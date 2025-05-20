@@ -8,6 +8,10 @@ This script (`scraper.py`) automates the process of logging into the DY Patil LM
 - Handles URL-encoded filenames
 - Detects and reports login failures
 
+##Proof
+![image](https://github.com/user-attachments/assets/e8575606-e1d1-4d07-b63a-7e7d4f4f5c27)
+![image](https://github.com/user-attachments/assets/87b590bd-76f8-497c-bb3b-744c1f02e63f)
+
 ## Setup
 
 ### 1. Clone or Download
