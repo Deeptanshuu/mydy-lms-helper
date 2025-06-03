@@ -1,6 +1,6 @@
-# DY Patil LMS Scraper
+# Moodle LMS Scraper
 
-This script (`scraper.py`) automates the process of logging into the DY Patil LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
+This script (`scraper.py`) automates the process of logging into the Moodle LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
 
 ## Features
 - **Interactive Course Selection**: Choose specific courses or download from all courses
@@ -69,7 +69,7 @@ The script will:
 ## How It Works
 
 ### Authentication Process
-The script handles DY Patil's two-step login:
+The script handles Moodle's two-step login:
 1. Submits username to get redirected to Moodle login
 2. Submits password to complete authentication
 3. Maintains session for subsequent requests
@@ -168,7 +168,7 @@ activity_types = [
 ## Requirements
 - Python 3.6+
 - Internet connection
-- Valid DY Patil LMS account
+- Valid LMS account
 - Access to courses you want to download
 
 ## License

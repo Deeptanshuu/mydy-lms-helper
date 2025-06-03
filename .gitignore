@@ -11,3 +11,6 @@
 *.csv
 *.json
 *.xml
+/build/
+/dist/
+*.spec
