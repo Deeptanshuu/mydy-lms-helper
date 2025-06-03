@@ -1,0 +1,72 @@
+name: Build Multi-Platform Executables
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            executable_name: lms_scraper_win64
+            artifact_name: lms_scraper_win64.exe
+          - os: macos-latest
+            executable_name: lms_scraper_macos
+            artifact_name: lms_scraper_macos
+          - os: ubuntu-latest
+            executable_name: lms_scraper_linux
+            artifact_name: lms_scraper_linux
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      run: |
+        pyinstaller --onefile --console scraper_public.py --clean --name="${{ matrix.executable_name }}"
+      shell: bash
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.executable_name }}
+        path: |
+          dist/${{ matrix.artifact_name }}
+        retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          **/lms_scraper_*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
