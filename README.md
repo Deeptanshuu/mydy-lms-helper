@@ -1,12 +1,21 @@
 # DY Patil LMS Scraper
 
-This script (`scraper.py`) automates the process of logging into the DY Patil LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from a specified course page.
+This script (`scraper.py`) automates the process of logging into the DY Patil LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
 
 ## Features
-- Logs in using your LMS credentials
-- Finds and downloads all files from course activities (resources, presentations, FlexPaper, etc.)
-- Handles URL-encoded filenames
-- Detects and reports login failures
+- **Interactive Course Selection**: Choose specific courses or download from all courses
+- **Automatic Login**: Handles the two-step authentication process
+- **Smart File Detection**: Finds and downloads files from various activity types:
+  - Direct file resources (PDFs, PPTs, DOCX)
+  - FlexPaper presentations
+  - Presentation modules
+  - Case studies and question modules
+- **Progress Tracking**: Real-time progress bars for downloads and processing
+- **Rate Limiting**: Built-in delays to avoid overwhelming the server
+- **Duplicate Detection**: Skips files that already exist with the same size
+- **URL Decoding**: Handles URL-encoded filenames properly
+- **Comprehensive Reporting**: Detailed summary of downloaded files and any failures
+- **Previous Semester Support**: Can download materials from previous semester courses
 
 ## Proof
 ![image](https://github.com/user-attachments/assets/e8575606-e1d1-4d07-b63a-7e7d4f4f5c27)
@@ -25,9 +34,15 @@ venv\Scripts\activate  # On Windows
 # or
 source venv/bin/activate  # On Linux/Mac
 ```
+
 Install required packages:
 ```sh
-pip install requests beautifulsoup4 python-dotenv
+pip install -r requirements.txt
+```
+
+Or install manually:
+```sh
+pip install requests beautifulsoup4 python-dotenv tqdm
 ```
 
 ### 3. Configure Environment Variables
@@ -36,31 +51,126 @@ Create a `.env` file in the same directory as `scraper.py` with the following co
 MYDY_USERNAME="your_lms_email@dypatil.edu"
 MYDY_PASSWORD="your_lms_password"
 ```
-**Do not use `USERNAME` as the variable name on Windows!**
+**Important: Do not use `USERNAME` as the variable name on Windows - it's reserved by the system!**
 
 ### 4. Run the Script
-Edit the `course_url` in `scraper.py` if you want to scrape a different course.
-Then run:
 ```sh
 python scraper.py
 ```
 
-## Troubleshooting
-- **Login failed!**
-  - Double-check your `.env` file and make sure the variable names are `MYDY_USERNAME` and `MYDY_PASSWORD`.
-  - Make sure your `.env` file is in the same directory as `scraper.py`.
-  - If you see your Windows username instead of your LMS email, you are using the wrong variable name (`USERNAME` is reserved by Windows).
-- **No files are downloaded:**
-  - The script prints the number of activity links found. If this is 0, the course page structure may have changed, or you are not logged in.
-  - Try running the script with your credentials hardcoded to debug.
+The script will:
+1. Log you into the LMS
+2. Fetch your available courses
+3. Display an interactive menu to select courses
+4. Download all materials from selected courses with progress tracking
 
-## Security
-- Your credentials are stored in `.env` and never hardcoded in the script. Do not share your `.env` file.
-- Add `.env` to your `.gitignore` if you use version control.
+## How It Works
+
+### Authentication Process
+The script handles DY Patil's two-step login:
+1. Submits username to get redirected to Moodle login
+2. Submits password to complete authentication
+3. Maintains session for subsequent requests
+
+### Course Discovery
+- Scans dashboard for enrolled courses
+- Includes both current and previous semester courses
+- Displays courses sorted by course ID (newest first)
+
+### File Detection & Download
+The scraper identifies downloadable content from various Moodle activity types:
+- **Resource modules**: Direct file downloads
+- **FlexPaper modules**: Extracts PDF URLs from JavaScript
+- **Presentation modules**: PowerPoint and other presentation files
+- **Object/Iframe content**: Files embedded in various formats
+
+### Organization
+- Creates separate folders for each course
+- Uses sanitized course names for folder creation
+- Preserves original filenames with proper URL decoding
+
+## Usage Examples
+
+### Download All Courses
+```
+Select course to download (1-X): [number for "Download ALL courses"]
+```
+
+### Download Specific Course
+```
+Select course to download (1-X): [specific course number]
+```
+
+### Sample Output
+```
+🎓 Courses processed: 3
+✅ Total files downloaded: 45
+⚠️  Total failed activities: 2
+⏱️  Total download time: 67.23s
+
+📁 Course breakdown:
+  📁 Data Structures and Algorithms: 18 files
+  📁 Computer Networks: 15 files  
+  📁 Database Management Systems: 12 files
+```
+
+## Troubleshooting
+
+### Login Issues
+- **"Login failed!"**: Double-check your `.env` file credentials
+- **Username shows as Windows username**: You're using `USERNAME` instead of `MYDY_USERNAME`
+- **Timeout errors**: The server might be slow; try running again
+
+### Download Issues
+- **No files downloaded**: Course might have no downloadable content or you might not be enrolled
+- **Some activities failed**: Normal - not all activities contain downloadable files
+- **Connection errors**: Check your internet connection and try again
+
+### File Issues
+- **Duplicate files**: The script automatically skips existing files of the same size
+- **Invalid filenames**: Script automatically sanitizes folder names for your OS
+- **Permission errors**: Make sure you have write access to the script directory
+
+## Security & Privacy
+- Credentials are stored in `.env` file and never hardcoded
+- Session cookies are temporary and only stored in memory
+- Always add `.env` to your `.gitignore` if using version control
+- The script respects rate limits to avoid overwhelming the server
+
+## Rate Limiting
+The script includes built-in rate limiting:
+- 0.5-2.0 second delays between requests
+- Additional delays for file downloads
+- Random intervals to appear more human-like
 
 ## Customization
-- To scrape a different course, change the `course_url` variable in `scraper.py`.
-- The script can be extended to download from multiple courses or handle other activity types.
+
+### Modify Rate Limits
+Edit the `__init__` method in `MydyScraper` class:
+```python
+self.min_delay = 0.5  # Minimum delay
+self.max_delay = 2.0  # Maximum delay
+self.download_delay = 0.3  # Additional delay for downloads
+```
+
+### Add New Activity Types
+Add new patterns to the `activity_types` list in `download_course` method:
+```python
+activity_types = [
+    '/mod/resource/view.php',
+    '/mod/flexpaper/view.php',
+    # Add new activity types here
+]
+```
+
+## Requirements
+- Python 3.6+
+- Internet connection
+- Valid DY Patil LMS account
+- Access to courses you want to download
 
 ## License
-MIT License. Use at your own risk. 
+MIT License. Use at your own risk.
+
+## Disclaimer
+This tool is for educational purposes only. Respect your institution's terms of service and use responsibly. Only download content you have legitimate access to.
