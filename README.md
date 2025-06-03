@@ -18,8 +18,10 @@ This script (`scraper.py`) automates the process of logging into the DY Patil LM
 - **Previous Semester Support**: Can download materials from previous semester courses
 
 ## Proof
-![image](https://github.com/user-attachments/assets/e8575606-e1d1-4d07-b63a-7e7d4f4f5c27)
-![image](https://github.com/user-attachments/assets/87b590bd-76f8-497c-bb3b-744c1f02e63f)
+![image](https://github.com/user-attachments/assets/d7698863-ae64-4743-9e3e-36c54a7a3e60)
+![image](https://github.com/user-attachments/assets/c999f6ed-6f1c-47ae-8a21-aa925c4363ab)
+![image](https://github.com/user-attachments/assets/ac364b9e-fac3-43ac-bbd9-997c9c3ae28e)
+
 
 ## Setup
 
