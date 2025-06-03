@@ -6,13 +6,26 @@ from urllib.parse import unquote
 import dotenv
 import time
 from tqdm import tqdm
+import random
 
 dotenv.load_dotenv()
 
 class MydyScraper:
     def __init__(self):
         self.session = requests.Session()
-        self.start_time = time.time()
+        # Rate limiting settings
+        self.min_delay = 0.5  # Minimum delay between requests (seconds)
+        self.max_delay = 2.0  # Maximum delay between requests (seconds)
+        self.download_delay = 0.3  # Additional delay for file downloads
+        
+    def _rate_limit(self, operation_type="general"):
+        """Apply rate limiting with random delays to avoid DDoS-like behavior"""
+        if operation_type == "download":
+            delay = random.uniform(self.min_delay + self.download_delay, self.max_delay + self.download_delay)
+        else:
+            delay = random.uniform(self.min_delay, self.max_delay)
+        
+        time.sleep(delay)
         
     def login(self):
         """Handle the two-step login process"""
@@ -217,6 +230,9 @@ class MydyScraper:
         """Fetch courses from the dashboard sidebar navigation"""
         print("📚 Fetching courses from dashboard...")
         
+        # Add rate limiting before dashboard request
+        self._rate_limit("dashboard")
+        
         dashboard_url = "https://mydy.dypatil.edu/rait/my/"
         dashboard_resp = self.session.get(dashboard_url)
         
@@ -249,7 +265,7 @@ class MydyScraper:
                         })
         
         # Method 2: Look in navigation blocks
-        print("🔍 Scanning navigation blocks...")
+        # print("🔍 Scanning navigation blocks...")
         nav_blocks = soup.find_all(['div'], class_=re.compile(r'block.*navigation|block.*tree|block.*university'))
         for block in nav_blocks:
             course_links = block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
@@ -270,7 +286,7 @@ class MydyScraper:
         
         # Method 3: Fallback - scan entire page
         if not courses:
-            print("🔍 Fallback: Scanning entire page for course links...")
+            print("🔍 Scanning entire dashboard for course links...")
             all_course_links = soup.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
             for link in all_course_links:
                 href = link.get('href', '')
@@ -303,6 +319,12 @@ class MydyScraper:
         return courses
 
     def display_course_menu(self, courses):
+        """Display warning that course which you are not enrolled in will not be downloaded"""
+        
+        print(f"\n{'='*60}")
+        print("⚠️  Note: Only courses you are enrolled in will be downloaded. But you can still download previous semester courses.")
+        print(f"{'='*60}")
+        
         """Display course selection menu"""
         print(f"\n{'='*60}")
         print(f"📋 AVAILABLE COURSES")
@@ -316,8 +338,8 @@ class MydyScraper:
         
         while True:
             try:
-                choice = input(f"\n👆 Select course to download (1-{len(courses)+1}): ").strip()
-                
+                choice = input(f"\n👆 Select course to download (1-{len(courses)+1}): ")
+
                 if choice.lower() in ['q', 'quit', 'exit']:
                     print("👋 Goodbye!")
                     return None
@@ -355,6 +377,9 @@ class MydyScraper:
         """Download all materials from a single course"""
         print(f"\n🎯 Processing course: {course['name']}")
         # print(f"🔗 URL: {course['url']}")
+        
+        # Add rate limiting before course page request
+        self._rate_limit("course")
         
         course_start = time.time()
         resp = self.session.get(course['url'])
@@ -406,6 +431,9 @@ class MydyScraper:
         with tqdm(total=len(activity_links), desc=f"Processing {course_name[:20]}...", unit="activity") as pbar:
             for i, activity_url in enumerate(activity_links, 1):
                 pbar.set_description(f"Processing {course_name[:15]}... {i}/{len(activity_links)}")
+                
+                # Add rate limiting before each activity request
+                self._rate_limit("activity")
                 
                 activity_start = time.time()
                 activity_resp = self.session.get(activity_url)
@@ -522,9 +550,9 @@ class MydyScraper:
             # print(f"  ❌ Error downloading {url}: {str(e)}")
             return False
 
-    def display_summary(self, results):
+    def display_summary(self, results, download_start_time):
         """Display download summary for all courses"""
-        total_time = time.time() - self.start_time
+        total_time = time.time() - download_start_time
         total_files = sum(result['downloaded'] for result in results)
         total_failed = sum(result['failed'] for result in results)
         
@@ -534,7 +562,7 @@ class MydyScraper:
         print(f"🎓 Courses processed: {len(results)}")
         print(f"✅ Total files downloaded: {total_files}")
         print(f"⚠️  Total failed activities: {total_failed}")
-        print(f"⏱️  Total time: {total_time:.2f}s")
+        print(f"⏱️  Total download time: {total_time:.2f}s")
         
         if len(results) > 1:
             print(f"\n📋 Course breakdown:")
@@ -571,14 +599,17 @@ def main():
     if not selected_courses:
         return
     
+    # Start timing downloads only after menu selection
+    download_start_time = time.time()
+    
     # Download selected courses
     results = []
     for course in selected_courses:
         result = scraper.download_course(course)
         results.append(result)
     
-    # Display final summary
-    scraper.display_summary(results)
+    # Display final summary with actual download time
+    scraper.display_summary(results, download_start_time)
 
 if __name__ == "__main__":
     main()
