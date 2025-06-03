@@ -5,12 +5,10 @@
 *.pptx
 *.docx
 *.doc
-*.txt
 *.html
 *.xlsx
 *.csv
 *.json
 *.xml
 /build/
-/dist/
 *.spec

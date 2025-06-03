@@ -26,21 +26,21 @@ class MydyScraper:
         time.sleep(delay)
         
     def get_credentials(self):
-        """Prompt user for their MyDY credentials"""
-        print("🔐 MyDY Login Credentials Required")
+        """Prompt user for their Moodle credentials"""
+        print("🔐 Moodle Login Credentials Required")
         print("=" * 40)
         print("⚠️  Your credentials are only used for this session and are NOT stored anywhere!")
-        print("💡 Use your regular MyDY username and password")
+        print("💡 Use your regular Moodle username and password")
         print()
         
         while True:
-            username = input("👤 Enter your MyDY username: ").strip()
+            username = input("👤 Enter your Moodle username: ").strip()
             if username:
                 break
             print("❌ Username cannot be empty. Please try again.")
         
         while True:
-            password = getpass.getpass("🔑 Enter your MyDY password: ")
+            password = getpass.getpass("🔑 Enter your Moodle password: ")
             if password:
                 break
             print("❌ Password cannot be empty. Please try again.")
@@ -602,9 +602,9 @@ class MydyScraper:
         print(f"{'='*60}")
 
 def main():
-    print("🎓 MyDY Course Material Downloader")
+    print("🎓 Moodle Course Material Downloader")
     print("=" * 40)
-    print("📚 Download your course materials from MyDY portal")
+    print("📚 Download your course materials from Moodle portal")
     print("🔐 Your login credentials are secure and not stored")
     print("=" * 40)
     print()
