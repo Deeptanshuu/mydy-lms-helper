@@ -4,145 +4,581 @@ import os
 import re
 from urllib.parse import unquote
 import dotenv
+import time
+from tqdm import tqdm
 
 dotenv.load_dotenv()
 
-# 1. Start a session
-session = requests.Session()
+class MydyScraper:
+    def __init__(self):
+        self.session = requests.Session()
+        self.start_time = time.time()
+        
+    def login(self):
+        """Handle the two-step login process"""
+        print("🔄 Starting session...")
+        # print("🔍 Getting initial login page...")
 
-# 2. Get login page to extract logintoken
-login_url = 'https://mydy.dypatil.edu/rait/login/index.php'
-login_page = session.get(login_url)
-soup = BeautifulSoup(login_page.text, 'html.parser')
-logintoken = soup.find('input', {'name': 'logintoken'})
-if logintoken:
-    logintoken = logintoken['value']
-    print(f"Found logintoken: {logintoken}")
-else:
-    logintoken = None
-    print("No logintoken found. Proceeding without it.")
+        # Step 1: Access the university portal to get the username submission form
+        initial_url = 'https://mydy.dypatil.edu/rait/login/index.php'
+        initial_resp = self.session.get(initial_url)
+        initial_soup = BeautifulSoup(initial_resp.text, 'html.parser')
 
-# 3. Prepare login payload
+        # print(f"📄 Initial page status: {initial_resp.status_code}")
+        # print(f"📄 Initial page URL: {initial_resp.url}")
 
-username = os.getenv('MYDY_USERNAME')
-password = os.getenv('MYDY_PASSWORD')
+        # Check if we're redirected to the custom login (username only page)
+        if initial_resp.url == 'https://mydy.dypatil.edu/':
+            # print("🔍 Detected custom username entry page")
+            
+            # Step 1: Submit username to get the Moodle login form
+            username = os.getenv('MYDY_USERNAME')
+            print(f"👤 Submitting username: {username[:2]}******{username[-2:]}")
+            
+            step1_payload = {
+                'username': username,
+                'wantsurl': '',
+                'next': 'Next'
+            }
+            
+            # Submit username to get the password form
+            step1_resp = self.session.post('https://mydy.dypatil.edu/index.php', data=step1_payload)
+            
+            # print(f"📄 Step 1 response status: {step1_resp.status_code}")
+            # print(f"📄 Step 1 response URL: {step1_resp.url}")
+            
+            # Check if we got redirected to Moodle login with username parameter
+            if 'rait/login/index.php' in step1_resp.url and 'uname=' in step1_resp.url:
+                # print("✅ Successfully redirected to Moodle login with username")
+                
+                # Follow the redirect to get the actual Moodle login form
+                moodle_login_resp = self.session.get(step1_resp.url)
+                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
+                
+                # print(f"📄 Moodle login page status: {moodle_login_resp.status_code}")
+                # print(f"📄 Moodle login page URL: {moodle_login_resp.url}")
+                
+            else:
+                print("❌ Username submission didn't redirect to Moodle properly")
+                # with open('debug_step1_response.html', 'w', encoding='utf-8') as f:
+                #     f.write(step1_resp.text)
+                # print("💾 Saved step 1 response to 'debug_step1_response.html'")
+                
+                # Try direct access to Moodle login with username parameter
+                extracted_username = username
+                direct_moodle_url = f"https://mydy.dypatil.edu/rait/login/index.php?uname={extracted_username}&wantsurl="
+                print(f"🔄 Trying direct access to: {direct_moodle_url}")
+                
+                moodle_login_resp = self.session.get(direct_moodle_url)
+                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
+                
+                # print(f"📄 Direct Moodle access status: {moodle_login_resp.status_code}")
+                # print(f"📄 Direct Moodle access URL: {moodle_login_resp.url}")
 
-print(f"Username: {username[:2]}******{username[-2:]}")
-print(f"Password: {password[:2]}******{password[-2:]}")
+        else:
+            print("🔍 Already on Moodle login page")
+            login_soup = initial_soup
+            moodle_login_resp = initial_resp
 
-payload = {
-    'username': username,
-    'password': password
-}
-if logintoken:
-    payload['logintoken'] = logintoken
+        # Now check if we have the real Moodle login form
+        password_field = login_soup.find('input', {'name': 'password'})
+        static_username = login_soup.find('input', {'name': 'uname_static'})
 
-# 4. Log in
-login_resp = session.post(login_url, data=payload)
-if 'login' in login_resp.url or 'Invalid login' in login_resp.text or 'incorrect' in login_resp.text.lower():
-    print('Login failed! Please check your username and password.')
-    exit(1)
-else:
-    print('Login successful!')
+        if password_field:
+            # print("✅ Found Moodle password form")
+            
+            # Extract the pre-filled username if available
+            if static_username and static_username.get('value'):
+                prefilled_username = static_username['value']
+                print(f"📝 Username pre-filled: {prefilled_username[:2]}******{prefilled_username[-2:]}")
+            
+            # Look for any hidden fields or tokens
+            hidden_inputs = login_soup.find_all('input', {'type': 'hidden'})
+            # print(f"🔍 Found {len(hidden_inputs)} hidden input fields:")
+            
+            # Prepare login payload with all hidden fields
+            login_payload = {}
+            for inp in hidden_inputs:
+                name = inp.get('name')
+                value = inp.get('value', '')
+                if name:
+                    login_payload[name] = value
+                    # print(f"  - {name}: {value[:20]}{'...' if len(str(value)) > 20 else ''}")
+            
+            # Add password to payload
+            password = os.getenv('MYDY_PASSWORD')
+            login_payload['password'] = password
+            print(f"🔑 Password: {password[:2]}******{password[-2:]}")
+            
+            # Find the form action URL
+            form = login_soup.find('form')
+            if form and form.get('action'):
+                login_action_url = form['action']
+                if not login_action_url.startswith('http'):
+                    login_action_url = 'https://mydy.dypatil.edu/rait/login/' + login_action_url.lstrip('/')
+            else:
+                login_action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
+            
+            # print(f"🎯 Submitting login to: {login_action_url}")
+            
+            # Submit the login form
+            print("🔐 Logging in...")
+            login_start = time.time()
+            login_resp = self.session.post(login_action_url, data=login_payload)
+            
+        else:
+            print("❌ No password field found - still on username page")
+            
+            # Try using session from redirect URL if available
+            if 'step1_resp' in locals() and 'uname=' in step1_resp.url:
+                print("🔄 Attempting to use session from redirect URL...")
+                
+                # Access the redirect URL to trigger the session
+                session_resp = self.session.get(step1_resp.url)
+                
+                # Now try to access the Moodle login page again
+                moodle_retry_resp = self.session.get('https://mydy.dypatil.edu/rait/login/index.php')
+                retry_soup = BeautifulSoup(moodle_retry_resp.text, 'html.parser')
+                
+                # Check if this worked
+                retry_password_field = retry_soup.find('input', {'name': 'password'})
+                if retry_password_field:
+                    print("✅ Session retry worked - found password field!")
+                    login_soup = retry_soup
+                    moodle_login_resp = moodle_retry_resp
+                    
+                    # Continue with the login process
+                    hidden_inputs = login_soup.find_all('input', {'type': 'hidden'})
+                    # print(f"🔍 Found {len(hidden_inputs)} hidden input fields:")
+                    
+                    login_payload = {}
+                    for inp in hidden_inputs:
+                        name = inp.get('name')
+                        value = inp.get('value', '')
+                        if name:
+                            login_payload[name] = value
+                            # print(f"  - {name}: {value[:20]}{'...' if len(str(value)) > 20 else ''}")
+                    
+                    password = os.getenv('MYDY_PASSWORD')
+                    login_payload['password'] = password
+                    print(f"🔑 Password: {password[:2]}******{password[-2:]}")
+                    
+                    form = login_soup.find('form')
+                    if form and form.get('action'):
+                        login_action_url = form['action']
+                        if not login_action_url.startswith('http'):
+                            login_action_url = 'https://mydy.dypatil.edu/rait/login/' + login_action_url.lstrip('/')
+                    else:
+                        login_action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
+                    
+                    # print(f"🎯 Submitting login to: {login_action_url}")
+                    
+                    print("🔐 Logging in...")
+                    login_start = time.time()
+                    login_resp = self.session.post(login_action_url, data=login_payload)
+                    
+                else:
+                    print("❌ Session retry failed - still no password field")
+                    return False
+            else:
+                print("❌ Cannot proceed without proper session/redirect")
+                return False
 
-# 5. Visit a course page
-course_url = 'https://mydy.dypatil.edu/rait/course/view.php?id=7095'
-resp = session.get(course_url)
-soup = BeautifulSoup(resp.text, 'html.parser')
+        # Check login success
+        if 'login_resp' in locals():
+            login_time = time.time() - login_start
+            # print(f"📄 Login response status: {login_resp.status_code}")
+            # print(f"📄 Login response URL: {login_resp.url}")
 
+            # Improved login success detection
+            login_successful = False
+            if login_resp.url and 'rait' in login_resp.url and 'login' not in login_resp.url and 'errorcode' not in login_resp.url:
+                login_successful = True
+            elif 'dashboard' in login_resp.text.lower() or 'my home' in login_resp.text.lower():
+                login_successful = True
+            elif login_resp.status_code == 200 and len(login_resp.text) > 10000:
+                if any(indicator in login_resp.text.lower() for indicator in ['logout', 'profile', 'course', 'dashboard']):
+                    login_successful = True
 
-# 6. Find all activity links
-activity_types = [
-    '/mod/resource/view.php',
-    '/mod/flexpaper/view.php',
-    '/mod/presentation/view.php',
-    '/mod/casestudy/view.php',
-    '/mod/dyquestion/view.php'
-]
-activity_links = []
-# Find all <li> elements where 'activity' is one of the classes
-for li in soup.find_all('li', class_=re.compile(r'\bactivity\b')):
-    a = li.find('a', href=True)
-    if a:
-        href = a['href']
-        if any(x in href for x in activity_types):
-            full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
-            activity_links.append(full_url)
-print(f"Found {len(activity_links)} activity links.")
+            if not login_successful:
+                print('❌ Login failed! Please check your username and password.')
+                # print(f"🌐 Response URL: {login_resp.url}")
+                # print(f"📄 Response status: {login_resp.status_code}")
+                return False
+            else:
+                print(f'✅ Login successful! (took {login_time:.2f}s)')
+                # print(f"🌐 Final URL after login: {login_resp.url}")
+                return True
+        else:
+            print("❌ Login process failed - never reached login submission")
+            return False
 
-# 7. Visit each activity page and extract/download the real file link
-for activity_url in activity_links:
-    print(f"Visiting activity: {activity_url}")
-    activity_resp = session.get(activity_url)
-    activity_soup = BeautifulSoup(activity_resp.text, 'html.parser')
-    downloaded = False
+    def get_available_courses(self):
+        """Fetch courses from the dashboard sidebar navigation"""
+        print("📚 Fetching courses from dashboard...")
+        
+        dashboard_url = "https://mydy.dypatil.edu/rait/my/"
+        dashboard_resp = self.session.get(dashboard_url)
+        
+        if dashboard_resp.status_code != 200:
+            print(f"❌ Failed to load dashboard: {dashboard_resp.status_code}")
+            return []
+        
+        soup = BeautifulSoup(dashboard_resp.text, 'html.parser')
+        courses = []
+        seen_ids = set()
+        
+        # Method 1: Look in "Previous semester classes" block
+        print("🔍 Scanning Previous semester classes block...")
+        prev_classes_block = soup.find('div', {'id': re.compile(r'.*stu_previousclasses.*')})
+        if prev_classes_block:
+            course_links = prev_classes_block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+            for link in course_links:
+                href = link.get('href', '')
+                match = re.search(r'id=(\d+)', href)
+                if match:
+                    course_id = match.group(1)
+                    if course_id not in seen_ids:
+                        seen_ids.add(course_id)
+                        course_name = link.get_text(strip=True)
+                        full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                        courses.append({
+                            'id': course_id,
+                            'name': course_name,
+                            'url': full_url
+                        })
+        
+        # Method 2: Look in navigation blocks
+        print("🔍 Scanning navigation blocks...")
+        nav_blocks = soup.find_all(['div'], class_=re.compile(r'block.*navigation|block.*tree|block.*university'))
+        for block in nav_blocks:
+            course_links = block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+            for link in course_links:
+                href = link.get('href', '')
+                match = re.search(r'id=(\d+)', href)
+                if match:
+                    course_id = match.group(1)
+                    if course_id not in seen_ids:
+                        seen_ids.add(course_id)
+                        course_name = link.get_text(strip=True)
+                        full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                        courses.append({
+                            'id': course_id,
+                            'name': course_name,
+                            'url': full_url
+                        })
+        
+        # Method 3: Fallback - scan entire page
+        if not courses:
+            print("🔍 Fallback: Scanning entire page for course links...")
+            all_course_links = soup.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+            for link in all_course_links:
+                href = link.get('href', '')
+                match = re.search(r'id=(\d+)', href)
+                if match:
+                    course_id = match.group(1)
+                    if course_id not in seen_ids:
+                        seen_ids.add(course_id)
+                        course_name = link.get_text(strip=True)
+                        if course_name and len(course_name.strip()) > 2:
+                            full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                            courses.append({
+                                'id': course_id,
+                                'name': course_name,
+                                'url': full_url
+                            })
+        
+        # Sort courses by ID (newer course IDs are usually higher numbers)
+        courses.sort(key=lambda x: int(x['id']), reverse=True)
+        
+        if not courses:
+            print("⚠️  No courses found on dashboard.")
+            print("💡 This might be normal if you're between semesters.")
+            with open('debug_dashboard.html', 'w', encoding='utf-8') as f:
+                f.write(dashboard_resp.text)
+            print("💾 Saved dashboard HTML for investigation")
+        else:
+            print(f"✅ Found {len(courses)} courses")
+        
+        return courses
 
-    # Try to find direct file link (resource)
-    for a in activity_soup.find_all('a', href=True):
-        file_href = a['href']
-        if 'pluginfile.php' in file_href or file_href.endswith(('.pdf', '.ppt', '.pptx', '.docx')):
-            file_url = file_href if file_href.startswith('http') else 'https://mydy.dypatil.edu' + file_href
-            print(f"  Downloading: {file_url}")
-            file_resp = session.get(file_url)
-            filename = unquote(file_url.split('/')[-1])
-            with open(filename, 'wb') as f:
-                f.write(file_resp.content)
-            print(f"  Saved: {filename}")
-            downloaded = True
-            break
+    def display_course_menu(self, courses):
+        """Display course selection menu"""
+        print(f"\n{'='*60}")
+        print(f"📋 AVAILABLE COURSES")
+        print(f"{'='*60}")
+        
+        for i, course in enumerate(courses, 1):
+            print(f"{i:2d}. {course['name']} (ID: {course['id']})")
+        
+        print(f"{len(courses)+1:2d}. Download ALL courses")
+        print(f"{'='*60}")
+        
+        while True:
+            try:
+                choice = input(f"\n👆 Select course to download (1-{len(courses)+1}): ").strip()
+                
+                if choice.lower() in ['q', 'quit', 'exit']:
+                    print("👋 Goodbye!")
+                    return None
+                
+                choice_num = int(choice)
+                if 1 <= choice_num <= len(courses):
+                    return [courses[choice_num - 1]]
+                elif choice_num == len(courses) + 1:
+                    return courses
+                else:
+                    print(f"❌ Invalid choice. Please enter a number between 1 and {len(courses)+1}")
+                    
+            except ValueError:
+                print("❌ Invalid input. Please enter a number or 'q' to quit")
+            except KeyboardInterrupt:
+                print("\n👋 Goodbye!")
+                return None
 
-    # Try to find FlexPaper PDFFile in JS
-    if not downloaded:
-        pdf_links = re.findall(r"PDFFile\s*:\s*'([^']+)'", activity_resp.text)
+    def sanitize_folder_name(self, name):
+        """Sanitize course name for folder creation"""
+        return re.sub(r'[<>:"/\\|?*]', '_', name).strip()
+
+    def extract_course_name(self, soup):
+        """Extract course name from page title"""
+        title_tag = soup.find('title')
+        if title_tag:
+            title_text = title_tag.get_text()
+            if "Course:" in title_text:
+                return title_text.split("Course:", 1)[1].strip()
+            else:
+                return title_text.strip()
+        return "Unknown Course"
+
+    def download_course(self, course):
+        """Download all materials from a single course"""
+        print(f"\n🎯 Processing course: {course['name']}")
+        # print(f"🔗 URL: {course['url']}")
+        
+        course_start = time.time()
+        resp = self.session.get(course['url'])
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        course_load_time = time.time() - course_start
+        print(f"✅ Course page loaded (took {course_load_time:.2f}s)")
+
+        # Extract course name and create folder
+        course_name = self.extract_course_name(soup)
+        sanitized_course_name = self.sanitize_folder_name(course_name)
+        course_folder = sanitized_course_name
+
+        # Create the course folder if it doesn't exist
+        if not os.path.exists(course_folder):
+            os.makedirs(course_folder)
+            print(f"📁 Created folder: {course_folder}")
+        else:
+            print(f"📁 Using existing folder: {course_folder}")
+
+        # Find all activity links
+        print("🔍 Scanning for activities...")
+        activity_types = [
+            '/mod/resource/view.php',
+            '/mod/flexpaper/view.php',
+            '/mod/presentation/view.php',
+            '/mod/casestudy/view.php',
+            '/mod/dyquestion/view.php'
+        ]
+        activity_links = []
+        
+        for li in soup.find_all('li', class_=re.compile(r'\bactivity\b')):
+            a = li.find('a', href=True)
+            if a:
+                href = a['href']
+                if any(x in href for x in activity_types):
+                    full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                    activity_links.append(full_url)
+        
+        print(f"✅ Found {len(activity_links)} activity links.")
+        
+        if len(activity_links) == 0:
+            print("⚠️  No activities found in this course.")
+            return {'course': course_name, 'downloaded': 0, 'failed': 0, 'files': []}
+
+        # Download files from activities
+        downloaded_files = []
+        failed_downloads = []
+
+        with tqdm(total=len(activity_links), desc=f"Processing {course_name[:20]}...", unit="activity") as pbar:
+            for i, activity_url in enumerate(activity_links, 1):
+                pbar.set_description(f"Processing {course_name[:15]}... {i}/{len(activity_links)}")
+                
+                activity_start = time.time()
+                activity_resp = self.session.get(activity_url)
+                activity_soup = BeautifulSoup(activity_resp.text, 'html.parser')
+                downloaded = False
+
+                # Try different download methods
+                downloaded = (
+                    self._try_direct_download(activity_soup, course_folder, downloaded_files) or
+                    self._try_flexpaper_download(activity_resp, course_folder, downloaded_files) or
+                    self._try_presentation_download(activity_soup, course_folder, downloaded_files) or
+                    self._try_iframe_download(activity_soup, course_folder, downloaded_files) or
+                    self._try_object_download(activity_soup, course_folder, downloaded_files)
+                )
+
+                if not downloaded:
+                    failed_downloads.append(activity_url)
+                    # pbar.write(f"  ⚠️  No downloadable file found for activity {i}")
+                
+                pbar.update(1)
+
+        return {
+            'course': course_name,
+            'folder': course_folder,
+            'downloaded': len(downloaded_files),
+            'failed': len(failed_downloads),
+            'files': downloaded_files,
+            'failed_urls': failed_downloads
+        }
+
+    def _try_direct_download(self, soup, folder, downloaded_files):
+        """Try to download direct file links"""
+        for a in soup.find_all('a', href=True):
+            file_href = a['href']
+            if 'pluginfile.php' in file_href or file_href.endswith(('.pdf', '.ppt', '.pptx', '.docx')):
+                file_url = file_href if file_href.startswith('http') else 'https://mydy.dypatil.edu' + file_href
+                if self._download_file(file_url, folder, downloaded_files, "Direct"):
+                    return True
+        return False
+
+    def _try_flexpaper_download(self, response, folder, downloaded_files):
+        """Try to download FlexPaper PDFs"""
+        pdf_links = re.findall(r"PDFFile\s*:\s*'([^']+)'", response.text)
         for pdf_url in pdf_links:
-            print(f"  Downloading FlexPaper PDF: {pdf_url}")
-            file_resp = session.get(pdf_url)
-            filename = unquote(pdf_url.split('/')[-1])
-            with open(filename, 'wb') as f:
-                f.write(file_resp.content)
-            print(f"  Saved: {filename}")
-            downloaded = True
+            if self._download_file(pdf_url, folder, downloaded_files, "FlexPaper PDF"):
+                return True
+        return False
 
-    # Try to find presentation download link (look for .ppt, .pptx)
-    if not downloaded:
-        for a in activity_soup.find_all('a', href=True):
+    def _try_presentation_download(self, soup, folder, downloaded_files):
+        """Try to download presentation files"""
+        for a in soup.find_all('a', href=True):
             file_href = a['href']
             if file_href.endswith(('.ppt', '.pptx')):
                 file_url = file_href if file_href.startswith('http') else 'https://mydy.dypatil.edu' + file_href
-                print(f"  Downloading Presentation: {file_url}")
-                file_resp = session.get(file_url)
-                filename = unquote(file_url.split('/')[-1])
-                with open(filename, 'wb') as f:
-                    f.write(file_resp.content)
-                print(f"  Saved: {filename}")
-                downloaded = True
-                break
+                if self._download_file(file_url, folder, downloaded_files, "Presentation"):
+                    return True
+        return False
 
-    # Try to find file in iframe (presentation module)
-    if not downloaded:
-        iframe = activity_soup.find('iframe', id='presentationobject')
+    def _try_iframe_download(self, soup, folder, downloaded_files):
+        """Try to download from iframe sources"""
+        iframe = soup.find('iframe', id='presentationobject')
         if iframe and iframe.has_attr('src'):
             file_url = iframe['src']
-            print(f"  Downloading from iframe: {file_url}")
-            file_resp = session.get(file_url)
-            filename = unquote(file_url.split('/')[-1])
-            with open(filename, 'wb') as f:
-                f.write(file_resp.content)
-            print(f"  Saved: {filename}")
-            downloaded = True
+            if self._download_file(file_url, folder, downloaded_files, "Iframe"):
+                return True
+        return False
 
-    # Try to find file in object (presentation module, PDF)
-    if not downloaded:
-        obj = activity_soup.find('object', id='presentationobject')
+    def _try_object_download(self, soup, folder, downloaded_files):
+        """Try to download from object data"""
+        obj = soup.find('object', id='presentationobject')
         if obj and obj.has_attr('data'):
             file_url = obj['data']
-            print(f"  Downloading from object: {file_url}")
-            file_resp = session.get(file_url)
-            filename = unquote(file_url.split('/')[-1])
-            with open(filename, 'wb') as f:
-                f.write(file_resp.content)
-            print(f"  Saved: {filename}")
-            downloaded = True
+            if self._download_file(file_url, folder, downloaded_files, "Object"):
+                return True
+        return False
 
-    if not downloaded:
-        print("  No downloadable file found on this activity page.")
+    def _download_file(self, url, folder, downloaded_files, source_type):
+        """Download a single file with progress tracking"""
+        try:
+            download_start = time.time()
+            file_resp = self.session.get(url, stream=True)
+            
+            if file_resp.status_code != 200:
+                return False
+                
+            filename = unquote(url.split('/')[-1])
+            filepath = os.path.join(folder, filename)
+            
+            # Skip if file already exists and has same size
+            total_size = int(file_resp.headers.get('content-length', 0))
+            if os.path.exists(filepath) and total_size > 0:
+                if os.path.getsize(filepath) == total_size:
+                    download_time = time.time() - download_start
+                    downloaded_files.append((filename, download_time))
+                    # print(f"  ⚪ Skipped (exists): {filename}")
+                    return True
+            
+            with open(filepath, 'wb') as f:
+                if total_size > 0:
+                    with tqdm(total=total_size, unit='B', unit_scale=True, desc=f"⬇️  {filename[:20]}...", leave=False) as download_pbar:
+                        for chunk in file_resp.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+                                download_pbar.update(len(chunk))
+                else:
+                    f.write(file_resp.content)
+            
+            download_time = time.time() - download_start
+            downloaded_files.append((filename, download_time))
+            # print(f"  ✅ Saved {source_type}: {filename} ({download_time:.2f}s)")
+            return True
+            
+        except Exception as e:
+            # print(f"  ❌ Error downloading {url}: {str(e)}")
+            return False
+
+    def display_summary(self, results):
+        """Display download summary for all courses"""
+        total_time = time.time() - self.start_time
+        total_files = sum(result['downloaded'] for result in results)
+        total_failed = sum(result['failed'] for result in results)
+        
+        print(f"\n{'='*60}")
+        print(f"📊 DOWNLOAD SUMMARY")
+        print(f"{'='*60}")
+        print(f"🎓 Courses processed: {len(results)}")
+        print(f"✅ Total files downloaded: {total_files}")
+        print(f"⚠️  Total failed activities: {total_failed}")
+        print(f"⏱️  Total time: {total_time:.2f}s")
+        
+        if len(results) > 1:
+            print(f"\n📋 Course breakdown:")
+            for result in results:
+                print(f"  📁 {result['course']}: {result['downloaded']} files")
+        
+        if any(result['files'] for result in results):
+            print(f"\n📄 Downloaded files:")
+            for result in results:
+                if result['files']:
+                    print(f"  📁 {result['course']}:")
+                    for filename, download_time in result['files']:
+                        print(f"    • {filename} ({download_time:.2f}s)")
+        
+        print(f"\n🎉 All processing completed!")
+        print(f"{'='*60}")
+
+def main():
+    scraper = MydyScraper()
+    
+    # Login
+    if not scraper.login():
+        print("❌ Login failed. Exiting.")
+        return
+    
+    # Get available courses
+    courses = scraper.get_available_courses()
+    if not courses:
+        print("❌ No courses found. Exiting.")
+        return
+    
+    # Display course selection menu
+    selected_courses = scraper.display_course_menu(courses)
+    if not selected_courses:
+        return
+    
+    # Download selected courses
+    results = []
+    for course in selected_courses:
+        result = scraper.download_course(course)
+        results.append(result)
+    
+    # Display final summary
+    scraper.display_summary(results)
+
+if __name__ == "__main__":
+    main()

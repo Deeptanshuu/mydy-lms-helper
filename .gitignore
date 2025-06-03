@@ -7,3 +7,7 @@
 *.doc
 *.txt
 *.html
+*.xlsx
+*.csv
+*.json
+*.xml
