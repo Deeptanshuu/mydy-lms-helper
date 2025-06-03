@@ -8,6 +8,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Allows manual triggering
 
+permissions:
+  contents: write  # Required for creating releases
+  actions: read
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -21,7 +25,7 @@ jobs:
           - os: macos-latest
             executable_name: lms_scraper_macos
             artifact_name: lms_scraper_macos
-            icon_file: icons/logo.icns
+            icon_file: icons/logo.png  # Changed from .icns since you don't have it
           - os: ubuntu-latest
             executable_name: lms_scraper_linux
             artifact_name: lms_scraper_linux
@@ -44,7 +48,7 @@ jobs:
 
     - name: Build executable
       run: |
-        pyinstaller --onefile --console scraper_public.py --clean --name="${{ matrix.executable_name }}"
+        pyinstaller --onefile --console --icon="${{ matrix.icon_file }}" scraper_public.py --clean --name="${{ matrix.executable_name }}"
       shell: bash
 
     - name: Upload artifacts
