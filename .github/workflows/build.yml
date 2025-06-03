@@ -17,12 +17,15 @@ jobs:
           - os: windows-latest
             executable_name: lms_scraper_win64
             artifact_name: lms_scraper_win64.exe
+            icon_file: icons/logo.ico
           - os: macos-latest
             executable_name: lms_scraper_macos
             artifact_name: lms_scraper_macos
+            icon_file: icons/logo.icns
           - os: ubuntu-latest
             executable_name: lms_scraper_linux
             artifact_name: lms_scraper_linux
+            icon_file: icons/logo.png 
 
     steps:
     - name: Checkout code
