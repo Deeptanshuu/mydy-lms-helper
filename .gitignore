@@ -10,7 +10,6 @@
 *.csv
 *.json
 *.xml
-*.ico
 /build/
 /dist/
 *.spec
