@@ -205,18 +205,56 @@ class MydyScraper:
 
             # Improved login success detection
             login_successful = False
-            if login_resp.url and 'rait' in login_resp.url and 'login' not in login_resp.url and 'errorcode' not in login_resp.url:
+            
+            # Check if we're back on a login page (indicates failure)
+            login_soup = BeautifulSoup(login_resp.text, 'html.parser')
+            
+            # Look for login form indicators (means we're still on login page)
+            has_login_form = (
+                login_soup.find('input', {'name': 'username'}) is not None or
+                login_soup.find('input', {'name': 'password'}) is not None or
+                'login' in login_resp.url.lower() or
+                'notloggedin' in login_resp.text.lower()
+            )
+            
+            # Look for error indicators
+            has_error = (
+                'errorcode' in login_resp.url or
+                'invalid login' in login_resp.text.lower() or
+                'login failed' in login_resp.text.lower() or
+                'incorrect username' in login_resp.text.lower() or
+                'incorrect password' in login_resp.text.lower()
+            )
+            
+            # Look for success indicators
+            has_success_indicators = (
+                'dashboard' in login_resp.text.lower() or
+                'my home' in login_resp.text.lower() or
+                'logout' in login_resp.text.lower() or
+                'profile' in login_resp.text.lower() or
+                ('course' in login_resp.text.lower() and len(login_resp.text) > 10000)
+            )
+            
+            # Determine login success
+            if has_login_form or has_error:
+                login_successful = False
+            elif has_success_indicators and not has_login_form:
                 login_successful = True
-            elif 'dashboard' in login_resp.text.lower() or 'my home' in login_resp.text.lower():
+            elif login_resp.url and 'rait' in login_resp.url and 'login' not in login_resp.url and not has_login_form:
                 login_successful = True
-            elif login_resp.status_code == 200 and len(login_resp.text) > 10000:
-                if any(indicator in login_resp.text.lower() for indicator in ['logout', 'profile', 'course', 'dashboard']):
-                    login_successful = True
 
             if not login_successful:
                 print('❌ Login failed! Please check your username and password.')
+                print('💡 Common issues:')
+                print('   - Incorrect username or password in .env file')
+                print('   - Using USERNAME instead of MYDY_USERNAME (Windows issue)')
+                print('   - Network connectivity issues')
                 # print(f"🌐 Response URL: {login_resp.url}")
                 # print(f"📄 Response status: {login_resp.status_code}")
+                if has_login_form:
+                    print('🔍 Detected: Still on login page after submission')
+                if has_error:
+                    print('🔍 Detected: Error indicators in response')
                 return False
             else:
                 print(f'✅ Login successful! (took {login_time:.2f}s)')
