@@ -26,7 +26,7 @@ A Chrome browser extension that automatically downloads course materials from th
 
 ## Installation
 
-1. Download or clone this repository
+1. Download the release or clone this repository
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
 4. Click "Load unpacked" and select the extension folder
