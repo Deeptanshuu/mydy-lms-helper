@@ -1,0 +1,38 @@
+{
+  "name": "mydy-moodle-downloader",
+  "version": "1.0.0",
+  "description": "A Chrome browser extension that automatically downloads course materials from the MyDY Moodle portal",
+  "scripts": {
+    "build": "npm run clean && npm run copy-files",
+    "clean": "rimraf dist",
+    "copy-files": "mkdir dist && xcopy . dist /E /I /H /Y /Q /EXCLUDE:exclude.txt",
+    "package": "npm run build && cd dist && powershell Compress-Archive -Path * -DestinationPath ../mydy-extension-v%npm_package_version%.zip -Force",
+    "build:webstore": "node scripts/build-webstore.js",
+    "version:patch": "npm version patch --no-git-tag-version && npm run update-manifest",
+    "version:minor": "npm version minor --no-git-tag-version && npm run update-manifest",
+    "version:major": "npm version major --no-git-tag-version && npm run update-manifest",
+    "update-manifest": "node scripts/update-manifest.js",
+    "prepare-release": "npm run version:patch && npm run package"
+  },
+  "keywords": [
+    "chrome-extension",
+    "moodle",
+    "downloader",
+    "mydy",
+    "education"
+  ],
+  "author": "Deeptanshu Lal",
+  "license": "MIT",
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "archiver": "^6.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deeptanshuu/mydy-browser-extension.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deeptanshuu/mydy-browser-extension/issues"
+  },
+  "homepage": "https://github.com/Deeptanshuu/mydy-browser-extension#readme"
+}

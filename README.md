@@ -69,11 +69,6 @@ Downloaded files maintain the original names and are organized by course. Files 
 - Make sure you're enrolled in courses
 - Previous semester courses should still be accessible
 
-### Download Failures
-- Some files might be restricted or corrupted
-- Check your internet connection
-- Ensure you have permission to access the course materials
-
 ## Technical Details
 
 - **Manifest Version**: 3 (latest Chrome extension format)
