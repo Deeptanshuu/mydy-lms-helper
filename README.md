@@ -12,6 +12,10 @@ A Chrome browser extension that automatically downloads course materials from th
 - ⚡ Progress tracking with real-time updates
 - 🛡️ Rate limiting to avoid server overload
 
+## Screenshots
+![image](https://github.com/user-attachments/assets/6ae0af24-a82a-4e29-b3a4-57cd27b05fda)
+![image](https://github.com/user-attachments/assets/5f18fec2-d637-469a-9011-c7675c9a9c81)
+
 ## Supported File Types
 
 - Direct file links (PDFs, PowerPoints, Documents)
