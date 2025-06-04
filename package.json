@@ -1,6 +1,6 @@
 {
   "name": "mydy-moodle-downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Chrome browser extension that automatically downloads course materials from the MyDY Moodle portal",
   "scripts": {
     "build": "npm run clean && npm run copy-files",

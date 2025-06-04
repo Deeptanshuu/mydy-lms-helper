@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MyDY Moodle Downloader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Download course materials from MyDY Moodle portal",
   "permissions": [
     "activeTab",
@@ -26,8 +26,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://mydy.dypatil.edu/*"],
-      "js": ["js/content.js"]
+      "matches": [
+        "https://mydy.dypatil.edu/*"
+      ],
+      "js": [
+        "js/content.js"
+      ]
     }
   ],
   "icons": {
