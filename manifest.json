@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "MyDY Moodle Downloader",
+  "version": "1.0.0",
+  "description": "Download course materials from MyDY Moodle portal",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage",
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://mydy.dypatil.edu/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "MyDY Moodle Downloader",
+    "default_icon": {
+      "16": "icons/logo.png",
+      "48": "icons/logo.png",
+      "128": "icons/logo.png"
+    }
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mydy.dypatil.edu/*"],
+      "js": ["js/content.js"]
+    }
+  ],
+  "icons": {
+    "16": "icons/logo.png",
+    "48": "icons/logo.png",
+    "128": "icons/logo.png"
+  }
+}

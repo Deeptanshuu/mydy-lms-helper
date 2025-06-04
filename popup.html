@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>MyDY Moodle Downloader</title>
+    <link rel="stylesheet" href="css/popup.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Position Helper (only shows if popup is cut off) -->
+        <div id="positionHelper" class="position-helper" style="display: none;">
+            <div class="helper-content">
+                <span class="helper-icon">📌</span>
+                <span class="helper-text">Popup cut off? Try pinning this extension to your toolbar for better positioning!</span>
+                <button class="helper-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+            </div>
+        </div>
+        
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo-wrapper">
+                        <img src="icons/logo.png" alt="Moodle Downloader" class="logo">
+                    </div>
+                    <div class="logo-glow"></div>
+                </div>
+                <div class="header-text">
+                    <div class="brand-info">
+                        <h1 class="title">LMS Course Downloader</h1>
+                        <div class="title-accent"></div>
+                    </div>
+                    <span class="subtitle-icon"></span>
+                        Made with ❤️ by <a href="https://www.deeptanshu.tech" target="_blank" class="author-link">Deeptanshu</a>
+                    </p>
+                </div>
+                <div class="header-decoration">
+                    <div class="decoration-dots">
+                        <span class="dot dot-1"></span>
+                        <span class="dot dot-2"></span>
+                        <span class="dot dot-3"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Not Logged In Section -->
+        <div id="notLoggedInSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <div class="status-icon status-warning">🔐</div>
+                    <h2 class="card-title">Authentication Required</h2>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">Please log in to MyDY Moodle in your browser first, then return to this extension.</p>
+                </div>
+                <div class="card-footer">
+                    <button id="checkLoginBtn" class="btn btn-primary">
+                        <span class="btn-text">Check Login Status</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Courses Section -->
+        <div id="coursesSection" class="section hidden">
+            <div class="card">
+                <div class="card-header">
+                    <div class="status-icon status-success">📚</div>
+                    <h2 class="card-title">Available Courses</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-warning">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <p class="alert-title">Enrollment Required</p>
+                            <p class="alert-description">Only courses you are enrolled in will be downloaded and you can still download previous courses you were enrolled in.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Bar -->
+                    <div class="search-container">
+                        <div class="search-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="courseSearchInput" class="search-input" placeholder="Search courses by name...">
+                            <button id="clearSearchBtn" class="clear-search" style="display: none;">×</button>
+                        </div>
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                    
+                    <div id="coursesList" class="courses-container">
+                        <!-- Courses will be populated here -->
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="button-group">
+                        <button id="downloadAllBtn" class="btn btn-primary">Download All</button>
+                        <button id="downloadSelectedBtn" class="btn btn-secondary">Download Selected</button>
+                        <button id="refreshCoursesBtn" class="btn btn-outline">
+                            <span class="btn-icon">🔄</span>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progress Section -->
+        <div id="progressSection" class="section hidden">
+            <div class="card">
+                <div class="card-header">
+                    <div class="status-icon status-loading">📥</div>
+                    <h2 class="card-title">Downloading Materials</h2>
+                </div>
+                <div class="card-content">
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div id="statusText" class="status-text">Starting download...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="resultsSection" class="section hidden">
+            <div class="card">
+                <div class="card-header">
+                    <div class="status-icon status-success">📊</div>
+                    <h2 class="card-title">Download Complete</h2>
+                </div>
+                <div class="card-content">
+                    <div id="summaryText" class="summary-stats"></div>
+                    <div id="filesList" class="files-grid"></div>
+                </div>
+                <div class="card-footer">
+                    <button id="resetBtn" class="btn btn-outline">Start Over</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error Section -->
+        <div id="errorSection" class="section hidden">
+            <div class="card">
+                <div class="card-header">
+                    <div class="status-icon status-error">❌</div>
+                    <h2 class="card-title">Error Occurred</h2>
+                </div>
+                <div class="card-content">
+                    <div class="alert alert-destructive">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <div id="errorText" class="alert-description"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button id="retryBtn" class="btn btn-primary">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/popup.js"></script>
+    <script>
+        // Check if popup might be cut off and show helper
+        setTimeout(() => {
+            if (window.innerHeight < 750 || window.innerWidth < 630) {
+                document.getElementById('positionHelper').style.display = 'block';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
