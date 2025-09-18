@@ -5,18 +5,37 @@ import re
 from urllib.parse import unquote
 import dotenv
 import time
-from tqdm import tqdm
 import random
 
+# Rich imports for beautiful CLI
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn, FileSizeColumn, TotalFileSizeColumn, TransferSpeedColumn
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
+from rich.prompt import Prompt, Confirm, IntPrompt
+from rich.layout import Layout
+from rich.live import Live
+from rich.align import Align
+from rich.rule import Rule
+from rich import box
+from rich.columns import Columns
+from rich.tree import Tree
+from rich.status import Status
+from rich.theme import Theme
+
 dotenv.load_dotenv()
+
+# Initialize Rich console
+console = Console()
 
 class MydyScraper:
     def __init__(self):
         self.session = requests.Session()
         # Rate limiting settings
         self.min_delay = 0.5  # Minimum delay between requests (seconds)
-        self.max_delay = 2.0  # Maximum delay between requests (seconds)
-        self.download_delay = 0.3  # Additional delay for file downloads
+        self.max_delay = 0.5  # Maximum delay between requests (seconds)
+        self.download_delay = 0.1  # Additional delay for file downloads
         
     def _rate_limit(self, operation_type="general"):
         """Apply rate limiting with random delays to avoid DDoS-like behavior"""
@@ -27,87 +46,88 @@ class MydyScraper:
         
         time.sleep(delay)
         
+    def _show_banner(self):
+        """Display beautiful banner"""
+        banner_text = """
+███╗   ███╗██╗   ██╗██████╗ ██╗   ██╗    ███████╗ ██████╗██████╗  █████╗ ██████╗ ███████╗██████╗ 
+████╗ ████║╚██╗ ██╔╝██╔══██╗╚██╗ ██╔╝    ██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔══██╗
+██╔████╔██║ ╚████╔╝ ██║  ██║ ╚████╔╝     ███████╗██║     ██████╔╝███████║██████╔╝█████╗  ██████╔╝
+██║╚██╔╝██║  ╚██╔╝  ██║  ██║  ╚██╔╝      ╚════██║██║     ██╔══██╗██╔══██║██╔═══╝ ██╔══╝  ██╔══██╗
+██║ ╚═╝ ██║   ██║   ██████╔╝   ██║       ███████║╚██████╗██║  ██║██║  ██║██║     ███████╗██║  ██║
+╚═╝     ╚═╝   ╚═╝   ╚═════╝    ╚═╝       ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚══════╝╚═╝  ╚═╝
+        """
+        
+        console.print(Panel(
+            Align.center(Text(banner_text, style="bold #FF6500")),
+            title="[bold #FF6500]Welcome to MYDY Course Scraper[/bold #FF6500]",
+            subtitle="[italic #FF6500]Download your course materials without the pain[/italic #FF6500]",
+            border_style="#FF6500",
+            padding=(1, 2)
+        ))
+        
     def login(self):
-        """Handle the two-step login process"""
-        print("🔄 Starting session...")
-        # print("🔍 Getting initial login page...")
+        """Handle the two-step login process with beautiful UI"""
+        
+        with console.status("[bold #1E3E62]Starting session...", spinner="dots") as status:
+            # Step 1: Access the university portal to get the username submission form
+            initial_url = 'https://mydy.dypatil.edu/rait/login/index.php'
+            initial_resp = self.session.get(initial_url)
+            initial_soup = BeautifulSoup(initial_resp.text, 'html.parser')
 
-        # Step 1: Access the university portal to get the username submission form
-        initial_url = 'https://mydy.dypatil.edu/rait/login/index.php'
-        initial_resp = self.session.get(initial_url)
-        initial_soup = BeautifulSoup(initial_resp.text, 'html.parser')
+            # Check if we're redirected to the custom login (username only page)
+            if initial_resp.url == 'https://mydy.dypatil.edu/':
+                status.update("[bold #FF6500]Detected custom username entry page")
+                
+                # Step 1: Submit username to get the Moodle login form
+                username = os.getenv('MYDY_USERNAME')
+                
+                console.print(f"[bold #1E3E62]👤 Submitting username:[/bold #1E3E62] [#FF6500]{username[:2]}******{username[-2:]}[/#FF6500]")
+                
+                step1_payload = {
+                    'username': username,
+                    'wantsurl': '',
+                    'next': 'Next'
+                }
+                
+                # Submit username to get the password form
+                step1_resp = self.session.post('https://mydy.dypatil.edu/index.php', data=step1_payload)
+                
+                # Check if we got redirected to Moodle login with username parameter
+                if 'rait/login/index.php' in step1_resp.url and 'uname=' in step1_resp.url:
+                    status.update("[bold #FF6500]Successfully redirected to Moodle login")
+                    
+                    # Follow the redirect to get the actual Moodle login form
+                    moodle_login_resp = self.session.get(step1_resp.url)
+                    login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
+                    
+                else:
+                    console.print("[bold #0B192C]❌ Username submission didn't redirect to Moodle properly[/bold #0B192C]")
+                    
+                    # Try direct access to Moodle login with username parameter
+                    extracted_username = username
+                    direct_moodle_url = f"https://mydy.dypatil.edu/rait/login/index.php?uname={extracted_username}&wantsurl="
+                    console.print(f"[bold #FF6500]🔄 Trying direct access to Moodle...[/bold #FF6500]")
+                    
+                    moodle_login_resp = self.session.get(direct_moodle_url)
+                    login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
 
-        # print(f"📄 Initial page status: {initial_resp.status_code}")
-        # print(f"📄 Initial page URL: {initial_resp.url}")
-
-        # Check if we're redirected to the custom login (username only page)
-        if initial_resp.url == 'https://mydy.dypatil.edu/':
-            # print("🔍 Detected custom username entry page")
-            
-            # Step 1: Submit username to get the Moodle login form
-            username = os.getenv('MYDY_USERNAME')
-            print(f"👤 Submitting username: {username[:2]}******{username[-2:]}")
-            
-            step1_payload = {
-                'username': username,
-                'wantsurl': '',
-                'next': 'Next'
-            }
-            
-            # Submit username to get the password form
-            step1_resp = self.session.post('https://mydy.dypatil.edu/index.php', data=step1_payload)
-            
-            # print(f"📄 Step 1 response status: {step1_resp.status_code}")
-            # print(f"📄 Step 1 response URL: {step1_resp.url}")
-            
-            # Check if we got redirected to Moodle login with username parameter
-            if 'rait/login/index.php' in step1_resp.url and 'uname=' in step1_resp.url:
-                # print("✅ Successfully redirected to Moodle login with username")
-                
-                # Follow the redirect to get the actual Moodle login form
-                moodle_login_resp = self.session.get(step1_resp.url)
-                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
-                
-                # print(f"📄 Moodle login page status: {moodle_login_resp.status_code}")
-                # print(f"📄 Moodle login page URL: {moodle_login_resp.url}")
-                
             else:
-                print("❌ Username submission didn't redirect to Moodle properly")
-                # with open('debug_step1_response.html', 'w', encoding='utf-8') as f:
-                #     f.write(step1_resp.text)
-                # print("💾 Saved step 1 response to 'debug_step1_response.html'")
-                
-                # Try direct access to Moodle login with username parameter
-                extracted_username = username
-                direct_moodle_url = f"https://mydy.dypatil.edu/rait/login/index.php?uname={extracted_username}&wantsurl="
-                print(f"🔄 Trying direct access to: {direct_moodle_url}")
-                
-                moodle_login_resp = self.session.get(direct_moodle_url)
-                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
-                
-                # print(f"📄 Direct Moodle access status: {moodle_login_resp.status_code}")
-                # print(f"📄 Direct Moodle access URL: {moodle_login_resp.url}")
-
-        else:
-            print("🔍 Already on Moodle login page")
-            login_soup = initial_soup
-            moodle_login_resp = initial_resp
+                status.update("[bold #1E3E62]Already on Moodle login page")
+                login_soup = initial_soup
+                moodle_login_resp = initial_resp
 
         # Now check if we have the real Moodle login form
         password_field = login_soup.find('input', {'name': 'password'})
         static_username = login_soup.find('input', {'name': 'uname_static'})
 
         if password_field:
-            # print("✅ Found Moodle password form")
-            
             # Extract the pre-filled username if available
             if static_username and static_username.get('value'):
                 prefilled_username = static_username['value']
-                print(f"📝 Username pre-filled: {prefilled_username[:2]}******{prefilled_username[-2:]}")
+                console.print(f"[bold #FF6500]👤 Username pre-filled:[/bold #FF6500] [#1E3E62]{prefilled_username[:2]}******{prefilled_username[-2:]}[/#1E3E62]")
             
             # Look for any hidden fields or tokens
             hidden_inputs = login_soup.find_all('input', {'type': 'hidden'})
-            # print(f"🔍 Found {len(hidden_inputs)} hidden input fields:")
             
             # Prepare login payload with all hidden fields
             login_payload = {}
@@ -116,12 +136,11 @@ class MydyScraper:
                 value = inp.get('value', '')
                 if name:
                     login_payload[name] = value
-                    # print(f"  - {name}: {value[:20]}{'...' if len(str(value)) > 20 else ''}")
             
             # Add password to payload
             password = os.getenv('MYDY_PASSWORD')
             login_payload['password'] = password
-            print(f"🔑 Password: {password[:2]}******{password[-2:]}")
+            console.print(f"[bold #1E3E62]🔑 Password:[/bold #1E3E62] [#FF6500]{password[:2]}******{password[-2:]}[/#FF6500]")
             
             # Find the form action URL
             form = login_soup.find('form')
@@ -132,19 +151,17 @@ class MydyScraper:
             else:
                 login_action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
             
-            # print(f"🎯 Submitting login to: {login_action_url}")
-            
             # Submit the login form
-            print("🔐 Logging in...")
-            login_start = time.time()
-            login_resp = self.session.post(login_action_url, data=login_payload)
-            
+            with console.status("[bold green]🔐 Logging in...", spinner="dots") as status:
+                login_start = time.time()
+                login_resp = self.session.post(login_action_url, data=login_payload)
+                
         else:
-            print("❌ No password field found - still on username page")
+            console.print("[bold red]❌ No password field found - still on username page[/bold red]")
             
             # Try using session from redirect URL if available
             if 'step1_resp' in locals() and 'uname=' in step1_resp.url:
-                print("🔄 Attempting to use session from redirect URL...")
+                console.print("[bold yellow]🔄 Attempting to use session from redirect URL...[/bold yellow]")
                 
                 # Access the redirect URL to trigger the session
                 session_resp = self.session.get(step1_resp.url)
@@ -156,13 +173,12 @@ class MydyScraper:
                 # Check if this worked
                 retry_password_field = retry_soup.find('input', {'name': 'password'})
                 if retry_password_field:
-                    print("✅ Session retry worked - found password field!")
+                    console.print("[bold green] Session retry worked - found password field![/bold green]")
                     login_soup = retry_soup
                     moodle_login_resp = moodle_retry_resp
                     
                     # Continue with the login process
                     hidden_inputs = login_soup.find_all('input', {'type': 'hidden'})
-                    # print(f"🔍 Found {len(hidden_inputs)} hidden input fields:")
                     
                     login_payload = {}
                     for inp in hidden_inputs:
@@ -170,11 +186,10 @@ class MydyScraper:
                         value = inp.get('value', '')
                         if name:
                             login_payload[name] = value
-                            # print(f"  - {name}: {value[:20]}{'...' if len(str(value)) > 20 else ''}")
                     
                     password = os.getenv('MYDY_PASSWORD')
                     login_payload['password'] = password
-                    print(f"🔑 Password: {password[:2]}******{password[-2:]}")
+                    console.print(f"[bold blue]🔑 Password:[/bold blue] [cyan]{password[:2]}******{password[-2:]}[/cyan]")
                     
                     form = login_soup.find('form')
                     if form and form.get('action'):
@@ -184,24 +199,20 @@ class MydyScraper:
                     else:
                         login_action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
                     
-                    # print(f"🎯 Submitting login to: {login_action_url}")
-                    
-                    print("🔐 Logging in...")
-                    login_start = time.time()
-                    login_resp = self.session.post(login_action_url, data=login_payload)
-                    
+                    with console.status("[bold green]🔐 Logging in...", spinner="dots") as status:
+                        login_start = time.time()
+                        login_resp = self.session.post(login_action_url, data=login_payload)
+                        
                 else:
-                    print("❌ Session retry failed - still no password field")
+                    console.print("[bold red]❌ Session retry failed - still no password field[/bold red]")
                     return False
             else:
-                print("❌ Cannot proceed without proper session/redirect")
+                console.print("[bold red]❌ Cannot proceed without proper session/redirect[/bold red]")
                 return False
 
         # Check login success
         if 'login_resp' in locals():
             login_time = time.time() - login_start
-            # print(f"📄 Login response status: {login_resp.status_code}")
-            # print(f"📄 Login response URL: {login_resp.url}")
 
             # Improved login success detection
             login_successful = False
@@ -244,156 +255,249 @@ class MydyScraper:
                 login_successful = True
 
             if not login_successful:
-                print('❌ Login failed! Please check your username and password.')
-                print('💡 Common issues:')
-                print('   - Incorrect username or password in .env file')
-                print('   - Using USERNAME instead of MYDY_USERNAME (Windows issue)')
-                print('   - Network connectivity issues')
-                # print(f"🌐 Response URL: {login_resp.url}")
-                # print(f"📄 Response status: {login_resp.status_code}")
+                console.print(Panel(
+                    "[bold red]❌ Login failed![/bold red]\n\n"
+                    "[bold yellow]💡 Common issues:[/bold yellow]\n"
+                    "   • Incorrect username or password in .env file\n"
+                    "   • Using USERNAME instead of MYDY_USERNAME (Windows issue)\n"
+                    "   • Network connectivity issues",
+                    title="[bold red]Authentication Error[/bold red]",
+                    border_style="red"
+                ))
+                
                 if has_login_form:
-                    print('🔍 Detected: Still on login page after submission')
+                    console.print('[bold red] Detected: Still on login page after submission[/bold red]')
                 if has_error:
-                    print('🔍 Detected: Error indicators in response')
+                    console.print('[bold red] Detected: Error indicators in response[/bold red]')
                 return False
             else:
-                print(f'✅ Login successful! (took {login_time:.2f}s)')
-                # print(f"🌐 Final URL after login: {login_resp.url}")
+                console.print(f'[bold green] Login successful! ({login_time:.2f}s)[/bold green]')
                 return True
         else:
-            print("❌ Login process failed - never reached login submission")
+            console.print("[bold red]❌ Login process failed - never reached login submission[/bold red]")
             return False
 
     def get_available_courses(self):
         """Fetch courses from the dashboard sidebar navigation"""
-        print("📚 Fetching courses from dashboard...")
         
-        # Add rate limiting before dashboard request
-        self._rate_limit("dashboard")
-        
-        dashboard_url = "https://mydy.dypatil.edu/rait/my/"
-        dashboard_resp = self.session.get(dashboard_url)
-        
-        if dashboard_resp.status_code != 200:
-            print(f"❌ Failed to load dashboard: {dashboard_resp.status_code}")
-            return []
-        
-        soup = BeautifulSoup(dashboard_resp.text, 'html.parser')
-        courses = []
-        seen_ids = set()
-        
-        # Method 1: Look in "Previous semester classes" block
-        print("🔍 Scanning Previous semester classes block...")
-        prev_classes_block = soup.find('div', {'id': re.compile(r'.*stu_previousclasses.*')})
-        if prev_classes_block:
-            course_links = prev_classes_block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
-            for link in course_links:
-                href = link.get('href', '')
-                match = re.search(r'id=(\d+)', href)
-                if match:
-                    course_id = match.group(1)
-                    if course_id not in seen_ids:
-                        seen_ids.add(course_id)
-                        course_name = link.get_text(strip=True)
-                        full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
-                        courses.append({
-                            'id': course_id,
-                            'name': course_name,
-                            'url': full_url
-                        })
-        
-        # Method 2: Look in navigation blocks
-        # print("🔍 Scanning navigation blocks...")
-        nav_blocks = soup.find_all(['div'], class_=re.compile(r'block.*navigation|block.*tree|block.*university'))
-        for block in nav_blocks:
-            course_links = block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
-            for link in course_links:
-                href = link.get('href', '')
-                match = re.search(r'id=(\d+)', href)
-                if match:
-                    course_id = match.group(1)
-                    if course_id not in seen_ids:
-                        seen_ids.add(course_id)
-                        course_name = link.get_text(strip=True)
-                        full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
-                        courses.append({
-                            'id': course_id,
-                            'name': course_name,
-                            'url': full_url
-                        })
-        
-        # Method 3: Fallback - scan entire page
-        if not courses:
-            print("🔍 Scanning entire dashboard for course links...")
-            all_course_links = soup.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
-            for link in all_course_links:
-                href = link.get('href', '')
-                match = re.search(r'id=(\d+)', href)
-                if match:
-                    course_id = match.group(1)
-                    if course_id not in seen_ids:
-                        seen_ids.add(course_id)
-                        course_name = link.get_text(strip=True)
-                        if course_name and len(course_name.strip()) > 2:
+        with console.status("[bold #1E3E62] Fetching courses from dashboard...", spinner="dots"):
+            # Add rate limiting before dashboard request
+            self._rate_limit("dashboard")
+            
+            dashboard_url = "https://mydy.dypatil.edu/rait/my/"
+            dashboard_resp = self.session.get(dashboard_url)
+            
+            if dashboard_resp.status_code != 200:
+                console.print(f"[bold red]❌ Failed to load dashboard: {dashboard_resp.status_code}[/bold red]")
+                return []
+            
+            soup = BeautifulSoup(dashboard_resp.text, 'html.parser')
+            courses = []
+            seen_ids = set()
+            
+            # Method 1: Look in "Previous semester classes" block
+            prev_classes_block = soup.find('div', {'id': re.compile(r'.*stu_previousclasses.*')})
+            if prev_classes_block:
+                course_links = prev_classes_block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+                for link in course_links:
+                    href = link.get('href', '')
+                    match = re.search(r'id=(\d+)', href)
+                    if match:
+                        course_id = match.group(1)
+                        if course_id not in seen_ids:
+                            seen_ids.add(course_id)
+                            course_name = link.get_text(strip=True)
                             full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
                             courses.append({
                                 'id': course_id,
                                 'name': course_name,
                                 'url': full_url
                             })
-        
-        # Sort courses by ID (newer course IDs are usually higher numbers)
-        courses.sort(key=lambda x: int(x['id']), reverse=True)
-        
+            
+            # Method 2: Look in navigation blocks
+            nav_blocks = soup.find_all(['div'], class_=re.compile(r'block.*navigation|block.*tree|block.*university'))
+            for block in nav_blocks:
+                course_links = block.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+                for link in course_links:
+                    href = link.get('href', '')
+                    match = re.search(r'id=(\d+)', href)
+                    if match:
+                        course_id = match.group(1)
+                        if course_id not in seen_ids:
+                            seen_ids.add(course_id)
+                            course_name = link.get_text(strip=True)
+                            full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                            courses.append({
+                                'id': course_id,
+                                'name': course_name,
+                                'url': full_url
+                            })
+            
+            # Method 3: Fallback - scan entire page
+            if not courses:
+                all_course_links = soup.find_all('a', href=re.compile(r'/course/view\.php\?id=\d+'))
+                for link in all_course_links:
+                    href = link.get('href', '')
+                    match = re.search(r'id=(\d+)', href)
+                    if match:
+                        course_id = match.group(1)
+                        if course_id not in seen_ids:
+                            seen_ids.add(course_id)
+                            course_name = link.get_text(strip=True)
+                            if course_name and len(course_name.strip()) > 2:
+                                full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                                courses.append({
+                                    'id': course_id,
+                                    'name': course_name,
+                                    'url': full_url
+                                })
+            
+            # Sort courses by ID (newer course IDs are usually higher numbers)
+            courses.sort(key=lambda x: int(x['id']), reverse=True)
+            
         if not courses:
-            print("⚠️  No courses found on dashboard.")
-            print("💡 This might be normal if you're between semesters.")
+            console.print(Panel(
+                "[bold #FF6500] No courses found on dashboard.[/bold #FF6500]\n"
+                "[#1E3E62] This might be normal if you're between semesters.[/#1E3E62]",
+                title="[bold #FF6500]No Courses Found[/bold #FF6500]",
+                border_style="#FF6500"
+            ))
             with open('debug_dashboard.html', 'w', encoding='utf-8') as f:
                 f.write(dashboard_resp.text)
-            print("💾 Saved dashboard HTML for investigation")
+            console.print("[#1E3E62]💾 Saved dashboard HTML for investigation[/#1E3E62]")
         else:
-            print(f"✅ Found {len(courses)} courses")
+            console.print(f"[bold #FF6500]  Found {len(courses)} courses[/bold #FF6500]")
         
         return courses
 
     def display_course_menu(self, courses):
-        """Display warning that course which you are not enrolled in will not be downloaded"""
+        """Display advanced course selection menu with multiple selection support"""
         
-        print(f"\n{'='*60}")
-        print("⚠️  Note: Only courses you are enrolled in will be downloaded. But you can still download previous semester courses.")
-        print(f"{'='*60}")
+        # Warning panel
+        console.print(Panel(
+            "[bold #FF6500]⚠️  Note:[/bold #FF6500] Only courses you are enrolled in will be downloaded.\n"
+            "[#1E3E62]But you can still download previous semester courses.[/#1E3E62]",
+            title="[bold #FF6500]Important Information[/bold #FF6500]",
+            border_style="#FF6500",
+            padding=(0, 1)
+        ))
         
-        """Display course selection menu"""
-        print(f"\n{'='*60}")
-        print(f"📋 AVAILABLE COURSES")
-        print(f"{'='*60}")
+        console.print()  # Add spacing
+        
+        # Create courses table
+        table = Table(
+            title="[bold #FF6500] Available Courses[/bold #FF6500]",
+            box=box.ROUNDED,
+            title_style="bold #FF6500",
+            header_style="bold #1E3E62",
+            border_style="#FF6500"
+        )
+        
+        table.add_column("#", style="bold #FF6500", justify="center", width=4)
+        table.add_column("Course Name", style="white", min_width=40)
+        table.add_column("Course ID", style="#1E3E62", justify="center", width=10)
+        table.add_column("Status", style="#FF6500", justify="center", width=12)
         
         for i, course in enumerate(courses, 1):
-            print(f"{i:2d}. {course['name']} (ID: {course['id']})")
+            table.add_row(
+                str(i),
+                course['name'],
+                course['id'],
+                "Available"
+            )
         
-        print(f"{len(courses)+1:2d}. Download ALL courses")
-        print(f"{'='*60}")
+        console.print(table)
+        console.print()
+        
+        # Selection options panel
+        options_table = Table(
+            title="[bold #1E3E62] Selection Options[/bold #1E3E62]",
+            box=box.SIMPLE,
+            title_style="bold #1E3E62",
+            border_style="#1E3E62",
+            show_header=False
+        )
+        
+        options_table.add_column("Option", style="bold #FF6500", width=20)
+        options_table.add_column("Description", style="#1E3E62")
+        
+        options_table.add_row("Single course", "Enter course number (e.g., 1)")
+        options_table.add_row("Multiple courses", "Enter numbers separated by commas (e.g., 1,3,5)")
+        options_table.add_row("Range of courses", "Enter range with dash (e.g., 1-5)")
+        options_table.add_row("All courses", "Enter 'all' or 'a'")
+        options_table.add_row("Exit", "Enter 'q', 'quit', or 'exit'")
+        
+        console.print(options_table)
+        console.print()
         
         while True:
             try:
-                choice = input(f"\n👆 Select course to download (1-{len(courses)+1}): ")
+                choice = Prompt.ask(
+                    "[bold #FF6500]👆 Select courses to download[/bold #FF6500]",
+                    default="all"
+                ).strip()
 
                 if choice.lower() in ['q', 'quit', 'exit']:
-                    print("👋 Goodbye!")
+                    console.print("[bold #FF6500]👋 Goodbye![/bold #FF6500]")
                     return None
                 
-                choice_num = int(choice)
-                if 1 <= choice_num <= len(courses):
-                    return [courses[choice_num - 1]]
-                elif choice_num == len(courses) + 1:
+                if choice.lower() in ['all', 'a']:
+                    console.print(f"[bold #FF6500] Selected:[/bold #FF6500] [#1E3E62]All {len(courses)} courses[/#1E3E62]")
                     return courses
+                
+                selected_indices = []
+                
+                # Handle comma-separated values
+                if ',' in choice:
+                    parts = [p.strip() for p in choice.split(',')]
+                    for part in parts:
+                        if '-' in part:
+                            # Handle range within comma-separated (e.g., "1,3-5,7")
+                            start, end = map(int, part.split('-'))
+                            selected_indices.extend(range(start, end + 1))
+                        else:
+                            selected_indices.append(int(part))
+                
+                # Handle range (e.g., "1-5")
+                elif '-' in choice:
+                    start, end = map(int, choice.split('-'))
+                    selected_indices = list(range(start, end + 1))
+                
+                # Handle single number
                 else:
-                    print(f"❌ Invalid choice. Please enter a number between 1 and {len(courses)+1}")
+                    selected_indices = [int(choice)]
+                
+                # Validate indices
+                invalid_indices = [i for i in selected_indices if i < 1 or i > len(courses)]
+                if invalid_indices:
+                    console.print(f"[bold error]❌ Invalid course numbers:[/bold error] [error]{', '.join(map(str, invalid_indices))}[/error]")
+                    console.print(f"[muted]Please enter numbers between 1 and {len(courses)}[/muted]")
+                    continue
+                
+                # Remove duplicates and sort
+                selected_indices = sorted(list(set(selected_indices)))
+                selected_courses = [courses[i - 1] for i in selected_indices]
+                
+                # Display selection confirmation
+                if len(selected_courses) == 1:
+                    console.print(f"[bold #FF6500] Selected:[/bold #FF6500] [#1E3E62]{selected_courses[0]['name']}[/#1E3E62]")
+                else:
+                    console.print(f"[bold #FF6500] Selected {len(selected_courses)} courses:[/bold #FF6500]")
+                    for i, course in enumerate(selected_courses, 1):
+                        console.print(f"  [#0B192C]{i}.[/#0B192C] [#0B192C]{course['name']}[/#0B192C]")
+                
+                # Confirmation for multiple courses
+                if len(selected_courses) > 3:
+                    if not Confirm.ask(f"[bold #FF6500]Download {len(selected_courses)} courses?[/bold #FF6500]", default=True):
+                        continue
+                
+                return selected_courses
                     
-            except ValueError:
-                print("❌ Invalid input. Please enter a number or 'q' to quit")
+            except ValueError as e:
+                console.print("[bold #FF6500]❌ Invalid input format.[/bold #FF6500]")
+                console.print("[#1E3E62]Examples: '1', '1,3,5', '1-5', 'all'[/#1E3E62]")
             except KeyboardInterrupt:
-                print("\n👋 Goodbye!")
+                console.print("\n[bold #FF6500]👋 Goodbye![/bold #FF6500]")
                 return None
 
     def sanitize_folder_name(self, name):
@@ -413,17 +517,18 @@ class MydyScraper:
 
     def download_course(self, course):
         """Download all materials from a single course"""
-        print(f"\n🎯 Processing course: {course['name']}")
-        # print(f"🔗 URL: {course['url']}")
+        console.print(f"\n[bold #FF6500] Processing course:[/bold #FF6500] [#1e3e62]{course['name']}[/#1e3e62]")
         
         # Add rate limiting before course page request
         self._rate_limit("course")
         
-        course_start = time.time()
-        resp = self.session.get(course['url'])
-        soup = BeautifulSoup(resp.text, 'html.parser')
-        course_load_time = time.time() - course_start
-        print(f"✅ Course page loaded (took {course_load_time:.2f}s)")
+        with console.status(f"[bold #1E3E62]Loading course page...", spinner="dots") as status:
+            course_start = time.time()
+            resp = self.session.get(course['url'])
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            course_load_time = time.time() - course_start
+            
+        console.print(f"[bold #FF6500] Course page loaded[/bold #FF6500] [#1E3E62]({course_load_time:.2f}s)[/#1E3E62]")
 
         # Extract course name and create folder
         course_name = self.extract_course_name(soup)
@@ -433,47 +538,70 @@ class MydyScraper:
         # Create the course folder if it doesn't exist
         if not os.path.exists(course_folder):
             os.makedirs(course_folder)
-            print(f"📁 Created folder: {course_folder}")
+            console.print(f"[bold #FF6500] Created folder:[/bold #FF6500] [#1E3E62]{course_folder}[/#1E3E62]")
         else:
-            print(f"📁 Using existing folder: {course_folder}")
+            console.print(f"[bold #1E3E62] Using existing folder:[/bold #1E3E62] [#1E3E62]{course_folder}[/#1E3E62]")
 
         # Find all activity links
-        print("🔍 Scanning for activities...")
-        activity_types = [
-            '/mod/resource/view.php',
-            '/mod/flexpaper/view.php',
-            '/mod/presentation/view.php',
-            '/mod/casestudy/view.php',
-            '/mod/dyquestion/view.php'
-        ]
-        activity_links = []
+        with console.status("[bold #1E3E62] Scanning for activities...", spinner="dots"):
+            activity_types = [
+                '/mod/resource/view.php',
+                '/mod/flexpaper/view.php',
+                '/mod/presentation/view.php',
+                '/mod/casestudy/view.php',
+                '/mod/dyquestion/view.php'
+            ]
+            activity_links = []
+            
+            for li in soup.find_all('li', class_=re.compile(r'\bactivity\b')):
+                a = li.find('a', href=True)
+                if a:
+                    href = a['href']
+                    if any(x in href for x in activity_types):
+                        full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                        activity_links.append(full_url)
         
-        for li in soup.find_all('li', class_=re.compile(r'\bactivity\b')):
-            a = li.find('a', href=True)
-            if a:
-                href = a['href']
-                if any(x in href for x in activity_types):
-                    full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
-                    activity_links.append(full_url)
-        
-        print(f"✅ Found {len(activity_links)} activity links.")
+        console.print(f"[bold #FF6500]Found {len(activity_links)} activities[/bold #FF6500]")
         
         if len(activity_links) == 0:
-            print("⚠️  No activities found in this course.")
+            console.print(Panel(
+                "[bold #FF6500] No activities found in this course.[/bold #FF6500]\n"
+                "[#1E3E62]This might be normal for some courses.[/#1E3E62]",
+                title="[bold #FF6500]No Activities[/bold #FF6500]",
+                border_style="#FF6500"
+            ))
             return {'course': course_name, 'downloaded': 0, 'failed': 0, 'files': []}
 
         # Download files from activities
         downloaded_files = []
         failed_downloads = []
 
-        with tqdm(total=len(activity_links), desc=f"Processing {course_name[:20]}...", unit="activity") as pbar:
+        # Create progress bar for activities
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+            transient=False
+        ) as progress:
+            
+            activity_task = progress.add_task(
+                f"[#FF6500]Processing {course_name[:20]}...[/#FF6500]",
+                total=len(activity_links)
+            )
+            
             for i, activity_url in enumerate(activity_links, 1):
-                pbar.set_description(f"Processing {course_name[:15]}... {i}/{len(activity_links)}")
+                progress.update(
+                    activity_task,
+                    description=f"[#FF6500]Activity {i}/{len(activity_links)} - {course_name[:15]}...[/#FF6500]"
+                )
                 
                 # Add rate limiting before each activity request
                 self._rate_limit("activity")
                 
-                activity_start = time.time()
                 activity_resp = self.session.get(activity_url)
                 activity_soup = BeautifulSoup(activity_resp.text, 'html.parser')
                 downloaded = False
@@ -489,9 +617,9 @@ class MydyScraper:
 
                 if not downloaded:
                     failed_downloads.append(activity_url)
-                    # pbar.write(f"  ⚠️  No downloadable file found for activity {i}")
+                    console.print(f"  [bold #FF6500] No downloadable file found for activity {i}[/bold #FF6500]")
                 
-                pbar.update(1)
+                progress.update(activity_task, advance=1)
 
         return {
             'course': course_name,
@@ -549,7 +677,7 @@ class MydyScraper:
         return False
 
     def _download_file(self, url, folder, downloaded_files, source_type):
-        """Download a single file with progress tracking"""
+        """Download a single file with simple progress tracking"""
         try:
             download_start = time.time()
             file_resp = self.session.get(url, stream=True)
@@ -566,71 +694,142 @@ class MydyScraper:
                 if os.path.getsize(filepath) == total_size:
                     download_time = time.time() - download_start
                     downloaded_files.append((filename, download_time))
-                    # print(f"  ⚪ Skipped (exists): {filename}")
+                    console.print(f"  [bold #FF6500]⚪ Skipped (exists):[/bold #FF6500] [#1E3E62]{filename}[/#1E3E62]")
                     return True
             
+            # Simple download without nested progress bar
             with open(filepath, 'wb') as f:
                 if total_size > 0:
-                    with tqdm(total=total_size, unit='B', unit_scale=True, desc=f"⬇️  {filename[:20]}...", leave=False) as download_pbar:
-                        for chunk in file_resp.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-                                download_pbar.update(len(chunk))
+                    downloaded = 0
+                    for chunk in file_resp.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
                 else:
                     f.write(file_resp.content)
             
             download_time = time.time() - download_start
             downloaded_files.append((filename, download_time))
-            # print(f"  ✅ Saved {source_type}: {filename} ({download_time:.2f}s)")
+            
+            # Format file size for display
+            if total_size > 0:
+                size_mb = total_size / (1024 * 1024)
+                size_str = f"{size_mb:.1f}MB" if size_mb >= 1 else f"{total_size / 1024:.1f}KB"
+            else:
+                size_str = "Unknown size"
+                
+            console.print(f"  [bold #FF6500] Downloaded:[/bold #FF6500] [#1E3E62]{filename}[/#1E3E62] [#1E3E62]({size_str}, {download_time:.2f}s)[/#1E3E62]")
             return True
             
         except Exception as e:
-            # print(f"  ❌ Error downloading {url}: {str(e)}")
+            console.print(f"  [bold #000000]❌ Error downloading:[/bold #000000] [#000000]{str(e)}[/#000000]")
             return False
 
     def display_summary(self, results, download_start_time):
-        """Display download summary for all courses"""
+        """Display beautiful download summary for all courses"""
         total_time = time.time() - download_start_time
         total_files = sum(result['downloaded'] for result in results)
         total_failed = sum(result['failed'] for result in results)
         
-        print(f"\n{'='*60}")
-        print(f"📊 DOWNLOAD SUMMARY")
-        print(f"{'='*60}")
-        print(f"🎓 Courses processed: {len(results)}")
-        print(f"✅ Total files downloaded: {total_files}")
-        print(f"⚠️  Total failed activities: {total_failed}")
-        print(f"⏱️  Total download time: {total_time:.2f}s")
+        # Create summary table
+        summary_table = Table(
+            title="[bold #1e3e62] Download Summary[/bold #1e3e62]",
+            box=box.ROUNDED,
+            title_style="bold #1e3e62",
+            border_style="#1e3e62"
+        )
         
+        summary_table.add_column("Metric", style="bold #1E3E62", justify="left")
+        summary_table.add_column("Value", style="bold #FF6500", justify="center")
+        
+        summary_table.add_row(" Courses processed", str(len(results)))
+        summary_table.add_row(" Files downloaded", str(total_files))
+        summary_table.add_row("  Failed activities", str(total_failed))
+        summary_table.add_row("  Total time", f"{total_time:.2f}s")
+        
+        console.print()
+        console.print(summary_table)
+        
+        # Course breakdown if multiple courses
         if len(results) > 1:
-            print(f"\n📋 Course breakdown:")
+            console.print()
+            breakdown_table = Table(
+                title="[bold #1E3E62]📋 Course Breakdown[/bold #1E3E62]",
+                box=box.SIMPLE,
+                title_style="bold #1E3E62",
+                border_style="#1E3E62"
+            )
+            
+            breakdown_table.add_column("Course", style="#0B192C", min_width=30)
+            breakdown_table.add_column("Files", style="#FF6500", justify="center")
+            breakdown_table.add_column("Folder", style="#1E3E62", min_width=20)
+            
             for result in results:
-                print(f"  📁 {result['course']}: {result['downloaded']} files")
+                breakdown_table.add_row(
+                    result['course'],
+                    str(result['downloaded']),
+                    result.get('folder', 'N/A')
+                )
+            
+            console.print(breakdown_table)
         
+        # Downloaded files tree
         if any(result['files'] for result in results):
-            print(f"\n📄 Downloaded files:")
+            console.print()
+            console.print("[bold #FF6500] Downloaded Files:[/bold #FF6500]")
+            
             for result in results:
                 if result['files']:
-                    print(f"  📁 {result['course']}:")
+                    tree = Tree(f"[bold #1E3E62] {result['course']}[/bold #1E3E62]")
                     for filename, download_time in result['files']:
-                        print(f"    • {filename} ({download_time:.2f}s)")
+                        tree.add(f"[#FF6500]• {filename}[/#FF6500] [#1E3E62]({download_time:.2f}s)[/#1E3E62]")
+                    console.print(tree)
         
-        print(f"\n🎉 All processing completed!")
-        print(f"{'='*60}")
+        # Final success message
+        console.print()
+        console.print(Panel(
+            f"[bold #FF6500]🎉 All processing completed successfully![/bold #FF6500]\n\n"
+            f"[bold #1E3E62] Stats:[/bold #1E3E62]\n"
+            f"  • {total_files} files downloaded\n"
+            f"  • {len(results)} courses processed\n"
+            f"  • {total_time:.2f}s total time\n\n"
+            f"[#1E3E62]Files are saved in their respective course folders.[/#1E3E62]",
+            title="[bold #FF6500] Success![/bold #FF6500]",
+            border_style="#FF6500",
+            padding=(1, 2)
+        ))
 
 def main():
+    # Clear console and show banner
+    console.clear()
+    
     scraper = MydyScraper()
+    scraper._show_banner()
+    
+    console.print()  # Add spacing
     
     # Login
     if not scraper.login():
-        print("❌ Login failed. Exiting.")
+        console.print(Panel(
+            "[bold #000000]❌ Login failed. Please check your credentials and try again.[/bold #000000]",
+            title="[bold #000000]Authentication Failed[/bold #000000]",
+            border_style="#000000"
+        ))
         return
+    
+    console.print()  # Add spacing
     
     # Get available courses
     courses = scraper.get_available_courses()
     if not courses:
-        print("❌ No courses found. Exiting.")
+        console.print(Panel(
+            "[bold #FF6500]❌ No courses found. This might be normal between semesters.[/bold #FF6500]",
+            title="[bold #FF6500]No Courses Available[/bold #FF6500]",
+            border_style="#FF6500"
+        ))
         return
+    
+    console.print()  # Add spacing
     
     # Display course selection menu
     selected_courses = scraper.display_course_menu(courses)
