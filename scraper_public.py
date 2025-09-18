@@ -858,6 +858,23 @@ def main():
     
     # Display final summary with actual download time
     scraper.display_summary(results, download_start_time)
+    
+    # Add 30-second delay before exit
+    console.print()
+    console.print(Panel(
+        "[bold #FF6500]Program will exit in 30 seconds...[/bold #FF6500]\n"
+        "[#1E3E62]Press Ctrl+C to exit immediately[/#1E3E62]",
+        title="[bold #FF6500]Auto-Exit Timer[/bold #FF6500]",
+        border_style="#FF6500",
+        padding=(0, 1)
+    ))
+    
+    try:
+        time.sleep(30)
+    except KeyboardInterrupt:
+        console.print("\n[bold #FF6500]👋 Exiting immediately...[/bold #FF6500]")
+    
+    console.print("[bold #FF6500]👋 Goodbye![/bold #FF6500]")
 
 if __name__ == "__main__":
     main()
