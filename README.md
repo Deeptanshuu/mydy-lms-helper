@@ -1,6 +1,6 @@
-# Moodle LMS Scraper
+# MyDy LMS Helper
 
-This script (`scraper.py`) automates the process of logging into the Moodle LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
+This script automates the process of logging into the Moodle LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
 
 ## Features
 - **Interactive Course Selection**: Choose specific courses or download from all courses
@@ -18,10 +18,10 @@ This script (`scraper.py`) automates the process of logging into the Moodle LMS 
 - **Previous Semester Support**: Can download materials from previous semester courses
 
 ## Proof
-![image](https://github.com/user-attachments/assets/d7698863-ae64-4743-9e3e-36c54a7a3e60)
-![image](https://github.com/user-attachments/assets/c999f6ed-6f1c-47ae-8a21-aa925c4363ab)
-![image](https://github.com/user-attachments/assets/ac364b9e-fac3-43ac-bbd9-997c9c3ae28e)
 
+<img width="1906" height="994" alt="Screenshot 2025-09-19 000702" src="https://github.com/user-attachments/assets/c241827c-c2f0-4e7e-98d6-20a13fb4cf4a" />
+<img width="1886" height="997" alt="Screenshot 2025-09-19 000803" src="https://github.com/user-attachments/assets/b2b19e50-4529-40a3-803b-0968641da54c" />
+<img width="1902" height="935" alt="Screenshot 2025-09-19 000822" src="https://github.com/user-attachments/assets/17e5f034-43e9-4972-8dad-e970fba92879" />
 
 ## Setup
 
