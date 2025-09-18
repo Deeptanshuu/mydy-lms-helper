@@ -2,20 +2,6 @@
 
 This script automates the process of logging into the Moodle LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
 
-## Features
-- **Interactive Course Selection**: Choose specific courses or download from all courses
-- **Automatic Login**: Handles the two-step authentication process
-- **Smart File Detection**: Finds and downloads files from various activity types:
-  - Direct file resources (PDFs, PPTs, DOCX)
-  - FlexPaper presentations
-  - Presentation modules
-  - Case studies and question modules
-- **Progress Tracking**: Real-time progress bars for downloads and processing
-- **Rate Limiting**: Built-in delays to avoid overwhelming the server
-- **Duplicate Detection**: Skips files that already exist with the same size
-- **URL Decoding**: Handles URL-encoded filenames properly
-- **Comprehensive Reporting**: Detailed summary of downloaded files and any failures
-- **Previous Semester Support**: Can download materials from previous semester courses
 
 ## Proof
 
@@ -103,19 +89,6 @@ Select course to download (1-X): [number for "Download ALL courses"]
 Select course to download (1-X): [specific course number]
 ```
 
-### Sample Output
-```
-🎓 Courses processed: 3
-✅ Total files downloaded: 45
-⚠️  Total failed activities: 2
-⏱️  Total download time: 67.23s
-
-📁 Course breakdown:
-  📁 Data Structures and Algorithms: 18 files
-  📁 Computer Networks: 15 files  
-  📁 Database Management Systems: 12 files
-```
-
 ## Troubleshooting
 
 ### Login Issues
@@ -139,34 +112,8 @@ Select course to download (1-X): [specific course number]
 - Always add `.env` to your `.gitignore` if using version control
 - The script respects rate limits to avoid overwhelming the server
 
-## Rate Limiting
-The script includes built-in rate limiting:
-- 0.5-2.0 second delays between requests
-- Additional delays for file downloads
-- Random intervals to appear more human-like
-
-## Customization
-
-### Modify Rate Limits
-Edit the `__init__` method in `MydyScraper` class:
-```python
-self.min_delay = 0.5  # Minimum delay
-self.max_delay = 2.0  # Maximum delay
-self.download_delay = 0.3  # Additional delay for downloads
-```
-
-### Add New Activity Types
-Add new patterns to the `activity_types` list in `download_course` method:
-```python
-activity_types = [
-    '/mod/resource/view.php',
-    '/mod/flexpaper/view.php',
-    # Add new activity types here
-]
-```
-
 ## Requirements
-- Python 3.6+
+- Python 3.10+
 - Internet connection
 - Valid LMS account
 - Access to courses you want to download
