@@ -439,6 +439,7 @@ class MydyScraper:
 
                 if choice.lower() in ['q', 'quit', 'exit']:
                     console.print("[bold #FF6500]👋 Goodbye![/bold #FF6500]")
+                    time.sleep(10)
                     return None
                 
                 if choice.lower() in ['all', 'a']:
@@ -498,6 +499,7 @@ class MydyScraper:
                 console.print("[#1E3E62]Examples: '1', '1,3,5', '1-5', 'all'[/#1E3E62]")
             except KeyboardInterrupt:
                 console.print("\n[bold #FF6500]👋 Goodbye![/bold #FF6500]")
+                time.sleep(10)
                 return None
 
     def sanitize_folder_name(self, name):
@@ -576,29 +578,44 @@ class MydyScraper:
         downloaded_files = []
         failed_downloads = []
 
-        # Create progress bar for activities
+        # Create progress bar for activities (two rows: current file on top + course progress below)
         with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            TimeElapsedColumn(),
+            TextColumn("{task.fields[prefix]:<12}"),
+            TextColumn("{task.fields[filename]:<40}"),
+            BarColumn(bar_width=30),
+            TextColumn(" {task.percentage:>3.0f}% "),
+            TextColumn("{task.fields[mb_progress]:>16}"),
+            TextColumn("{task.fields[speed]:>10}"),
             TimeRemainingColumn(),
             console=console,
-            transient=False
+            transient=False,
+            expand=True
         ) as progress:
             
-            activity_task = progress.add_task(
-                f"[#FF6500]Processing {course_name[:20]}...[/#FF6500]",
-                total=len(activity_links)
+            total_activities = len(activity_links)
+            downloaded_count = 0
+            
+            # Stable current file task (first row)
+            file_task_id = progress.add_task(
+                "",
+                total=None,
+                prefix="",
+                filename="Preparing...",
+                mb_progress="",
+                speed=""
+            )
+            
+            # Stable course progress task (second row)
+            overall_task = progress.add_task(
+                "",
+                total=total_activities,
+                prefix="",
+                filename=f"[#FF6500]Course Progress[/#FF6500]",
+                mb_progress=f"0/{total_activities}",
+                speed=""
             )
             
             for i, activity_url in enumerate(activity_links, 1):
-                progress.update(
-                    activity_task,
-                    description=f"[#FF6500]Activity {i}/{len(activity_links)} - {course_name[:15]}...[/#FF6500]"
-                )
-                
                 # Add rate limiting before each activity request
                 self._rate_limit("activity")
                 
@@ -606,20 +623,25 @@ class MydyScraper:
                 activity_soup = BeautifulSoup(activity_resp.text, 'html.parser')
                 downloaded = False
 
-                # Try different download methods
+                # Try different download methods, using the stable per-file task
                 downloaded = (
-                    self._try_direct_download(activity_soup, course_folder, downloaded_files) or
-                    self._try_flexpaper_download(activity_resp, course_folder, downloaded_files) or
-                    self._try_presentation_download(activity_soup, course_folder, downloaded_files) or
-                    self._try_iframe_download(activity_soup, course_folder, downloaded_files) or
-                    self._try_object_download(activity_soup, course_folder, downloaded_files)
+                    self._try_direct_download(activity_soup, course_folder, downloaded_files, progress, file_task_id) or
+                    self._try_flexpaper_download(activity_resp, course_folder, downloaded_files, progress, file_task_id) or
+                    self._try_presentation_download(activity_soup, course_folder, downloaded_files, progress, file_task_id) or
+                    self._try_iframe_download(activity_soup, course_folder, downloaded_files, progress, file_task_id) or
+                    self._try_object_download(activity_soup, course_folder, downloaded_files, progress, file_task_id)
                 )
 
+                # Update course progress
+                if downloaded:
+                    downloaded_count += 1
+                progress.update(overall_task, advance=1, mb_progress=f"{downloaded_count}/{total_activities}")
+
                 if not downloaded:
+                    # Clear the per-file row to a neutral state
+                    progress.update(file_task_id, total=None, completed=0, filename="Pending...", mb_progress="", speed="")
                     failed_downloads.append(activity_url)
                     console.print(f"  [bold #FF6500] No downloadable file found for activity {i}[/bold #FF6500]")
-                
-                progress.update(activity_task, advance=1)
 
         return {
             'course': course_name,
@@ -630,53 +652,53 @@ class MydyScraper:
             'failed_urls': failed_downloads
         }
 
-    def _try_direct_download(self, soup, folder, downloaded_files):
+    def _try_direct_download(self, soup, folder, downloaded_files, progress=None, file_task_id=None):
         """Try to download direct file links"""
         for a in soup.find_all('a', href=True):
             file_href = a['href']
             if 'pluginfile.php' in file_href or file_href.endswith(('.pdf', '.ppt', '.pptx', '.docx')):
                 file_url = file_href if file_href.startswith('http') else 'https://mydy.dypatil.edu' + file_href
-                if self._download_file(file_url, folder, downloaded_files, "Direct"):
+                if self._download_file(file_url, folder, downloaded_files, "Direct", progress, file_task_id):
                     return True
         return False
 
-    def _try_flexpaper_download(self, response, folder, downloaded_files):
+    def _try_flexpaper_download(self, response, folder, downloaded_files, progress=None, file_task_id=None):
         """Try to download FlexPaper PDFs"""
         pdf_links = re.findall(r"PDFFile\s*:\s*'([^']+)'", response.text)
         for pdf_url in pdf_links:
-            if self._download_file(pdf_url, folder, downloaded_files, "FlexPaper PDF"):
+            if self._download_file(pdf_url, folder, downloaded_files, "FlexPaper PDF", progress, file_task_id):
                 return True
         return False
 
-    def _try_presentation_download(self, soup, folder, downloaded_files):
+    def _try_presentation_download(self, soup, folder, downloaded_files, progress=None, file_task_id=None):
         """Try to download presentation files"""
         for a in soup.find_all('a', href=True):
             file_href = a['href']
             if file_href.endswith(('.ppt', '.pptx')):
                 file_url = file_href if file_href.startswith('http') else 'https://mydy.dypatil.edu' + file_href
-                if self._download_file(file_url, folder, downloaded_files, "Presentation"):
+                if self._download_file(file_url, folder, downloaded_files, "Presentation", progress, file_task_id):
                     return True
         return False
 
-    def _try_iframe_download(self, soup, folder, downloaded_files):
+    def _try_iframe_download(self, soup, folder, downloaded_files, progress=None, file_task_id=None):
         """Try to download from iframe sources"""
         iframe = soup.find('iframe', id='presentationobject')
         if iframe and iframe.has_attr('src'):
             file_url = iframe['src']
-            if self._download_file(file_url, folder, downloaded_files, "Iframe"):
+            if self._download_file(file_url, folder, downloaded_files, "Iframe", progress, file_task_id):
                 return True
         return False
 
-    def _try_object_download(self, soup, folder, downloaded_files):
+    def _try_object_download(self, soup, folder, downloaded_files, progress=None, file_task_id=None):
         """Try to download from object data"""
         obj = soup.find('object', id='presentationobject')
         if obj and obj.has_attr('data'):
             file_url = obj['data']
-            if self._download_file(file_url, folder, downloaded_files, "Object"):
+            if self._download_file(file_url, folder, downloaded_files, "Object", progress, file_task_id):
                 return True
         return False
 
-    def _download_file(self, url, folder, downloaded_files, source_type):
+    def _download_file(self, url, folder, downloaded_files, source_type, progress=None, file_task_id=None):
         """Download a single file with simple progress tracking"""
         try:
             download_start = time.time()
@@ -686,6 +708,8 @@ class MydyScraper:
                 return False
                 
             filename = unquote(url.split('/')[-1])
+            # Truncate filename for layout stability
+            display_name = filename if len(filename) <= 40 else filename[:37] + "..."
             filepath = os.path.join(folder, filename)
             
             # Skip if file already exists and has same size
@@ -694,19 +718,58 @@ class MydyScraper:
                 if os.path.getsize(filepath) == total_size:
                     download_time = time.time() - download_start
                     downloaded_files.append((filename, download_time))
-                    console.print(f"  [bold #FF6500]⚪ Skipped (exists):[/bold #FF6500] [#1E3E62]{filename}[/#1E3E62]")
+                    console.print(f"  [bold #FF6500]Skipped (exists):[/bold #FF6500] [#1E3E62]{filename}[/#1E3E62]")
+                    # Reset stable file row
+                    if progress is not None and file_task_id is not None:
+                        progress.update(file_task_id, total=None, completed=0, filename="Pending...", mb_progress="", speed="")
                     return True
             
-            # Simple download without nested progress bar
+            # Initialize the stable task for this file
+            if progress is not None and file_task_id is not None:
+                if total_size > 0:
+                    total_mb = total_size / (1024 * 1024)
+                    mb_progress_str = f"0.00MB/{total_mb:.2f}MB"
+                    progress.update(file_task_id, total=total_size, filename=display_name, mb_progress=mb_progress_str, speed="")
+                else:
+                    progress.update(file_task_id, total=None, filename=display_name, mb_progress="0.00MB/?MB", speed="")
+            
+            # Download with live progress
+            downloaded = 0
             with open(filepath, 'wb') as f:
                 if total_size > 0:
-                    downloaded = 0
                     for chunk in file_resp.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
                             downloaded += len(chunk)
+                            if progress is not None and file_task_id is not None:
+                                elapsed = time.time() - download_start
+                                speed_mb_s = (downloaded / (1024 * 1024)) / elapsed if elapsed > 0 else 0
+                                downloaded_mb = downloaded / (1024 * 1024)
+                                total_mb = total_size / (1024 * 1024)
+                                progress.update(
+                                    file_task_id,
+                                    advance=len(chunk),
+                                    mb_progress=f"{downloaded_mb:.2f}MB/{total_mb:.2f}MB",
+                                    speed=f"{speed_mb_s:.1f} MB/s"
+                                )
                 else:
-                    f.write(file_resp.content)
+                    for chunk in file_resp.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if progress is not None and file_task_id is not None:
+                                elapsed = time.time() - download_start
+                                speed_mb_s = (downloaded / (1024 * 1024)) / elapsed if elapsed > 0 else 0
+                                downloaded_mb = downloaded / (1024 * 1024)
+                                progress.update(
+                                    file_task_id,
+                                    mb_progress=f"{downloaded_mb:.2f}MB/?MB",
+                                    speed=f"{speed_mb_s:.1f} MB/s"
+                                )
+            
+            # Reset stable file row to neutral after completion
+            if progress is not None and file_task_id is not None:
+                progress.update(file_task_id, total=None, completed=0, filename="Pending...", mb_progress="", speed="")
             
             download_time = time.time() - download_start
             downloaded_files.append((filename, download_time))
@@ -722,7 +785,7 @@ class MydyScraper:
             return True
             
         except Exception as e:
-            console.print(f"  [bold #000000]❌ Error downloading:[/bold #000000] [#000000]{str(e)}[/#000000]")
+            console.print(f"  [bold #000000]❌ Error downloading:[/bold #000000] [#000000]{str(e)}[/000000]")
             return False
 
     def display_summary(self, results, download_start_time):
@@ -847,6 +910,26 @@ def main():
     
     # Display final summary with actual download time
     scraper.display_summary(results, download_start_time)
+    
+    # Add graceful exit countdown (single, live-updating panel)
+    def countdown(seconds: int = 10):
+        try:
+            with Live(console=console, refresh_per_second=10) as live:
+                for remaining in range(seconds, 0, -1):
+                    panel = Panel(
+                        f"[bold #FF6500]Program will exit in {remaining} seconds...[/bold #FF6500]\n[#1E3E62]Press Ctrl+C to exit immediately[/#1E3E62]",
+                        title="[bold #FF6500]Auto-Exit Timer[/bold #FF6500]",
+                        border_style="#FF6500",
+                        padding=(0, 1)
+                    )
+                    live.update(panel)
+                    time.sleep(1)
+        except KeyboardInterrupt:
+            console.print("\n[bold #FF6500]👋 Exiting immediately...[/bold #FF6500]")
+            return
+    
+    countdown(10)
+    console.print("[bold #FF6500]👋 Goodbye![/bold #FF6500]")
 
 if __name__ == "__main__":
     main()
