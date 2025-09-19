@@ -24,11 +24,11 @@ jobs:
             icon_file: icons/logo.ico
           - os: macos-latest
             executable_name: lms_helper_macos
-            artifact_name: lms_helper_macos
+            artifact_name: lms_helper_macos.dmg
             icon_file: icons/logo.icns
           - os: ubuntu-latest
             executable_name: lms_helper_linux
-            artifact_name: lms_helper_linux
+            artifact_name: lms_helper_linux.deb
             icon_file: icons/logo.icns
 
     steps:
