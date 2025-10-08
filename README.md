@@ -122,4 +122,6 @@ Select course to download (1-X): [specific course number]
 MIT License. Use at your own risk.
 
 ## Disclaimer
-This tool is for educational purposes only. Respect your institution's terms of service and use responsibly. Only download content you have legitimate access to.
+This tool is for educational purposes only. Respect your institution's terms of service and use responsibly. Only download content you have legitimate access to. This project is unofficial and made for personal/educational use. DY Patil or MyDY is not associated with this project.
+
+Use responsibly. The author is not responsible for misuse, data loss, or violations of institutional policies.
