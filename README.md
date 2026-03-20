@@ -9,6 +9,53 @@ This script automates the process of logging into the Moodle LMS (Moodle-based) 
 <img width="1886" height="997" alt="Screenshot 2025-09-19 000803" src="https://github.com/user-attachments/assets/b2b19e50-4529-40a3-803b-0968641da54c" />
 <img width="1902" height="935" alt="Screenshot 2025-09-19 000822" src="https://github.com/user-attachments/assets/17e5f034-43e9-4972-8dad-e970fba92879" />
 
+## MCP Server (for Claude Code / OpenClaw)
+
+This project can also run as an **MCP (Model Context Protocol) server**, letting AI assistants like Claude Code or OpenClaw interact with the LMS on your behalf.
+
+### Quick Setup with Claude Code
+
+```sh
+claude mcp add mydy-lms -e MYDY_USERNAME=your_email@dypatil.edu -e MYDY_PASSWORD=your_password -- python /path/to/mcp_server.py
+```
+
+### Manual Config (claude_desktop_config.json / settings)
+
+```json
+{
+  "mcpServers": {
+    "mydy-lms": {
+      "command": "python",
+      "args": ["/path/to/mcp_server.py"],
+      "env": {
+        "MYDY_USERNAME": "your_email@dypatil.edu",
+        "MYDY_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `login` | Authenticate with the LMS portal |
+| `list_courses` | List all available courses from your dashboard |
+| `download_course_materials` | Download materials from specific or all courses |
+
+### Example Conversation
+
+> **You:** Download all my LMS course materials to ~/Downloads/courses
+>
+> **Claude:** *calls login, then list_courses, then download_course_materials*
+>
+> Downloaded 47 files across 8 courses to ~/Downloads/courses.
+
+---
+
+## CLI Usage (Original)
+
 ## Setup
 
 ### 1. Clone or Download
