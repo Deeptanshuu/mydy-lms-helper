@@ -8,6 +8,11 @@ Tools:
   - login: Authenticate with the LMS
   - list_courses: Get available courses from the dashboard
   - download_course_materials: Download all materials from specified courses
+  - get_course_content: List all sections and activities in a course
+  - get_assignments: View assignments with due dates and submission status
+  - get_grades: Fetch grade report for a course
+  - get_announcements: Read course announcements/forum posts
+  - get_attendance: View attendance summary across all subjects
 
 Usage with Claude Code:
   claude mcp add mydy-lms -- python /path/to/mcp_server.py
@@ -40,7 +45,7 @@ from mcp.server.fastmcp import FastMCP
 # Create MCP server
 mcp = FastMCP(
     "mydy-lms",
-    instructions="Tools for interacting with the MyDy (Moodle) LMS - login, list courses, and download course materials.",
+    instructions="Tools for interacting with the MyDy (Moodle) LMS - login, list courses, download materials, view course content, assignments, grades, announcements, and attendance.",
 )
 
 # Global session state
@@ -84,6 +89,37 @@ def _extract_course_name(soup: BeautifulSoup) -> str:
             return title_text.split("Course:", 1)[1].strip()
         return title_text.strip()
     return "Unknown Course"
+
+
+def _fetch_course_page(session: requests.Session, course_id: str) -> tuple[BeautifulSoup, str] | str:
+    """Fetch and parse a course page. Returns (soup, course_name) or error string."""
+    _rate_limit("course")
+    url = f"https://mydy.dypatil.edu/rait/course/view.php?id={course_id}"
+    try:
+        resp = session.get(url)
+        if resp.status_code != 200:
+            return f"Error: Course page returned status {resp.status_code}"
+        if 'login' in resp.url and 'course' not in resp.url:
+            return "Error: Session expired. Please login again."
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        course_name = _extract_course_name(soup)
+        return (soup, course_name)
+    except requests.RequestException as e:
+        return f"Network error fetching course: {str(e)}"
+
+
+def _get_activity_name(element) -> str:
+    """Extract clean activity name from a Moodle activity element."""
+    name_span = element.find('span', class_='instancename')
+    if name_span:
+        # Remove accesshide spans (screen-reader-only text)
+        for hidden in name_span.find_all('span', class_='accesshide'):
+            hidden.decompose()
+        return name_span.get_text(strip=True)
+    a_tag = element.find('a', href=True)
+    if a_tag:
+        return a_tag.get_text(strip=True)
+    return ""
 
 
 def _download_file(
@@ -504,6 +540,483 @@ def _download_single_course(
         "downloaded": len(downloaded_files),
         "failed": len(failed_activities),
         "files": downloaded_files,
+    }
+
+
+@mcp.tool()
+def get_course_content(course_id: str) -> list[dict] | str:
+    """
+    List all sections and activities in a course.
+
+    Must be logged in first (call login tool).
+
+    Args:
+        course_id: The course ID (from list_courses).
+
+    Returns:
+        List of sections, each with section_number, section_name, and activities list.
+    """
+    if not _logged_in:
+        return "Error: Not logged in. Call the login tool first."
+
+    session = _get_session()
+    result = _fetch_course_page(session, course_id)
+    if isinstance(result, str):
+        return result
+    soup, course_name = result
+
+    sections = []
+
+    # Find section elements
+    section_elements = soup.find_all('li', class_=re.compile(r'\bsection\b'))
+    if not section_elements:
+        section_elements = soup.find_all('div', class_=re.compile(r'\bsection\b'))
+
+    for section_el in section_elements:
+        # Extract section number from id="section-N"
+        section_id = section_el.get('id', '')
+        match = re.search(r'section-(\d+)', section_id)
+        section_num = int(match.group(1)) if match else None
+
+        # Extract section name
+        name_el = section_el.find(class_='sectionname') or section_el.find(['h3', 'h4'])
+        section_name = name_el.get_text(strip=True) if name_el else f"Section {section_num}"
+
+        # Find activities within this section
+        activities = []
+        for activity_li in section_el.find_all('li', class_=re.compile(r'\bactivity\b')):
+            classes = ' '.join(activity_li.get('class', []))
+            type_match = re.search(r'modtype_(\w+)', classes)
+            activity_type = type_match.group(1) if type_match else "unknown"
+
+            activity_name = _get_activity_name(activity_li)
+            a_tag = activity_li.find('a', href=True)
+            if not a_tag:
+                continue
+            href = a_tag['href']
+            full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+
+            activities.append({
+                "name": activity_name,
+                "type": activity_type,
+                "url": full_url,
+            })
+
+        sections.append({
+            "section_number": section_num,
+            "section_name": section_name,
+            "activities": activities,
+        })
+
+    # Fallback: if no sections found, list all activities flat
+    if not sections:
+        all_activities = []
+        for activity_li in soup.find_all('li', class_=re.compile(r'\bactivity\b')):
+            classes = ' '.join(activity_li.get('class', []))
+            type_match = re.search(r'modtype_(\w+)', classes)
+            activity_type = type_match.group(1) if type_match else "unknown"
+
+            activity_name = _get_activity_name(activity_li)
+            a_tag = activity_li.find('a', href=True)
+            if not a_tag:
+                continue
+            href = a_tag['href']
+            full_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+
+            all_activities.append({"name": activity_name, "type": activity_type, "url": full_url})
+
+        if all_activities:
+            sections = [{"section_number": 0, "section_name": "All Activities", "activities": all_activities}]
+
+    return sections
+
+
+@mcp.tool()
+def get_assignments(course_id: str) -> list[dict] | str:
+    """
+    View assignments with due dates and submission status for a course.
+
+    Must be logged in first (call login tool).
+
+    Args:
+        course_id: The course ID (from list_courses).
+
+    Returns:
+        List of assignments with name, url, due_date, submission_status, grading_status, grade, and time_remaining.
+    """
+    if not _logged_in:
+        return "Error: Not logged in. Call the login tool first."
+
+    session = _get_session()
+    result = _fetch_course_page(session, course_id)
+    if isinstance(result, str):
+        return result
+    soup, course_name = result
+
+    # Find assignment links
+    assignment_links = []
+
+    # Method 1: activity elements with modtype_assign
+    for li in soup.find_all('li', class_=re.compile(r'modtype_assign')):
+        a = li.find('a', href=True)
+        if a and '/mod/assign/view.php' in a['href']:
+            name = _get_activity_name(li)
+            href = a['href']
+            url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+            assignment_links.append({"name": name, "url": url})
+
+    # Method 2: fallback scan all links
+    if not assignment_links:
+        seen: set[str] = set()
+        for a in soup.find_all('a', href=re.compile(r'/mod/assign/view\.php\?id=\d+')):
+            href = a['href']
+            if href not in seen:
+                seen.add(href)
+                url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                assignment_links.append({"name": a.get_text(strip=True), "url": url})
+
+    if not assignment_links:
+        return []
+
+    assignments = []
+    for asgn in assignment_links:
+        _rate_limit("activity")
+        try:
+            resp = session.get(asgn["url"])
+            asoup = BeautifulSoup(resp.text, 'html.parser')
+
+            info: dict = {"name": asgn["name"], "url": asgn["url"]}
+
+            # Parse submission status table
+            table = asoup.find('table', class_='submissionstatustable') or asoup.find('table', class_='generaltable')
+            if table:
+                for row in table.find_all('tr'):
+                    cells = row.find_all(['td', 'th'])
+                    if len(cells) >= 2:
+                        label = cells[0].get_text(strip=True).lower()
+                        value = cells[1].get_text(strip=True)
+                        if 'due date' in label:
+                            info['due_date'] = value
+                        elif 'submission status' in label:
+                            info['submission_status'] = value
+                        elif 'grading status' in label:
+                            info['grading_status'] = value
+                        elif 'grade' in label and 'grading' not in label:
+                            info['grade'] = value
+                        elif 'time remaining' in label:
+                            info['time_remaining'] = value
+
+            for field in ['due_date', 'submission_status', 'grading_status', 'grade', 'time_remaining']:
+                info.setdefault(field, None)
+
+            assignments.append(info)
+        except requests.RequestException as e:
+            assignments.append({
+                "name": asgn["name"], "url": asgn["url"],
+                "error": str(e),
+                "due_date": None, "submission_status": None,
+                "grading_status": None, "grade": None, "time_remaining": None,
+            })
+
+    return assignments
+
+
+@mcp.tool()
+def get_grades(course_id: str) -> dict | str:
+    """
+    Fetch the grade report for a course.
+
+    Must be logged in first (call login tool).
+
+    Args:
+        course_id: The course ID (from list_courses).
+
+    Returns:
+        Dict with course_name, grade_items list, and course_total.
+    """
+    if not _logged_in:
+        return "Error: Not logged in. Call the login tool first."
+
+    session = _get_session()
+    _rate_limit("course")
+    url = f"https://mydy.dypatil.edu/rait/grade/report/user/index.php?id={course_id}"
+
+    try:
+        resp = session.get(url)
+        if resp.status_code != 200:
+            return f"Error: Grade page returned status {resp.status_code}"
+    except requests.RequestException as e:
+        return f"Network error: {str(e)}"
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
+    course_name = _extract_course_name(soup)
+
+    # Check for access errors
+    error_div = soup.find('div', class_='errorbox') or soup.find('div', class_=re.compile(r'alert-danger'))
+    if error_div:
+        return f"Error accessing grades: {error_div.get_text(strip=True)}"
+
+    # Find grade table
+    table = (
+        soup.find('table', class_=re.compile(r'user-grade'))
+        or soup.find('table', id='user-grade')
+        or soup.find('table', class_='generaltable')
+    )
+
+    if not table:
+        return {"course_name": course_name, "grade_items": [], "course_total": None}
+
+    # Detect column indices from header
+    headers: list[str] = []
+    header_row = table.find('tr')
+    if header_row:
+        for th in header_row.find_all(['th', 'td']):
+            headers.append(th.get_text(strip=True).lower())
+
+    col_map: dict[str, int] = {}
+    for i, h in enumerate(headers):
+        if 'grade item' in h or ('item' in h and 'grade' not in col_map):
+            col_map['name'] = i
+        elif h == 'grade' or ('grade' in h and 'item' not in h and 'grade' not in col_map):
+            col_map['grade'] = i
+        elif 'range' in h:
+            col_map['range'] = i
+        elif 'percentage' in h:
+            col_map['percentage'] = i
+        elif 'feedback' in h:
+            col_map['feedback'] = i
+
+    # Parse data rows
+    grade_items = []
+    course_total = None
+    rows = table.find_all('tr')[1:]  # skip header
+
+    for row in rows:
+        cells = row.find_all(['td', 'th'])
+        if not cells:
+            continue
+
+        def _cell_text(col_key: str) -> str | None:
+            idx = col_map.get(col_key)
+            if idx is not None and idx < len(cells):
+                return cells[idx].get_text(strip=True)
+            return None
+
+        item = {
+            "name": _cell_text('name') or cells[0].get_text(strip=True),
+            "grade": _cell_text('grade'),
+            "range": _cell_text('range'),
+            "percentage": _cell_text('percentage'),
+            "feedback": _cell_text('feedback'),
+        }
+
+        if 'course total' in (item['name'] or '').lower():
+            course_total = {k: v for k, v in item.items() if k != 'name'}
+        else:
+            # Skip empty category rows
+            row_classes = ' '.join(row.get('class', []))
+            if 'category' in row_classes and not item.get('grade'):
+                continue
+            grade_items.append(item)
+
+    return {
+        "course_name": course_name,
+        "grade_items": grade_items,
+        "course_total": course_total,
+    }
+
+
+@mcp.tool()
+def get_announcements(course_id: str, limit: int = 10) -> list[dict] | str:
+    """
+    Read announcements/forum posts for a course.
+
+    Must be logged in first (call login tool).
+
+    Args:
+        course_id: The course ID (from list_courses).
+        limit: Maximum number of announcements to fetch (default 10).
+
+    Returns:
+        List of announcements with title, author, date, url, and content.
+    """
+    if not _logged_in:
+        return "Error: Not logged in. Call the login tool first."
+
+    session = _get_session()
+    result = _fetch_course_page(session, course_id)
+    if isinstance(result, str):
+        return result
+    soup, course_name = result
+
+    # Phase 1: Find announcements forum
+    forum_url = None
+
+    # Method 1: Forum activity with "announcement" in name
+    for li in soup.find_all('li', class_=re.compile(r'modtype_forum')):
+        a = li.find('a', href=True)
+        if a and 'announcement' in a.get_text(strip=True).lower():
+            href = a['href']
+            forum_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+            break
+
+    # Method 2: First forum link on page
+    if not forum_url:
+        for a in soup.find_all('a', href=re.compile(r'/mod/forum/view\.php\?id=\d+')):
+            href = a['href']
+            forum_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+            break
+
+    if not forum_url:
+        return "No announcements forum found for this course."
+
+    # Phase 2: List discussions
+    _rate_limit("activity")
+    try:
+        forum_resp = session.get(forum_url)
+        forum_soup = BeautifulSoup(forum_resp.text, 'html.parser')
+    except requests.RequestException as e:
+        return f"Error loading forum: {str(e)}"
+
+    discussions: list[dict] = []
+
+    # Method 1: Table-based forum listing
+    forum_table = forum_soup.find('table', class_=re.compile(r'forumheaderlist|discussion-list'))
+    if forum_table:
+        for row in forum_table.find_all('tr')[1:][:limit]:
+            a = row.find('a', href=re.compile(r'/mod/forum/discuss\.php\?d=\d+'))
+            if a:
+                cells = row.find_all(['td', 'th'])
+                href = a['href']
+                disc_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                title = a.get_text(strip=True)
+                author = cells[1].get_text(strip=True) if len(cells) > 1 else None
+                date = cells[-1].get_text(strip=True) if len(cells) > 2 else None
+                discussions.append({"title": title, "url": disc_url, "author": author, "date": date})
+
+    # Method 2: Fallback - scan all discussion links
+    if not discussions:
+        seen: set[str] = set()
+        for a in forum_soup.find_all('a', href=re.compile(r'/mod/forum/discuss\.php\?d=\d+')):
+            href = a['href']
+            if href not in seen:
+                seen.add(href)
+                disc_url = href if href.startswith('http') else 'https://mydy.dypatil.edu' + href
+                discussions.append({"title": a.get_text(strip=True), "url": disc_url, "author": None, "date": None})
+                if len(discussions) >= limit:
+                    break
+
+    if not discussions:
+        return []
+
+    # Phase 3: Fetch content for each discussion
+    results = []
+    for disc in discussions:
+        _rate_limit("activity")
+        try:
+            disc_resp = session.get(disc["url"])
+            disc_soup = BeautifulSoup(disc_resp.text, 'html.parser')
+
+            post = disc_soup.find('div', class_=re.compile(r'forumpost|forum-post'))
+            content = None
+            if post:
+                content_div = post.find(class_=re.compile(r'posting|post-content'))
+                content = content_div.get_text(strip=True) if content_div else None
+
+                if not disc["author"]:
+                    author_el = post.find(class_='author') or post.find('a', href=re.compile(r'/user/'))
+                    disc["author"] = author_el.get_text(strip=True) if author_el else None
+
+                if not disc["date"]:
+                    date_el = post.find('time') or post.find(class_=re.compile(r'modified|date'))
+                    disc["date"] = date_el.get_text(strip=True) if date_el else None
+
+            results.append({
+                "title": disc["title"],
+                "author": disc["author"],
+                "date": disc["date"],
+                "url": disc["url"],
+                "content": content,
+            })
+        except requests.RequestException:
+            results.append({
+                "title": disc["title"],
+                "author": disc.get("author"),
+                "date": disc.get("date"),
+                "url": disc["url"],
+                "content": "Error: could not load discussion",
+            })
+
+    return results
+
+
+@mcp.tool()
+def get_attendance() -> dict | str:
+    """
+    View attendance summary across all subjects for the current semester.
+
+    Must be logged in first (call login tool). This fetches data from the
+    Academic Status block on the dashboard.
+
+    Returns:
+        Dict with semester info, batch, and per-subject attendance (total_classes, present, absent, percentage).
+    """
+    if not _logged_in:
+        return "Error: Not logged in. Call the login tool first."
+
+    session = _get_session()
+    _rate_limit("dashboard")
+
+    url = "https://mydy.dypatil.edu/rait/blocks/academic_status/ajax.php?action=attendance"
+    try:
+        resp = session.get(url)
+        if resp.status_code != 200:
+            return f"Error: Attendance page returned status {resp.status_code}"
+    except requests.RequestException as e:
+        return f"Network error: {str(e)}"
+
+    soup = BeautifulSoup(resp.text, 'html.parser')
+
+    # Extract semester info
+    batch = None
+    semester = None
+    header_divs = soup.find_all('div', style=re.compile(r'float'))
+    for div in header_divs:
+        text = div.get_text(strip=True)
+        if re.match(r'^[A-Z]+-\d+-', text):
+            batch = text
+        elif 'Semester' in text:
+            semester = text
+
+    # Parse attendance table
+    table = soup.find('table', class_='generaltable')
+    if not table:
+        return {"batch": batch, "semester": semester, "subjects": [], "message": "No attendance data found."}
+
+    subjects = []
+    for row in table.find_all('tr'):
+        cells = row.find_all('td')
+        if len(cells) < 5:
+            continue
+
+        subject = cells[0].get_text(strip=True)
+        total = cells[1].get_text(strip=True)
+        present = cells[2].get_text(strip=True)
+        absent = cells[3].get_text(strip=True)
+        percentage = cells[4].get_text(strip=True)
+
+        subjects.append({
+            "subject": subject,
+            "total_classes": int(total) if total.isdigit() else total,
+            "present": int(present) if present.isdigit() else present,
+            "absent": int(absent) if absent.isdigit() else absent,
+            "percentage": float(percentage) if percentage.replace('.', '', 1).isdigit() else percentage,
+        })
+
+    return {
+        "batch": batch,
+        "semester": semester,
+        "subjects": subjects,
     }
 
 

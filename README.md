@@ -1,17 +1,66 @@
 # MyDy LMS Helper
 
-This script automates the process of logging into the Moodle LMS (Moodle-based) and downloading all available course materials (PDFs, PPTs, etc.) from your enrolled courses.
+A terminal UI application and MCP server for interacting with the MyDy (Moodle-based) LMS at D.Y. Patil institutions. View attendance, browse courses, check assignments and grades, read announcements, and download course materials.
 
-
-## Proof
+## Screenshots
 
 <img width="1906" height="994" alt="Screenshot 2025-09-19 000702" src="https://github.com/user-attachments/assets/c241827c-c2f0-4e7e-98d6-20a13fb4cf4a" />
 <img width="1886" height="997" alt="Screenshot 2025-09-19 000803" src="https://github.com/user-attachments/assets/b2b19e50-4529-40a3-803b-0968641da54c" />
 <img width="1902" height="935" alt="Screenshot 2025-09-19 000822" src="https://github.com/user-attachments/assets/17e5f034-43e9-4972-8dad-e970fba92879" />
 
-## MCP Server (for Claude Code / OpenClaw)
+## Features
 
-This project can also run as an **MCP (Model Context Protocol) server**, letting AI assistants like Claude Code or OpenClaw interact with the LMS on your behalf.
+- **Dashboard** — Attendance summary + current semester courses at a glance
+- **Course Detail** — Tabbed view with Content, Assignments, Grades, and Announcements
+- **Download Materials** — Download from a single course or bulk download from multiple
+- **Login Screen** — Auto-login from `.env` or manual login via the UI
+- **MCP Server** — Let AI assistants interact with your LMS
+
+## Setup
+
+### 1. Clone and install
+
+```sh
+git clone https://github.com/your-username/mydy-lms-helper.git
+cd mydy-lms-helper
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
+uv pip install -r requirements.txt
+# or: pip install -r requirements.txt
+```
+
+### 2. Configure credentials (optional)
+
+Create a `.env` file:
+```
+MYDY_USERNAME="your_email@dypatil.edu"
+MYDY_PASSWORD="your_password"
+```
+
+If no `.env` is present, the app will show a login screen on startup.
+
+### 3. Run the TUI
+
+```sh
+python __main__.py
+```
+
+### Navigation
+
+| Key / Action | What it does |
+|---|---|
+| Click sidebar items | Switch between Dashboard, All Courses, Bulk Download |
+| Click a course | Open course detail page with tabs |
+| `Back` button | Return to previous view |
+| `Download Materials` | Download all files from the current course |
+| `q` | Quit |
+
+---
+
+## MCP Server
+
+The project also includes an MCP (Model Context Protocol) server for AI assistants like Claude Code.
 
 ### Quick Setup with Claude Code
 
@@ -19,7 +68,7 @@ This project can also run as an **MCP (Model Context Protocol) server**, letting
 claude mcp add mydy-lms -e MYDY_USERNAME=your_email@dypatil.edu -e MYDY_PASSWORD=your_password -- python /path/to/mcp_server.py
 ```
 
-### Manual Config (claude_desktop_config.json / settings)
+### Manual Config
 
 ```json
 {
@@ -41,129 +90,32 @@ claude mcp add mydy-lms -e MYDY_USERNAME=your_email@dypatil.edu -e MYDY_PASSWORD
 | Tool | Description |
 |------|-------------|
 | `login` | Authenticate with the LMS portal |
-| `list_courses` | List all available courses from your dashboard |
+| `list_courses` | List all enrolled courses |
+| `get_course_content` | List sections and activities in a course |
+| `get_assignments` | View assignments with due dates and submission status |
+| `get_grades` | Fetch grade report for a course |
+| `get_announcements` | Read course announcements |
+| `get_attendance` | View attendance summary for current semester |
 | `download_course_materials` | Download materials from specific or all courses |
-
-### Example Conversation
-
-> **You:** Download all my LMS course materials to ~/Downloads/courses
->
-> **Claude:** *calls login, then list_courses, then download_course_materials*
->
-> Downloaded 47 files across 8 courses to ~/Downloads/courses.
 
 ---
 
-## CLI Usage (Original)
+## Project Structure
 
-## Setup
-
-### 1. Clone or Download
-Place `scraper.py` and this `README.md` in a folder of your choice.
-
-### 2. Install Dependencies
-Create a virtual environment (optional but recommended):
-```sh
-python -m venv venv
-venv\Scripts\activate  # On Windows
-# or
-source venv/bin/activate  # On Linux/Mac
 ```
-
-Install required packages:
-```sh
-pip install -r requirements.txt
+mydy-lms-helper/
+├── __main__.py       # Entry point
+├── app.py            # Textual TUI application
+├── client.py         # HTTP client (shared by TUI and MCP server)
+├── mcp_server.py     # MCP server for AI assistants
+├── requirements.txt  # Dependencies
+└── .env              # Credentials (gitignored)
 ```
-
-Or install manually:
-```sh
-pip install requests beautifulsoup4 python-dotenv tqdm
-```
-
-### 3. Configure Environment Variables
-Create a `.env` file in the same directory as `scraper.py` with the following content:
-```
-MYDY_USERNAME="your_lms_email@dypatil.edu"
-MYDY_PASSWORD="your_lms_password"
-```
-**Important: Do not use `USERNAME` as the variable name on Windows - it's reserved by the system!**
-
-### 4. Run the Script
-```sh
-python scraper.py
-```
-
-The script will:
-1. Log you into the LMS
-2. Fetch your available courses
-3. Display an interactive menu to select courses
-4. Download all materials from selected courses with progress tracking
-
-## How It Works
-
-### Authentication Process
-The script handles Moodle's two-step login:
-1. Submits username to get redirected to Moodle login
-2. Submits password to complete authentication
-3. Maintains session for subsequent requests
-
-### Course Discovery
-- Scans dashboard for enrolled courses
-- Includes both current and previous semester courses
-- Displays courses sorted by course ID (newest first)
-
-### File Detection & Download
-The scraper identifies downloadable content from various Moodle activity types:
-- **Resource modules**: Direct file downloads
-- **FlexPaper modules**: Extracts PDF URLs from JavaScript
-- **Presentation modules**: PowerPoint and other presentation files
-- **Object/Iframe content**: Files embedded in various formats
-
-### Organization
-- Creates separate folders for each course
-- Uses sanitized course names for folder creation
-- Preserves original filenames with proper URL decoding
-
-## Usage Examples
-
-### Download All Courses
-```
-Select course to download (1-X): [number for "Download ALL courses"]
-```
-
-### Download Specific Course
-```
-Select course to download (1-X): [specific course number]
-```
-
-## Troubleshooting
-
-### Login Issues
-- **"Login failed!"**: Double-check your `.env` file credentials
-- **Username shows as Windows username**: You're using `USERNAME` instead of `MYDY_USERNAME`
-- **Timeout errors**: The server might be slow; try running again
-
-### Download Issues
-- **No files downloaded**: Course might have no downloadable content or you might not be enrolled
-- **Some activities failed**: Normal - not all activities contain downloadable files
-- **Connection errors**: Check your internet connection and try again
-
-### File Issues
-- **Duplicate files**: The script automatically skips existing files of the same size
-- **Invalid filenames**: Script automatically sanitizes folder names for your OS
-- **Permission errors**: Make sure you have write access to the script directory
-
-## Security & Privacy
-- Credentials are stored in `.env` file and never hardcoded
-- Session cookies are temporary and only stored in memory
-- Always add `.env` to your `.gitignore` if using version control
-- The script respects rate limits to avoid overwhelming the server
 
 ## Requirements
 - Python 3.10+
 - Internet connection
-- Valid LMS account
-- Access to courses you want to download
+- Valid MyDy LMS account
 
 ## License
 MIT License. Use at your own risk.

@@ -6,10 +6,10 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 permissions:
-  contents: write  # Required for creating releases
+  contents: write
   actions: read
 
 jobs:
@@ -38,17 +38,29 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.12'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        uv pip install --system -r requirements.txt
+        uv pip install --system pyinstaller
 
     - name: Build executable
       run: |
-        pyinstaller --onefile --console --icon="${{ matrix.icon_file }}" scraper_public.py --clean --name="${{ matrix.executable_name }}"
+        pyinstaller --onefile --console \
+          --icon="${{ matrix.icon_file }}" \
+          --hidden-import=textual \
+          --hidden-import=textual.widgets \
+          --hidden-import=textual.css \
+          --collect-data=textual \
+          --add-data="client.py:." \
+          --add-data="app.py:." \
+          __main__.py \
+          --clean \
+          --name="${{ matrix.executable_name }}"
       shell: bash
 
     - name: Upload artifacts
@@ -63,11 +75,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    
+
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
-      
+
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
