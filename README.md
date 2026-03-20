@@ -4,9 +4,14 @@ A terminal UI application and MCP server for interacting with the MyDy (Moodle-b
 
 ## Screenshots
 
-<img width="1906" height="994" alt="Screenshot 2025-09-19 000702" src="https://github.com/user-attachments/assets/c241827c-c2f0-4e7e-98d6-20a13fb4cf4a" />
-<img width="1886" height="997" alt="Screenshot 2025-09-19 000803" src="https://github.com/user-attachments/assets/b2b19e50-4529-40a3-803b-0968641da54c" />
-<img width="1902" height="935" alt="Screenshot 2025-09-19 000822" src="https://github.com/user-attachments/assets/17e5f034-43e9-4972-8dad-e970fba92879" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_51_47_161948" src="https://github.com/user-attachments/assets/1caedfd3-7b27-459c-b100-866a4e5a23f8" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_50_21_603458" src="https://github.com/user-attachments/assets/9a474387-ff04-4b87-b787-d2f5545652fe" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_50_11_961475" src="https://github.com/user-attachments/assets/7495c62f-84ff-4251-85fc-d900c3bff58a" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_50_07_599421" src="https://github.com/user-attachments/assets/da366e58-5dcc-4b10-a3ca-e7a80ee1c4de" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_50_03_617570" src="https://github.com/user-attachments/assets/df05d709-cff0-47be-90a7-85b439940325" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_50_00_030190" src="https://github.com/user-attachments/assets/5295fe80-7b84-43fa-9a4e-83f5d6cdd9b0" />
+<img width="2446" height="1466" alt="MyDy_LMS_Helper_2026-03-21T02_48_44_883104" src="https://github.com/user-attachments/assets/698580e6-2893-40e2-b863-b1b06dd753a7" />
+
 
 ## Features
 
