@@ -2,10 +2,7 @@ name: Build Multi-Platform Executables
 
 on:
   push:
-    branches: [ main, master ]
     tags: [ 'v*' ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 permissions:
@@ -52,9 +49,7 @@ jobs:
       run: |
         pyinstaller --onefile --console \
           --icon="${{ matrix.icon_file }}" \
-          --hidden-import=textual \
-          --hidden-import=textual.widgets \
-          --hidden-import=textual.css \
+          --collect-submodules=textual \
           --collect-data=textual \
           --add-data="client.py:." \
           --add-data="app.py:." \
