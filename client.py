@@ -9,6 +9,7 @@ import os
 import re
 import time
 import random
+import html
 from urllib.parse import unquote
 
 import requests
@@ -790,7 +791,11 @@ class MydyClient:
             div = a.find("div")
             text = (div.get_text(separator=" ", strip=True)
                     if div else a.get_text(strip=True))
-            name = re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip() or "Activity"
+            # Source HTML uses bare "&nbsp" (no semicolon) — BeautifulSoup leaves
+            # those as-is. html.unescape handles both forms; \xa0 cleanup
+            # collapses the resulting NBSPs into normal spaces.
+            text = html.unescape(text).replace("\xa0", " ")
+            name = re.sub(r"\s+", " ", text).strip() or "Activity"
             item = {"url": href, "name": name}
             (completed if "completed" in cls else pending).append(item)
 

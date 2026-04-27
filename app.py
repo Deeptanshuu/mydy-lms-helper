@@ -655,9 +655,20 @@ class BulkDownloadView(VerticalScroll):
 # ---------------------------------------------------------------------------
 
 class MaxxView(VerticalScroll):
-    """Multi-select courses to bring their Course Progress to 100%."""
+    """Multi-select courses to bring their Course Progress to 100%.
 
-    class MaxxRequested(Message):
+    Two-step flow: Preview → Confirm. The Preview phase is read-only and
+    just fetches the customview.php data for each selected course so the
+    user can see exactly which activities will be opened (and back out if
+    they picked a course by mistake — there's no undo on MyDy's side).
+    """
+
+    class PreviewRequested(Message):
+        def __init__(self, courses: list[dict]) -> None:
+            self.courses = courses
+            super().__init__()
+
+    class MaxxConfirmed(Message):
         def __init__(self, courses: list[dict]) -> None:
             self.courses = courses
             super().__init__()
@@ -666,13 +677,15 @@ class MaxxView(VerticalScroll):
         super().__init__(**kwargs)
         self._selected: set[str] = set()
         self._courses: list[dict] = []
+        self._previewing: list[dict] = []  # courses awaiting confirm
 
     def compose(self) -> ComposeResult:
         yield Static(f"[bold {PRIMARY}]Hit Rate Maxxer[/]", id="mxx-title")
         yield Static(
             f"[{MUTED}]Brings your [bold]Course Progress[/bold] to 100% by "
             f"opening every unviewed activity for you. "
-            f"Pick the courses you want maxxed.[/{MUTED}]"
+            f"Pick the courses you want maxxed — you'll see a preview before "
+            f"anything is actually opened.[/{MUTED}]"
         )
         yield Static("", classes="spacer-sm")
         yield Static("", id="mxx-selection-count")
@@ -683,11 +696,18 @@ class MaxxView(VerticalScroll):
         with Horizontal(id="mxx-actions"):
             yield Button("Select All", id="btn-mxx-sel-all", variant="default")
             yield Button("Clear", id="btn-mxx-sel-none", variant="default")
-            yield Button("Bring to 100%", id="btn-mxx-run", variant="warning")
+            yield Button("Preview", id="btn-mxx-run", variant="warning")
+            yield Button("Confirm", id="btn-mxx-confirm", variant="warning")
+            yield Button("Cancel", id="btn-mxx-cancel", variant="default")
         yield Static("", classes="spacer-sm")
         yield Static("", id="mxx-status")
         yield ProgressBar(id="mxx-progress", total=100, show_eta=False)
         yield RichLog(id="mxx-log", highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        # Confirm + Cancel are hidden until a preview has been fetched.
+        self.query_one("#btn-mxx-confirm", Button).display = False
+        self.query_one("#btn-mxx-cancel", Button).display = False
 
     def populate(self, courses: list[dict]) -> None:
         self._courses = courses
@@ -711,7 +731,7 @@ class MaxxView(VerticalScroll):
             word = "course" if n == 1 else "courses"
             self.query_one("#mxx-selection-count", Static).update(
                 f"[bold {PRIMARY}]{n}[/bold {PRIMARY}] [{MUTED}]{word} selected — hit "
-                f"[bold]Bring to 100%[/bold] when ready[/{MUTED}]"
+                f"[bold]Preview[/bold] to see what will be viewed[/{MUTED}]"
             )
 
     def _set_row_check(self, table: DataTable, row_key, checked: bool) -> None:
@@ -735,10 +755,20 @@ class MaxxView(VerticalScroll):
         self._update_count()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "btn-mxx-run" and self._selected:
+        bid = event.button.id
+        if bid == "btn-mxx-run" and self._selected:
             selected = [c for c in self._courses if c["id"] in self._selected]
-            self.post_message(self.MaxxRequested(courses=selected))
-        elif event.button.id == "btn-mxx-sel-all":
+            self._previewing = selected
+            self._enter_preview_mode()
+            self.post_message(self.PreviewRequested(courses=selected))
+        elif bid == "btn-mxx-confirm" and self._previewing:
+            self.post_message(self.MaxxConfirmed(courses=list(self._previewing)))
+            self._enter_running_mode()
+        elif bid == "btn-mxx-cancel":
+            self._previewing = []
+            self._exit_preview_mode()
+            self.set_status(f"[{MUTED}]Cancelled. Nothing was opened.[/{MUTED}]")
+        elif bid == "btn-mxx-sel-all":
             table = self.query_one("#mxx-table", DataTable)
             self._selected.clear()
             for c in self._courses:
@@ -746,12 +776,52 @@ class MaxxView(VerticalScroll):
             for rk in table.rows:
                 self._set_row_check(table, rk, True)
             self._update_count()
-        elif event.button.id == "btn-mxx-sel-none":
+        elif bid == "btn-mxx-sel-none":
             table = self.query_one("#mxx-table", DataTable)
             self._selected.clear()
             for rk in table.rows:
                 self._set_row_check(table, rk, False)
             self._update_count()
+
+    # -- preview / confirm UI state ----------------------------------------
+
+    def _enter_preview_mode(self) -> None:
+        run_btn = self.query_one("#btn-mxx-run", Button)
+        confirm_btn = self.query_one("#btn-mxx-confirm", Button)
+        cancel_btn = self.query_one("#btn-mxx-cancel", Button)
+        run_btn.display = False
+        confirm_btn.display = True
+        confirm_btn.disabled = True  # enabled once preview data is in
+        confirm_btn.label = "Confirm — checking…"
+        cancel_btn.display = True
+        cancel_btn.disabled = False
+
+    def preview_ready(self, total_pending: int) -> None:
+        """Called by the worker once preview data has been fetched."""
+        confirm_btn = self.query_one("#btn-mxx-confirm", Button)
+        if total_pending == 0:
+            # Nothing to do — drop back to picker mode
+            self._previewing = []
+            self._exit_preview_mode()
+            return
+        confirm_btn.disabled = False
+        word = "activity" if total_pending == 1 else "activities"
+        confirm_btn.label = f"Confirm — open {total_pending} {word}"
+
+    def _enter_running_mode(self) -> None:
+        # User has confirmed — disable everything to avoid double clicks
+        for bid in ("btn-mxx-confirm", "btn-mxx-cancel"):
+            self.query_one(f"#{bid}", Button).disabled = True
+
+    def _exit_preview_mode(self) -> None:
+        self.query_one("#btn-mxx-run", Button).display = True
+        self.query_one("#btn-mxx-confirm", Button).display = False
+        self.query_one("#btn-mxx-cancel", Button).display = False
+        self._previewing = []
+
+    def reset_to_picker(self) -> None:
+        """Called after a maxx run completes — return to the picker."""
+        self._exit_preview_mode()
 
     def set_status(self, msg: str) -> None:
         self.query_one("#mxx-status", Static).update(msg)
@@ -1333,8 +1403,106 @@ class MydyApp(App):
 
     # -- hit rate maxxer ---------------------------------------------------
 
-    def on_maxx_view_maxx_requested(self, event: MaxxView.MaxxRequested) -> None:
+    def on_maxx_view_preview_requested(self, event: MaxxView.PreviewRequested) -> None:
+        self._do_maxx_preview(event.courses)
+
+    def on_maxx_view_maxx_confirmed(self, event: MaxxView.MaxxConfirmed) -> None:
         self._do_bulk_maxx(event.courses)
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_maxx_preview(self, courses: list[dict]) -> None:
+        """Fetch progress for each selected course and show what would be opened."""
+        self.call_from_thread(self._maxx_reset)
+        word = "course" if len(courses) == 1 else "courses"
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[{MUTED}]Checking {len(courses)} {word}…[/{MUTED}]",
+        )
+        self.call_from_thread(
+            self._maxx_log,
+            f"[bold]Preview — {len(courses)} {word} selected[/bold]\n",
+        )
+
+        total_pending = 0
+        any_error = False
+        for idx, course in enumerate(courses):
+            cid = course.get("id") or self._extract_course_id(course)
+            self.call_from_thread(
+                self._maxx_set_progress,
+                ((idx + 1) / max(1, len(courses))) * 100,
+            )
+            progress = self.client.get_course_progress(cid)
+            if "error" in progress:
+                any_error = True
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"[red]Couldn't check {course['name']}: "
+                    f"{progress['error']}[/red]",
+                )
+                continue
+            pending = progress.get("not_viewed", 0)
+            viewed = progress.get("viewed", 0)
+            total = progress.get("total", 0)
+            pct = progress.get("percent", 0)
+            total_pending += pending
+
+            if pending == 0:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"  [{MUTED}]{course['name']}: already 100% — nothing to do[/{MUTED}]",
+                )
+                continue
+
+            verb = "activity" if pending == 1 else "activities"
+            self.call_from_thread(
+                self._maxx_log,
+                f"  [bold {PRIMARY}]{course['name']}[/bold {PRIMARY}] "
+                f"[{MUTED}]· currently {pct}% ({viewed}/{total})[/{MUTED}] "
+                f"[bold]→ {pending} {verb} would be opened[/bold]",
+            )
+            for item in progress["pending"][:5]:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"      [{MUTED}]· {item['name']}[/{MUTED}]",
+                )
+            if len(progress["pending"]) > 5:
+                more = len(progress["pending"]) - 5
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"      [{MUTED}]· … and {more} more[/{MUTED}]",
+                )
+
+        self.call_from_thread(self._maxx_set_progress, 100)
+
+        if total_pending == 0 and not any_error:
+            self.call_from_thread(
+                self._maxx_set_status,
+                "[bold green]Already at 100%.[/bold green] "
+                f"[{MUTED}]Nothing would change.[/{MUTED}]",
+            )
+        else:
+            verb = "activity" if total_pending == 1 else "activities"
+            self.call_from_thread(
+                self._maxx_set_status,
+                f"[bold]Ready to open [bold {PRIMARY}]{total_pending}[/bold {PRIMARY}] "
+                f"{verb} in total.[/bold] "
+                f"[{MUTED}]Hit Confirm to proceed, or Cancel to back out.[/{MUTED}]",
+            )
+
+        # Tell the view how many would be opened so it can label the Confirm button
+        self.call_from_thread(self._maxx_view_preview_ready, total_pending)
+
+    def _maxx_view_preview_ready(self, total_pending: int) -> None:
+        self.query_one("#view-maxx", MaxxView).preview_ready(total_pending)
+
+    @staticmethod
+    def _extract_course_id(course: dict) -> str:
+        cid = str(course.get("id") or "")
+        if cid:
+            return cid
+        import re as _re
+        m = _re.search(r"id=(\d+)", course.get("url", ""))
+        return m.group(1) if m else ""
 
     def _maxx_progress_cb(self, course_name: str):
         """Build a progress_callback that emits friendly TUI updates for one course."""
@@ -1451,6 +1619,10 @@ class MydyApp(App):
             self._maxx_set_status,
             f"[bold green]Finished.[/bold green] {courses_at_100} of {len(courses)} courses at 100%.",
         )
+        self.call_from_thread(self._maxx_reset_buttons)
+
+    def _maxx_reset_buttons(self) -> None:
+        self.query_one("#view-maxx", MaxxView).reset_to_picker()
 
     def _render_course_summary(self, name: str, result: dict, indent: str = "") -> None:
         before = result.get("percent_before", 0)

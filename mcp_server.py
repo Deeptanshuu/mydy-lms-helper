@@ -36,6 +36,7 @@ import os
 import re
 import time
 import random
+import html
 from urllib.parse import unquote
 
 import requests
@@ -1166,7 +1167,9 @@ def _fetch_progress(session: requests.Session, course_id: str) -> dict:
         div = a.find("div")
         text = (div.get_text(separator=" ", strip=True)
                 if div else a.get_text(strip=True))
-        name = re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip() or "Activity"
+        # Source HTML uses bare "&nbsp" (no semicolon); html.unescape handles both.
+        text = html.unescape(text).replace("\xa0", " ")
+        name = re.sub(r"\s+", " ", text).strip() or "Activity"
         item = {"url": href, "name": name}
         (completed if "completed" in cls else pending).append(item)
     total = len(pending) + len(completed)
