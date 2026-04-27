@@ -228,111 +228,186 @@ def _try_download_methods(
     return None
 
 
+_LMS_DOWN_MARKERS = (
+    "dns cache overflow", "service unavailable", "internal server error",
+    "bad gateway", "gateway timeout", "502 bad gateway", "503 ",
+    "temporarily unavailable", "maintenance",
+)
+
+
+def _is_lms_sick(resp) -> dict | None:
+    """Return an lms_down result dict if the response looks like a sick MyDy server."""
+    if resp is None:
+        return None
+    if resp.status_code >= 500:
+        return {"success": False, "kind": "lms_down",
+                "message": "MyDy is having issues right now.",
+                "detail": f"MyDy returned HTTP {resp.status_code}.",
+                "http_status": resp.status_code}
+    body = (resp.text or "")[:2000].lower()
+    hit = next((m for m in _LMS_DOWN_MARKERS if m in body), None)
+    if hit:
+        return {"success": False, "kind": "lms_down",
+                "message": "MyDy is having issues right now.",
+                "detail": f"MyDy responded with: {hit!r}.",
+                "http_status": resp.status_code}
+    if resp.headers.get("content-type", "").startswith("text/html") and len(resp.text) < 200:
+        return {"success": False, "kind": "lms_down",
+                "message": "MyDy is having issues right now.",
+                "detail": f"MyDy returned only {len(resp.text)} bytes.",
+                "http_status": resp.status_code}
+    return None
+
+
 @mcp.tool()
-def login(username: str = "", password: str = "") -> str:
+def login(username: str = "", password: str = "", max_attempts: int = 3) -> dict:
     """
     Authenticate with the MyDy LMS portal.
 
-    If username/password are not provided, falls back to MYDY_USERNAME and
-    MYDY_PASSWORD environment variables.
+    Falls back to MYDY_USERNAME / MYDY_PASSWORD environment variables when
+    arguments are empty. Auto-retries transient failures (network errors,
+    MyDy 5xx) with exponential backoff.
 
     Args:
-        username: LMS username (optional, uses MYDY_USERNAME env var if empty)
-        password: LMS password (optional, uses MYDY_PASSWORD env var if empty)
+        username: LMS username (optional, uses MYDY_USERNAME env var if empty).
+        password: LMS password (optional, uses MYDY_PASSWORD env var if empty).
+        max_attempts: How many times to try if MyDy is flaky. Default 3.
 
     Returns:
-        Login status message.
-    """
-    global _logged_in
+        A dict with::
 
-    session = _get_session()
+            success: bool
+            kind:    "ok" | "bad_credentials" | "lms_down"
+                     | "network_error" | "lms_unexpected" | "no_credentials"
+            message: short human-readable status
+            detail:  technical detail (when failing)
+            http_status: int | None
+            retried: int  # how many retries before this result
+
+        When ``kind`` is ``lms_down`` or ``network_error`` the failure is on
+        MyDy's / the network's side, not the user's credentials.
+    """
+    global _logged_in, _session
+
     username = username or os.getenv('MYDY_USERNAME', '')
     password = password or os.getenv('MYDY_PASSWORD', '')
-
     if not username or not password:
-        return "Error: No credentials provided. Pass username/password or set MYDY_USERNAME and MYDY_PASSWORD environment variables."
+        return {"success": False, "kind": "no_credentials",
+                "message": "Username and password are required.",
+                "retried": 0}
+
+    backoff = [0, 2, 5, 10]
+    last: dict = {}
+    for attempt in range(max_attempts):
+        if attempt > 0:
+            time.sleep(backoff[min(attempt, len(backoff) - 1)])
+            _session = requests.Session()  # fresh cookies
+        last = _login_once(_get_session(), username, password)
+        last["retried"] = attempt
+        if last["kind"] in ("ok", "bad_credentials", "no_credentials"):
+            _logged_in = (last["kind"] == "ok")
+            return last
+    _logged_in = False
+    return last
+
+
+def _login_once(session: requests.Session, username: str, password: str) -> dict:
+    try:
+        initial = session.get('https://mydy.dypatil.edu/rait/login/index.php', timeout=15)
+    except requests.Timeout:
+        return {"success": False, "kind": "lms_down",
+                "message": "MyDy is having issues right now.",
+                "detail": "Login page timed out.", "http_status": None}
+    except requests.ConnectionError as e:
+        return {"success": False, "kind": "network_error",
+                "message": "Can't reach the internet.",
+                "detail": str(e), "http_status": None}
+    except requests.RequestException as e:
+        return {"success": False, "kind": "network_error",
+                "message": "Network error while reaching MyDy.",
+                "detail": str(e), "http_status": None}
+
+    sick = _is_lms_sick(initial)
+    if sick: return sick
 
     try:
-        # Step 1: Access the university portal
-        initial_url = 'https://mydy.dypatil.edu/rait/login/index.php'
-        initial_resp = session.get(initial_url)
-
-        if initial_resp.url == 'https://mydy.dypatil.edu/':
-            # Custom username entry page - submit username first
-            step1_payload = {
-                'username': username,
-                'wantsurl': '',
-                'next': 'Next'
-            }
-            step1_resp = session.post('https://mydy.dypatil.edu/index.php', data=step1_payload)
-
-            if 'rait/login/index.php' in step1_resp.url and 'uname=' in step1_resp.url:
-                moodle_login_resp = session.get(step1_resp.url)
-                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
+        if initial.url == 'https://mydy.dypatil.edu/':
+            step1 = session.post(
+                'https://mydy.dypatil.edu/index.php',
+                data={'username': username, 'wantsurl': '', 'next': 'Next'},
+                timeout=15,
+            )
+            sick = _is_lms_sick(step1)
+            if sick: return sick
+            if 'rait/login/index.php' in step1.url and 'uname=' in step1.url:
+                moodle_resp = session.get(step1.url, timeout=15)
             else:
-                # Try direct access
-                direct_url = f"https://mydy.dypatil.edu/rait/login/index.php?uname={username}&wantsurl="
-                moodle_login_resp = session.get(direct_url)
-                login_soup = BeautifulSoup(moodle_login_resp.text, 'html.parser')
+                moodle_resp = session.get(
+                    f"https://mydy.dypatil.edu/rait/login/index.php?uname={username}&wantsurl=",
+                    timeout=15,
+                )
+            sick = _is_lms_sick(moodle_resp)
+            if sick: return sick
+            login_soup = BeautifulSoup(moodle_resp.text, 'html.parser')
         else:
-            login_soup = BeautifulSoup(initial_resp.text, 'html.parser')
+            login_soup = BeautifulSoup(initial.text, 'html.parser')
 
-        # Find password field and submit login
-        password_field = login_soup.find('input', {'name': 'password'})
-        if not password_field:
-            _logged_in = False
-            return "Error: Could not find password field on login page. The LMS portal may be down or has changed."
+        if not login_soup.find('input', {'name': 'password'}):
+            return {"success": False, "kind": "lms_down",
+                    "message": "MyDy returned a broken login page.",
+                    "detail": "No password field on the login page.",
+                    "http_status": initial.status_code}
 
-        # Collect hidden fields
         login_payload = {}
         for inp in login_soup.find_all('input', {'type': 'hidden'}):
             name = inp.get('name')
-            value = inp.get('value', '')
             if name:
-                login_payload[name] = value
-
+                login_payload[name] = inp.get('value', '')
         login_payload['password'] = password
 
-        # Find form action URL
         form = login_soup.find('form')
         if form and form.get('action'):
-            login_action_url = form['action']
-            if not login_action_url.startswith('http'):
-                login_action_url = 'https://mydy.dypatil.edu/rait/login/' + login_action_url.lstrip('/')
+            action_url = form['action']
+            if not action_url.startswith('http'):
+                action_url = 'https://mydy.dypatil.edu/rait/login/' + action_url.lstrip('/')
         else:
-            login_action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
+            action_url = 'https://mydy.dypatil.edu/rait/login/index.php'
 
-        login_resp = session.post(login_action_url, data=login_payload)
+        resp = session.post(action_url, data=login_payload, timeout=20)
+        sick = _is_lms_sick(resp)
+        if sick: return sick
 
-        # Check login success
-        resp_text = login_resp.text.lower()
-        has_login_form = (
-            BeautifulSoup(login_resp.text, 'html.parser').find('input', {'name': 'password'}) is not None
-            or 'notloggedin' in resp_text
-        )
-        has_error = any(x in resp_text for x in ['invalid login', 'login failed', 'incorrect username', 'incorrect password'])
-        has_success = any(x in resp_text for x in ['dashboard', 'my home', 'logout', 'profile'])
+        text_lower = resp.text.lower()
+        has_login = BeautifulSoup(resp.text, 'html.parser').find('input', {'name': 'password'}) is not None
+        has_error = any(x in text_lower for x in
+                        ['invalid login', 'login failed', 'incorrect username', 'incorrect password'])
+        has_success = any(x in text_lower for x in ['dashboard', 'my home', 'logout', 'profile'])
 
-        if has_login_form or has_error:
-            _logged_in = False
-            return "Login failed. Please check your credentials."
+        if has_error or (has_login and not has_success):
+            return {"success": False, "kind": "bad_credentials",
+                    "message": "That username or password didn't work.",
+                    "detail": "MyDy rejected the credentials.",
+                    "http_status": resp.status_code}
 
-        if has_success:
-            _logged_in = True
-            masked_user = username[:2] + "****" + username[-2:] if len(username) > 4 else "****"
-            return f"Successfully logged in as {masked_user}."
+        if has_success or ('rait' in resp.url and 'login' not in resp.url):
+            masked = username[:2] + "****" + username[-2:] if len(username) > 4 else "****"
+            return {"success": True, "kind": "ok",
+                    "message": f"Logged in as {masked}",
+                    "masked_user": masked, "http_status": resp.status_code}
 
-        # Ambiguous - check URL
-        if 'rait' in login_resp.url and 'login' not in login_resp.url:
-            _logged_in = True
-            return "Login appears successful (redirected to dashboard)."
+        return {"success": False, "kind": "lms_unexpected",
+                "message": "MyDy responded in an unexpected way.",
+                "detail": f"Final URL: {resp.url}",
+                "http_status": resp.status_code}
 
-        _logged_in = False
-        return "Login result unclear. You may need to try again."
-
+    except requests.Timeout:
+        return {"success": False, "kind": "lms_down",
+                "message": "MyDy is having issues right now.",
+                "detail": "Login request timed out.", "http_status": None}
     except requests.RequestException as e:
-        _logged_in = False
-        return f"Network error during login: {str(e)}"
+        return {"success": False, "kind": "network_error",
+                "message": "Network error during login.",
+                "detail": str(e), "http_status": None}
 
 
 @mcp.tool()

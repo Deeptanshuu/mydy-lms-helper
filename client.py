@@ -87,32 +87,100 @@ class MydyClient:
         return ""
 
     # -- login -------------------------------------------------------------
+    #
+    # Returns a dict with rich error categorization so the UI can clearly
+    # blame the LMS when it's flaky vs. the user when creds are wrong:
+    #   {
+    #     "success": bool,
+    #     "kind": "ok" | "bad_credentials" | "lms_down" | "network_error"
+    #             | "lms_unexpected" | "no_credentials",
+    #     "message": "<short human-readable>",
+    #     "detail": "<longer technical detail, optional>",
+    #     "http_status": <int|None>,
+    #     "retried": <int>,
+    #   }
+    # Transient failures (network_error, lms_down) are auto-retried with
+    # exponential backoff. Bad credentials are NOT retried.
 
-    def login(self, username: str = "", password: str = "") -> dict:
+    LMS_DOWN_MARKERS = (
+        "dns cache overflow", "service unavailable", "internal server error",
+        "bad gateway", "gateway timeout", "502 bad gateway", "503 ",
+        "temporarily unavailable", "maintenance",
+    )
+
+    def login(self, username: str = "", password: str = "",
+              max_attempts: int = 3, on_retry=None) -> dict:
         username = username or os.getenv("MYDY_USERNAME", "")
         password = password or os.getenv("MYDY_PASSWORD", "")
         if not username or not password:
-            return {"success": False, "message": "No credentials provided."}
+            return {
+                "success": False, "kind": "no_credentials",
+                "message": "Username and password are required.",
+                "retried": 0,
+            }
+
+        backoff = [0, 2, 5, 10]
+        last_result: dict = {}
+        for attempt in range(max_attempts):
+            if attempt > 0:
+                delay = backoff[min(attempt, len(backoff) - 1)]
+                if on_retry:
+                    on_retry({"attempt": attempt + 1, "max_attempts": max_attempts,
+                              "delay": delay, "previous": last_result})
+                time.sleep(delay)
+                # Fresh session each retry — old cookies may be stale
+                self.session = requests.Session()
+
+            last_result = self._login_once(username, password)
+            last_result["retried"] = attempt
+            if last_result["kind"] in ("ok", "bad_credentials", "no_credentials"):
+                return last_result
+            # Otherwise keep retrying transient failures
+        return last_result
+
+    def _login_once(self, username: str, password: str) -> dict:
+        try:
+            initial_resp = self.session.get(
+                f"{RAIT_URL}/login/index.php", timeout=15,
+            )
+        except requests.Timeout:
+            return self._lms_down(None, "Login page timed out — MyDy isn't responding.")
+        except requests.ConnectionError as e:
+            return {"success": False, "kind": "network_error",
+                    "message": "Can't reach the internet.",
+                    "detail": str(e), "http_status": None}
+        except requests.RequestException as e:
+            return {"success": False, "kind": "network_error",
+                    "message": "Network error while reaching MyDy.",
+                    "detail": str(e), "http_status": None}
+
+        # 5xx or DNS-cache-overflow style body → MyDy is sick
+        sick = self._is_lms_sick(initial_resp)
+        if sick:
+            return sick
 
         try:
-            initial_resp = self.session.get(f"{RAIT_URL}/login/index.php")
-
             if initial_resp.url == f"{BASE_URL}/":
                 payload = {"username": username, "wantsurl": "", "next": "Next"}
-                step1 = self.session.post(f"{BASE_URL}/index.php", data=payload)
+                step1 = self.session.post(f"{BASE_URL}/index.php", data=payload, timeout=15)
+                sick = self._is_lms_sick(step1)
+                if sick: return sick
                 if "rait/login/index.php" in step1.url and "uname=" in step1.url:
-                    moodle_resp = self.session.get(step1.url)
-                    login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
+                    moodle_resp = self.session.get(step1.url, timeout=15)
                 else:
                     direct = f"{RAIT_URL}/login/index.php?uname={username}&wantsurl="
-                    moodle_resp = self.session.get(direct)
-                    login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
+                    moodle_resp = self.session.get(direct, timeout=15)
+                sick = self._is_lms_sick(moodle_resp)
+                if sick: return sick
+                login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
             else:
                 login_soup = BeautifulSoup(initial_resp.text, "html.parser")
 
             if not login_soup.find("input", {"name": "password"}):
-                self.logged_in = False
-                return {"success": False, "message": "Could not find login form. LMS may be down."}
+                return {"success": False, "kind": "lms_down",
+                        "message": "MyDy returned a broken login page.",
+                        "detail": "No password field on the login page.",
+                        "http_status": initial_resp.status_code}
 
             login_payload: dict[str, str] = {}
             for inp in login_soup.find_all("input", {"type": "hidden"}):
@@ -126,28 +194,68 @@ class MydyClient:
             if not action.startswith("http"):
                 action = f"{RAIT_URL}/login/" + action.lstrip("/")
 
-            resp = self.session.post(action, data=login_payload)
-            text_lower = resp.text.lower()
+            resp = self.session.post(action, data=login_payload, timeout=20)
+            sick = self._is_lms_sick(resp)
+            if sick: return sick
 
+            text_lower = resp.text.lower()
             has_login = BeautifulSoup(resp.text, "html.parser").find("input", {"name": "password"}) is not None
             has_error = any(x in text_lower for x in ["invalid login", "login failed", "incorrect"])
             has_success = any(x in text_lower for x in ["dashboard", "logout", "profile"])
 
-            if has_login or has_error:
+            if has_error or (has_login and not has_success):
                 self.logged_in = False
-                return {"success": False, "message": "Login failed. Check credentials."}
+                return {"success": False, "kind": "bad_credentials",
+                        "message": "That username or password didn't work.",
+                        "detail": "MyDy rejected the credentials.",
+                        "http_status": resp.status_code}
 
             if has_success or ("rait" in resp.url and "login" not in resp.url):
                 self.logged_in = True
                 masked = username[:2] + "****" + username[-2:] if len(username) > 4 else "****"
-                return {"success": True, "message": f"Logged in as {masked}", "masked_user": masked}
+                return {"success": True, "kind": "ok",
+                        "message": f"Logged in as {masked}",
+                        "masked_user": masked, "http_status": resp.status_code}
 
-            self.logged_in = False
-            return {"success": False, "message": "Login result unclear. Try again."}
+            return {"success": False, "kind": "lms_unexpected",
+                    "message": "MyDy responded in an unexpected way.",
+                    "detail": f"Final URL: {resp.url}",
+                    "http_status": resp.status_code}
 
+        except requests.Timeout:
+            return self._lms_down(None, "MyDy timed out during login.")
         except requests.RequestException as e:
-            self.logged_in = False
-            return {"success": False, "message": f"Network error: {e}"}
+            return {"success": False, "kind": "network_error",
+                    "message": "Network error during login.",
+                    "detail": str(e), "http_status": None}
+
+    @classmethod
+    def _is_lms_sick(cls, resp) -> dict | None:
+        """Return an lms_down result if the response looks like a sick server."""
+        if resp is None:
+            return None
+        if resp.status_code >= 500:
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy returned HTTP {resp.status_code}.")
+        body = (resp.text or "")[:2000].lower()
+        if any(m in body for m in cls.LMS_DOWN_MARKERS):
+            # Try to surface the marker for debugging
+            hit = next((m for m in cls.LMS_DOWN_MARKERS if m in body), "")
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy responded with: {hit!r}.")
+        # Suspiciously tiny response when expecting HTML
+        if resp.headers.get("content-type", "").startswith("text/html") and len(resp.text) < 200:
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy returned only {len(resp.text)} bytes.")
+        return None
+
+    @staticmethod
+    def _lms_down(http_status, detail) -> dict:
+        return {
+            "success": False, "kind": "lms_down",
+            "message": "MyDy is having issues right now.",
+            "detail": detail, "http_status": http_status,
+        }
 
     # -- courses -----------------------------------------------------------
 
