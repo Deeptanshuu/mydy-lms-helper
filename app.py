@@ -306,6 +306,7 @@ class CourseDetailView(Vertical):
             yield Button("\u2190 Back", id="btn-back", variant="default")
             yield Static("", id="course-title")
             yield Button("Download Materials", id="btn-dl-course", variant="warning")
+            yield Button("Maxx Hit Rate", id="btn-maxx-course", variant="warning")
         with TabbedContent(id="course-tabs"):
             with TabPane("Content", id="tab-content"):
                 yield RichLog(id="content-log", highlight=True, markup=True)
@@ -542,6 +543,122 @@ class BulkDownloadView(VerticalScroll):
 
 
 # ---------------------------------------------------------------------------
+# Hit Rate Maxxer View
+# ---------------------------------------------------------------------------
+
+class MaxxView(VerticalScroll):
+    """Multi-select courses to mark every manual-completion activity as done."""
+
+    class MaxxRequested(Message):
+        def __init__(self, courses: list[dict]) -> None:
+            self.courses = courses
+            super().__init__()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._selected: set[str] = set()
+        self._courses: list[dict] = []
+
+    def compose(self) -> ComposeResult:
+        yield Static(f"[bold {PRIMARY}]Hit Rate Maxxer[/]", id="mxx-title")
+        yield Static(
+            f"[{MUTED}]Marks every manual-completion activity as done in the "
+            f"selected courses. Auto-tracked items (quiz pass / forum post) "
+            f"are not affected.[/{MUTED}]"
+        )
+        yield Static("", id="mxx-selection-count")
+        dt = DataTable(id="mxx-table", cursor_type="row")
+        dt.add_column("", key="sel")
+        dt.add_column("Course Name", key="name")
+        dt.add_column("ID", key="cid")
+        yield dt
+        with Horizontal(id="mxx-actions"):
+            yield Button("Select All", id="btn-mxx-sel-all", variant="default")
+            yield Button("Clear Selection", id="btn-mxx-sel-none", variant="default")
+            yield Button("✓ Maxx Selected", id="btn-mxx-run", variant="warning")
+        yield Static("", classes="spacer-sm")
+        yield Static("", id="mxx-status")
+        yield ProgressBar(id="mxx-progress", total=100, show_eta=False)
+        yield RichLog(id="mxx-log", highlight=True, markup=True)
+
+    def populate(self, courses: list[dict]) -> None:
+        self._courses = courses
+        self._selected.clear()
+        table = self.query_one("#mxx-table", DataTable)
+        table.clear()
+        for c in courses:
+            table.add_row(
+                Text.from_markup(f"[{MUTED}]☐[/{MUTED}]"),
+                c["name"], c["id"], key=c["id"],
+            )
+        self._update_count()
+
+    def _update_count(self) -> None:
+        n = len(self._selected)
+        if n == 0:
+            self.query_one("#mxx-selection-count", Static).update(
+                f"[{MUTED}]No courses selected[/{MUTED}]"
+            )
+        else:
+            self.query_one("#mxx-selection-count", Static).update(
+                f"[bold {PRIMARY}]{n}[/bold {PRIMARY}] [{MUTED}]course{'s' if n != 1 else ''} selected[/{MUTED}]"
+            )
+
+    def _set_row_check(self, table: DataTable, row_key, checked: bool) -> None:
+        if checked:
+            table.update_cell(row_key, "sel", Text.from_markup(f"[{PRIMARY}]☑[/{PRIMARY}]"))
+        else:
+            table.update_cell(row_key, "sel", Text.from_markup(f"[{MUTED}]☐[/{MUTED}]"))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id != "mxx-table":
+            return
+        table = self.query_one("#mxx-table", DataTable)
+        row_key = event.row_key
+        cid = str(row_key.value)
+        if cid in self._selected:
+            self._selected.discard(cid)
+            self._set_row_check(table, row_key, False)
+        else:
+            self._selected.add(cid)
+            self._set_row_check(table, row_key, True)
+        self._update_count()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "btn-mxx-run" and self._selected:
+            selected = [c for c in self._courses if c["id"] in self._selected]
+            self.post_message(self.MaxxRequested(courses=selected))
+        elif event.button.id == "btn-mxx-sel-all":
+            table = self.query_one("#mxx-table", DataTable)
+            self._selected.clear()
+            for c in self._courses:
+                self._selected.add(c["id"])
+            for rk in table.rows:
+                self._set_row_check(table, rk, True)
+            self._update_count()
+        elif event.button.id == "btn-mxx-sel-none":
+            table = self.query_one("#mxx-table", DataTable)
+            self._selected.clear()
+            for rk in table.rows:
+                self._set_row_check(table, rk, False)
+            self._update_count()
+
+    def set_status(self, msg: str) -> None:
+        self.query_one("#mxx-status", Static).update(msg)
+
+    def set_progress(self, value: float) -> None:
+        self.query_one("#mxx-progress", ProgressBar).update(total=100, progress=value)
+
+    def log(self, msg: str) -> None:
+        self.query_one("#mxx-log", RichLog).write(msg)
+
+    def reset_log(self) -> None:
+        self.query_one("#mxx-log", RichLog).clear()
+        self.query_one("#mxx-status", Static).update("")
+        self.query_one("#mxx-progress", ProgressBar).update(total=100, progress=0)
+
+
+# ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
 
@@ -549,6 +666,7 @@ NAV_ITEMS = [
     ("nav-dashboard", "Dashboard"),
     ("nav-all-courses", "All Courses"),
     ("nav-bulk-dl", "Bulk Download"),
+    ("nav-maxx", "Hit Rate Maxxer"),
 ]
 
 
@@ -832,6 +950,7 @@ class MydyApp(App):
                     yield AllCoursesView(id="view-all-courses")
                     yield CourseDetailView(id="view-course")
                     yield BulkDownloadView(id="view-bulk-dl")
+                    yield MaxxView(id="view-maxx")
                     yield Static("", id="view-error")
         yield Footer()
 
@@ -955,6 +1074,14 @@ class MydyApp(App):
             else:
                 self._show_error("No courses loaded yet.")
 
+        elif item_id == "nav-maxx":
+            if self._courses:
+                view = self.query_one("#view-maxx", MaxxView)
+                view.populate(self._courses)
+                cs.current = "view-maxx"
+            else:
+                self._show_error("No courses loaded yet.")
+
     def on_dashboard_view_course_clicked(self, event: DashboardView.CourseClicked) -> None:
         self._open_course(event.course)
 
@@ -968,6 +1095,9 @@ class MydyApp(App):
 
         elif event.button.id == "btn-dl-course" and self._current_course:
             self._do_single_download(self._current_course)
+
+        elif event.button.id == "btn-maxx-course" and self._current_course:
+            self._do_single_maxx(self._current_course)
 
     # -- downloads ---------------------------------------------------------
 
@@ -1054,6 +1184,126 @@ class MydyApp(App):
             f"[bold green]Done![/bold green] {total_files} files, {total_failed} failed "
             f"across {len(courses)} courses.",
         )
+
+    # -- hit rate maxxer ---------------------------------------------------
+
+    def on_maxx_view_maxx_requested(self, event: MaxxView.MaxxRequested) -> None:
+        self._do_bulk_maxx(event.courses)
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_single_maxx(self, course: dict) -> None:
+        self.call_from_thread(self._switch_to_maxx_view_single, course)
+
+        def _status(msg):
+            self.call_from_thread(self._maxx_set_status, msg)
+
+        def _log(msg):
+            self.call_from_thread(self._maxx_log, msg)
+
+        _status(f"[bold]Maxxing: {course['name']}...[/bold]")
+
+        def progress_cb(event_type, data):
+            if event_type == "activity":
+                pct = (data["index"] / data["total"]) * 100 if data["total"] else 0
+                self.call_from_thread(self._maxx_set_progress, pct)
+            elif event_type == "item_done":
+                name = data.get("name", "?")
+                st = data.get("status", "")
+                if st == "marked":
+                    _log(f"  [green]✓ Marked:[/green] {name}")
+                elif st == "skipped":
+                    _log(f"  [{MUTED}]Skipped (already complete): {name}[/{MUTED}]")
+                else:
+                    _log(f"  [red]✗ Failed:[/red] {name} — {data.get('error', data.get('http_status', ''))}")
+
+        result = self.client.hit_rate_maxx_course(course, progress_callback=progress_cb)
+        self.call_from_thread(self._maxx_set_progress, 100)
+        if "error" in result:
+            _status(f"[bold red]Error:[/bold red] {result['error']}")
+            return
+        _status(
+            f"[bold green]Done![/bold green] {result.get('marked', 0)} marked, "
+            f"{result.get('skipped', 0)} already complete, "
+            f"{result.get('failed', 0)} failed."
+        )
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_bulk_maxx(self, courses: list[dict]) -> None:
+        self.call_from_thread(self._maxx_reset)
+
+        total_marked = 0
+        total_skipped = 0
+        total_failed = 0
+
+        for idx, course in enumerate(courses):
+            self.call_from_thread(
+                self._maxx_set_status,
+                f"[bold]Maxxing {idx + 1}/{len(courses)}: {course['name']}...[/bold]",
+            )
+
+            def progress_cb(event_type, data):
+                if event_type == "activity":
+                    pct = (data["index"] / data["total"]) * 100 if data["total"] else 0
+                    self.call_from_thread(self._maxx_set_progress, pct)
+                elif event_type == "item_done":
+                    name = data.get("name", "?")
+                    st = data.get("status", "")
+                    if st == "marked":
+                        self.call_from_thread(self._maxx_log, f"  [green]✓ Marked:[/green] {name}")
+                    elif st == "skipped":
+                        self.call_from_thread(
+                            self._maxx_log,
+                            f"  [{MUTED}]Skipped (already complete): {name}[/{MUTED}]",
+                        )
+                    else:
+                        err = data.get("error", data.get("http_status", ""))
+                        self.call_from_thread(self._maxx_log, f"  [red]✗ Failed:[/red] {name} — {err}")
+
+            result = self.client.hit_rate_maxx_course(course, progress_callback=progress_cb)
+            if "error" in result:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"[red]{course['name']}: {result['error']}[/red]",
+                )
+                continue
+            total_marked += result.get("marked", 0)
+            total_skipped += result.get("skipped", 0)
+            total_failed += result.get("failed", 0)
+            self.call_from_thread(
+                self._maxx_log,
+                f"[bold {PRIMARY}]{course['name']}: "
+                f"{result.get('marked', 0)} marked, "
+                f"{result.get('skipped', 0)} already complete, "
+                f"{result.get('failed', 0)} failed[/bold {PRIMARY}]",
+            )
+
+        self.call_from_thread(self._maxx_set_progress, 100)
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[bold green]Done![/bold green] {total_marked} marked, "
+            f"{total_skipped} already complete, {total_failed} failed "
+            f"across {len(courses)} courses.",
+        )
+
+    def _switch_to_maxx_view_single(self, course: dict) -> None:
+        view = self.query_one("#view-maxx", MaxxView)
+        view.populate([course])
+        view.reset_log()
+        self.query_one("#content", ContentSwitcher).current = "view-maxx"
+
+    def _maxx_reset(self) -> None:
+        self.query_one("#view-maxx", MaxxView).reset_log()
+
+    def _maxx_set_status(self, msg: str) -> None:
+        self.query_one("#view-maxx", MaxxView).set_status(msg)
+
+    def _maxx_set_progress(self, value: float) -> None:
+        self.query_one("#view-maxx", MaxxView).set_progress(value)
+
+    def _maxx_log(self, msg: str) -> None:
+        self.query_one("#view-maxx", MaxxView).log(msg)
+
+    # -- helpers (cont) ----------------------------------------------------
 
     def _switch_to_bulk_dl_view(self) -> None:
         self.query_one("#content", ContentSwitcher).current = "view-bulk-dl"
