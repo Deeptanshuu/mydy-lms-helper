@@ -1023,22 +1023,21 @@ def get_attendance() -> dict | str:
 @mcp.tool()
 def hit_rate_maxxer(course_ids: list[str] | None = None) -> dict:
     """
-    Mark every manual-completion activity in the given courses as completed.
+    Bring the "Course Progress" widget to 100% on the given courses.
 
-    Posts to the legacy Moodle endpoint /rait/course/togglecompletion.php with
-    completionstate=1 for each activity that is currently NOT complete. Activities
-    whose completion is auto-tracked (quiz pass / forum post / etc.) cannot be
-    flipped this way and are not touched.
+    For each selected course, fetches the widget's data source
+    (/rait/course/customview.php?id=<cid>) and GETs every activity link the
+    widget marks as "pending". Each GET to /mod/<type>/view.php?id=N flips
+    that activity from "Not Viewed" to "Viewed" and bumps the percentage.
 
-    Must be logged in first (call login tool). Use list_courses to see available
-    course IDs.
+    Must be logged in first (call login tool). Use list_courses for IDs.
 
     Args:
         course_ids: List of course IDs to maxx. If None/empty, maxxes ALL courses.
 
     Returns:
-        Summary with per-course counts of activities marked, skipped (already
-        complete), and failed.
+        Summary with per-course before/after counts and the list of activities
+        that were newly marked, skipped (already viewed), or failed.
     """
     if not _logged_in:
         return {"error": "Not logged in. Call the login tool first."}
@@ -1061,103 +1060,96 @@ def hit_rate_maxxer(course_ids: list[str] | None = None) -> dict:
         return {"error": "No courses to maxx."}
 
     session = _get_session()
-    results: list[dict] = []
-    total_marked = total_skipped = total_failed = 0
-
-    for course in selected:
-        results.append(_maxx_single_course(session, course))
-
-    for r in results:
-        total_marked += r.get("marked", 0)
-        total_skipped += r.get("skipped", 0)
-        total_failed += r.get("failed", 0)
-
+    results = [_maxx_single_course(session, c) for c in selected]
     return {
         "summary": {
             "courses_processed": len(results),
-            "total_marked": total_marked,
-            "total_skipped": total_skipped,
-            "total_failed": total_failed,
+            "total_newly_marked": sum(r.get("marked", 0) for r in results),
+            "total_already_viewed": sum(r.get("skipped", 0) for r in results),
+            "total_failed": sum(r.get("failed", 0) for r in results),
         },
         "courses": results,
     }
 
 
-def _maxx_single_course(session: requests.Session, course: dict) -> dict:
-    """Mark every manual-completion activity in a single course as completed."""
+def _fetch_progress(session: requests.Session, course_id: str) -> dict:
+    """Parse customview.php into pending / completed lists."""
     _rate_limit("course")
+    resp = session.get(
+        f"https://mydy.dypatil.edu/rait/course/customview.php?id={course_id}"
+    )
+    soup = BeautifulSoup(resp.text, "html.parser")
+    pending: list[dict] = []
+    completed: list[dict] = []
+    for a in soup.find_all("a", class_=True):
+        cls = a.get("class") or []
+        if "pending" not in cls and "completed" not in cls:
+            continue
+        href = a.get("href", "")
+        if "/mod/" not in href or "/view.php" not in href:
+            continue
+        div = a.find("div")
+        text = (div.get_text(separator=" ", strip=True)
+                if div else a.get_text(strip=True))
+        name = re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip() or "Activity"
+        item = {"url": href, "name": name}
+        (completed if "completed" in cls else pending).append(item)
+    total = len(pending) + len(completed)
+    return {
+        "total": total,
+        "viewed": len(completed),
+        "percent": round(len(completed) / total * 100) if total else 0,
+        "pending": pending,
+        "completed": completed,
+    }
+
+
+def _maxx_single_course(session: requests.Session, course: dict) -> dict:
+    """Bring one course's Course Progress widget to 100% via view.php GETs."""
+    cid = str(course.get("id", ""))
+    if not cid:
+        m = re.search(r"id=(\d+)", course.get("url", ""))
+        cid = m.group(1) if m else ""
+    if not cid:
+        return {"course_name": course.get("name", ""), "error": "Course id not found.",
+                "marked": 0, "skipped": 0, "failed": 0}
+
     try:
-        resp = session.get(course["url"])
-        soup = BeautifulSoup(resp.text, "html.parser")
+        before = _fetch_progress(session, cid)
     except requests.RequestException as e:
         return {"course_name": course.get("name", ""), "error": str(e),
                 "marked": 0, "skipped": 0, "failed": 0}
 
-    course_name = _extract_course_name(soup)
-    forms: list[dict] = []
-    for li in soup.find_all("li", class_=re.compile(r"\bactivity\b")):
-        form = li.find("form", class_=re.compile(r"togglecompletion"))
-        if not form:
-            continue
-        inputs = {inp.get("name"): inp.get("value", "")
-                  for inp in form.find_all("input") if inp.get("name")}
-        cmid = inputs.get("id") or ""
-        if not cmid:
-            continue
-        forms.append({
-            "cmid": cmid,
-            "sesskey": inputs.get("sesskey", ""),
-            "modulename": inputs.get("modulename", ""),
-            "completionstate": inputs.get("completionstate", "1"),
-            "name": _get_activity_name(li),
-        })
-
-    sesskey_match = re.search(r'"sesskey":"([^"]+)"', resp.text) or \
-                    re.search(r'sesskey=([A-Za-z0-9]+)', resp.text)
-    page_sesskey = sesskey_match.group(1) if sesskey_match else None
-
     marked: list[dict] = []
-    skipped: list[dict] = []
     failed: list[dict] = []
-
-    for f in forms:
-        # completionstate=0 means the activity is currently complete (clicking
-        # would unmark). Skip those.
-        if f["completionstate"] == "0":
-            skipped.append({"cmid": f["cmid"], "name": f["name"],
-                            "reason": "already_complete"})
-            continue
-
-        sesskey = f["sesskey"] or page_sesskey or ""
-        if not sesskey:
-            failed.append({"cmid": f["cmid"], "name": f["name"],
-                           "error": "no_sesskey"})
-            continue
-
+    for item in before["pending"]:
         _rate_limit("activity")
         try:
-            r = session.post(
-                "https://mydy.dypatil.edu/rait/course/togglecompletion.php",
-                data={"id": f["cmid"], "sesskey": sesskey,
-                      "modulename": f["modulename"], "completionstate": "1"},
-                allow_redirects=True,
-            )
+            r = session.get(item["url"], allow_redirects=True)
             if r.status_code in (200, 302, 303):
-                marked.append({"cmid": f["cmid"], "name": f["name"],
-                               "http_status": r.status_code})
+                marked.append({"name": item["name"], "url": item["url"]})
             else:
-                failed.append({"cmid": f["cmid"], "name": f["name"],
+                failed.append({"name": item["name"], "url": item["url"],
                                "http_status": r.status_code})
         except requests.RequestException as e:
-            failed.append({"cmid": f["cmid"], "name": f["name"], "error": str(e)})
+            failed.append({"name": item["name"], "url": item["url"], "error": str(e)})
+
+    try:
+        after = _fetch_progress(session, cid)
+    except requests.RequestException:
+        after = {"viewed": before["viewed"] + len(marked), "percent": 0}
 
     return {
-        "course_name": course_name,
-        "manual_activities": len(forms),
+        "course_name": course.get("name", ""),
+        "total": before["total"],
+        "viewed_before": before["viewed"],
+        "viewed_after": after.get("viewed", 0),
+        "percent_before": before["percent"],
+        "percent_after": after.get("percent", 0),
         "marked": len(marked),
-        "skipped": len(skipped),
+        "skipped": before["viewed"],
         "failed": len(failed),
-        "items": {"marked": marked, "skipped": skipped, "failed": failed},
+        "items": {"marked": marked, "skipped": before["completed"], "failed": failed},
     }
 
 

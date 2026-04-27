@@ -306,7 +306,7 @@ class CourseDetailView(Vertical):
             yield Button("\u2190 Back", id="btn-back", variant="default")
             yield Static("", id="course-title")
             yield Button("Download Materials", id="btn-dl-course", variant="warning")
-            yield Button("Maxx Hit Rate", id="btn-maxx-course", variant="warning")
+            yield Button("Bring to 100%", id="btn-maxx-course", variant="warning")
         with TabbedContent(id="course-tabs"):
             with TabPane("Content", id="tab-content"):
                 yield RichLog(id="content-log", highlight=True, markup=True)
@@ -547,7 +547,7 @@ class BulkDownloadView(VerticalScroll):
 # ---------------------------------------------------------------------------
 
 class MaxxView(VerticalScroll):
-    """Multi-select courses to mark every manual-completion activity as done."""
+    """Multi-select courses to bring their Course Progress to 100%."""
 
     class MaxxRequested(Message):
         def __init__(self, courses: list[dict]) -> None:
@@ -562,20 +562,20 @@ class MaxxView(VerticalScroll):
     def compose(self) -> ComposeResult:
         yield Static(f"[bold {PRIMARY}]Hit Rate Maxxer[/]", id="mxx-title")
         yield Static(
-            f"[{MUTED}]Marks every manual-completion activity as done in the "
-            f"selected courses. Auto-tracked items (quiz pass / forum post) "
-            f"are not affected.[/{MUTED}]"
+            f"[{MUTED}]Brings your [bold]Course Progress[/bold] to 100% by "
+            f"opening every unviewed activity for you. "
+            f"Pick the courses you want maxxed.[/{MUTED}]"
         )
+        yield Static("", classes="spacer-sm")
         yield Static("", id="mxx-selection-count")
         dt = DataTable(id="mxx-table", cursor_type="row")
         dt.add_column("", key="sel")
-        dt.add_column("Course Name", key="name")
-        dt.add_column("ID", key="cid")
+        dt.add_column("Course", key="name")
         yield dt
         with Horizontal(id="mxx-actions"):
             yield Button("Select All", id="btn-mxx-sel-all", variant="default")
-            yield Button("Clear Selection", id="btn-mxx-sel-none", variant="default")
-            yield Button("✓ Maxx Selected", id="btn-mxx-run", variant="warning")
+            yield Button("Clear", id="btn-mxx-sel-none", variant="default")
+            yield Button("Bring to 100%", id="btn-mxx-run", variant="warning")
         yield Static("", classes="spacer-sm")
         yield Static("", id="mxx-status")
         yield ProgressBar(id="mxx-progress", total=100, show_eta=False)
@@ -589,7 +589,7 @@ class MaxxView(VerticalScroll):
         for c in courses:
             table.add_row(
                 Text.from_markup(f"[{MUTED}]☐[/{MUTED}]"),
-                c["name"], c["id"], key=c["id"],
+                c["name"], key=c["id"],
             )
         self._update_count()
 
@@ -597,11 +597,13 @@ class MaxxView(VerticalScroll):
         n = len(self._selected)
         if n == 0:
             self.query_one("#mxx-selection-count", Static).update(
-                f"[{MUTED}]No courses selected[/{MUTED}]"
+                f"[{MUTED}]Tap a course to select it.[/{MUTED}]"
             )
         else:
+            word = "course" if n == 1 else "courses"
             self.query_one("#mxx-selection-count", Static).update(
-                f"[bold {PRIMARY}]{n}[/bold {PRIMARY}] [{MUTED}]course{'s' if n != 1 else ''} selected[/{MUTED}]"
+                f"[bold {PRIMARY}]{n}[/bold {PRIMARY}] [{MUTED}]{word} selected — hit "
+                f"[bold]Bring to 100%[/bold] when ready[/{MUTED}]"
             )
 
     def _set_row_check(self, table: DataTable, row_key, checked: bool) -> None:
@@ -1190,100 +1192,141 @@ class MydyApp(App):
     def on_maxx_view_maxx_requested(self, event: MaxxView.MaxxRequested) -> None:
         self._do_bulk_maxx(event.courses)
 
-    @work(thread=True, exclusive=True, group="maxx")
-    def _do_single_maxx(self, course: dict) -> None:
-        self.call_from_thread(self._switch_to_maxx_view_single, course)
+    def _maxx_progress_cb(self, course_name: str):
+        """Build a progress_callback that emits friendly TUI updates for one course."""
+        state = {"pending": 0}
 
-        def _status(msg):
-            self.call_from_thread(self._maxx_set_status, msg)
-
-        def _log(msg):
-            self.call_from_thread(self._maxx_log, msg)
-
-        _status(f"[bold]Maxxing: {course['name']}...[/bold]")
-
-        def progress_cb(event_type, data):
-            if event_type == "activity":
-                pct = (data["index"] / data["total"]) * 100 if data["total"] else 0
+        def cb(event_type, data):
+            if event_type == "course_start":
+                state["pending"] = data.get("pending_count", 0)
+                pct_before = data.get("percent_before", 0)
+                total = data.get("total", 0)
+                if state["pending"] == 0:
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [{MUTED}]Already at 100% — nothing to do here.[/{MUTED}]",
+                    )
+                else:
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [{MUTED}]Currently {pct_before}% ({total - state['pending']}/{total}). "
+                        f"Opening {state['pending']} activit"
+                        f"{'y' if state['pending'] == 1 else 'ies'}...[/{MUTED}]",
+                    )
+            elif event_type == "activity":
+                total = data.get("total", 0) or 1
+                pct = (data["index"] / total) * 100
                 self.call_from_thread(self._maxx_set_progress, pct)
+                self.call_from_thread(
+                    self._maxx_set_status,
+                    f"[bold]{course_name}[/bold] [{MUTED}]· "
+                    f"{data['index']}/{total} · viewing[/{MUTED}] {data.get('name','')}",
+                )
             elif event_type == "item_done":
                 name = data.get("name", "?")
                 st = data.get("status", "")
                 if st == "marked":
-                    _log(f"  [green]✓ Marked:[/green] {name}")
-                elif st == "skipped":
-                    _log(f"  [{MUTED}]Skipped (already complete): {name}[/{MUTED}]")
+                    self.call_from_thread(self._maxx_log, f"  [green]✓[/green] {name}")
                 else:
-                    _log(f"  [red]✗ Failed:[/red] {name} — {data.get('error', data.get('http_status', ''))}")
+                    err = data.get("error", data.get("http_status", "?"))
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [red]✗[/red] {name} [{MUTED}]({err})[/{MUTED}]",
+                    )
+        return cb
 
-        result = self.client.hit_rate_maxx_course(course, progress_callback=progress_cb)
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_single_maxx(self, course: dict) -> None:
+        self.call_from_thread(self._switch_to_maxx_view_single, course)
+        self.call_from_thread(self._maxx_set_status,
+                              f"[bold]{course['name']}[/bold] [{MUTED}]· checking progress…[/{MUTED}]")
+        self.call_from_thread(self._maxx_log,
+                              f"[bold {PRIMARY}]{course['name']}[/bold {PRIMARY}]")
+
+        result = self.client.hit_rate_maxx_course(
+            course, progress_callback=self._maxx_progress_cb(course["name"]),
+        )
         self.call_from_thread(self._maxx_set_progress, 100)
+
         if "error" in result:
-            _status(f"[bold red]Error:[/bold red] {result['error']}")
+            self.call_from_thread(
+                self._maxx_set_status,
+                f"[bold red]Couldn't maxx {course['name']}:[/bold red] {result['error']}",
+            )
             return
-        _status(
-            f"[bold green]Done![/bold green] {result.get('marked', 0)} marked, "
-            f"{result.get('skipped', 0)} already complete, "
-            f"{result.get('failed', 0)} failed."
+
+        self._render_course_summary(course["name"], result)
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[bold green]Done![/bold green] {course['name']} is now "
+            f"[bold]{result.get('percent_after', 0)}%[/bold] viewed.",
         )
 
     @work(thread=True, exclusive=True, group="maxx")
     def _do_bulk_maxx(self, courses: list[dict]) -> None:
         self.call_from_thread(self._maxx_reset)
+        self.call_from_thread(
+            self._maxx_log,
+            f"[bold]Maxxing {len(courses)} course{'s' if len(courses) != 1 else ''}…[/bold]\n",
+        )
 
         total_marked = 0
-        total_skipped = 0
         total_failed = 0
+        courses_at_100 = 0
 
         for idx, course in enumerate(courses):
             self.call_from_thread(
-                self._maxx_set_status,
-                f"[bold]Maxxing {idx + 1}/{len(courses)}: {course['name']}...[/bold]",
+                self._maxx_log,
+                f"\n[bold {PRIMARY}]{idx + 1}/{len(courses)} · {course['name']}[/bold {PRIMARY}]",
             )
 
-            def progress_cb(event_type, data):
-                if event_type == "activity":
-                    pct = (data["index"] / data["total"]) * 100 if data["total"] else 0
-                    self.call_from_thread(self._maxx_set_progress, pct)
-                elif event_type == "item_done":
-                    name = data.get("name", "?")
-                    st = data.get("status", "")
-                    if st == "marked":
-                        self.call_from_thread(self._maxx_log, f"  [green]✓ Marked:[/green] {name}")
-                    elif st == "skipped":
-                        self.call_from_thread(
-                            self._maxx_log,
-                            f"  [{MUTED}]Skipped (already complete): {name}[/{MUTED}]",
-                        )
-                    else:
-                        err = data.get("error", data.get("http_status", ""))
-                        self.call_from_thread(self._maxx_log, f"  [red]✗ Failed:[/red] {name} — {err}")
-
-            result = self.client.hit_rate_maxx_course(course, progress_callback=progress_cb)
+            result = self.client.hit_rate_maxx_course(
+                course, progress_callback=self._maxx_progress_cb(course["name"]),
+            )
             if "error" in result:
                 self.call_from_thread(
                     self._maxx_log,
-                    f"[red]{course['name']}: {result['error']}[/red]",
+                    f"  [red]Couldn't maxx this one: {result['error']}[/red]",
                 )
                 continue
+
+            self._render_course_summary(course["name"], result, indent="  ")
             total_marked += result.get("marked", 0)
-            total_skipped += result.get("skipped", 0)
             total_failed += result.get("failed", 0)
-            self.call_from_thread(
-                self._maxx_log,
-                f"[bold {PRIMARY}]{course['name']}: "
-                f"{result.get('marked', 0)} marked, "
-                f"{result.get('skipped', 0)} already complete, "
-                f"{result.get('failed', 0)} failed[/bold {PRIMARY}]",
-            )
+            if result.get("percent_after", 0) >= 100:
+                courses_at_100 += 1
 
         self.call_from_thread(self._maxx_set_progress, 100)
         self.call_from_thread(
-            self._maxx_set_status,
-            f"[bold green]Done![/bold green] {total_marked} marked, "
-            f"{total_skipped} already complete, {total_failed} failed "
-            f"across {len(courses)} courses.",
+            self._maxx_log,
+            f"\n[bold green]All done.[/bold green] "
+            f"[bold]{courses_at_100}/{len(courses)}[/bold] courses are now at 100%. "
+            f"[{MUTED}]({total_marked} newly viewed, {total_failed} failed)[/{MUTED}]",
         )
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[bold green]Finished.[/bold green] {courses_at_100} of {len(courses)} courses at 100%.",
+        )
+
+    def _render_course_summary(self, name: str, result: dict, indent: str = "") -> None:
+        before = result.get("percent_before", 0)
+        after = result.get("percent_after", 0)
+        marked = result.get("marked", 0)
+        failed = result.get("failed", 0)
+        if marked == 0 and failed == 0:
+            self.call_from_thread(
+                self._maxx_log,
+                f"{indent}[{MUTED}]Already 100%, nothing to do.[/{MUTED}]",
+            )
+            return
+        bits = [f"[bold green]{after}%[/bold green]"]
+        if before != after:
+            bits.insert(0, f"[{MUTED}]{before}% →[/{MUTED}]")
+        line = f"{indent}{' '.join(bits)}  [{MUTED}]· {marked} newly viewed"
+        if failed:
+            line += f", {failed} failed"
+        line += "[/]"
+        self.call_from_thread(self._maxx_log, line)
 
     def _switch_to_maxx_view_single(self, course: dict) -> None:
         view = self.query_one("#view-maxx", MaxxView)
