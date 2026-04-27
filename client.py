@@ -640,3 +640,168 @@ class MydyClient:
             }
         except Exception as e:
             return {"filename": url.split("/")[-1], "status": "error", "error": str(e)}
+
+    # -- hit rate maxxer ---------------------------------------------------
+    #
+    # Marks activities as "completed" via the legacy Moodle togglecompletion
+    # endpoint. Verified against mydy.dypatil.edu:
+    #   POST /rait/course/togglecompletion.php
+    #   form: id=<cmid>&sesskey=<10ch>&modulename=<name>&completionstate=1
+    # Only activities whose course-page tile contains a togglecompletion form
+    # (i.e. manual completion) can be flipped this way. Auto-completion items
+    # (quiz pass / forum post) cannot.
+
+    @staticmethod
+    def _extract_sesskey(text: str) -> str | None:
+        m = re.search(r'"sesskey":"([^"]+)"', text) or re.search(r'sesskey=([A-Za-z0-9]+)', text)
+        return m.group(1) if m else None
+
+    @staticmethod
+    def _parse_togglecompletion_forms(soup: BeautifulSoup) -> list[dict]:
+        """Return [{cmid, modulename, sesskey, completionstate, name}, ...] for every
+        manual-completion activity on the course page. ``completionstate`` is the
+        value the form will POST when clicked — '1' to mark complete, '0' to unmark.
+        """
+        out: list[dict] = []
+        for li in soup.find_all("li", class_=re.compile(r"\bactivity\b")):
+            form = li.find("form", class_=re.compile(r"togglecompletion"))
+            if not form:
+                continue
+            inputs = {inp.get("name"): inp.get("value", "")
+                      for inp in form.find_all("input") if inp.get("name")}
+            cmid = inputs.get("id") or ""
+            if not cmid:
+                continue
+            out.append({
+                "cmid": cmid,
+                "sesskey": inputs.get("sesskey", ""),
+                "modulename": inputs.get("modulename", ""),
+                "completionstate": inputs.get("completionstate", "1"),
+                "name": MydyClient._get_activity_name(li),
+            })
+        return out
+
+    def mark_activity_complete(self, cmid: str, sesskey: str,
+                               modulename: str = "") -> dict:
+        if not self.logged_in:
+            return {"cmid": cmid, "status": "error", "error": "Not logged in."}
+        self._rate_limit("activity")
+        try:
+            resp = self.session.post(
+                f"{RAIT_URL}/course/togglecompletion.php",
+                data={
+                    "id": cmid,
+                    "sesskey": sesskey,
+                    "modulename": modulename,
+                    "completionstate": "1",
+                },
+                allow_redirects=True,
+            )
+            ok = resp.status_code in (200, 302, 303)
+            return {
+                "cmid": cmid,
+                "modulename": modulename,
+                "status": "marked" if ok else "error",
+                "http_status": resp.status_code,
+            }
+        except requests.RequestException as e:
+            return {"cmid": cmid, "modulename": modulename,
+                    "status": "error", "error": str(e)}
+
+    def hit_rate_maxx_course(self, course: dict, progress_callback=None) -> dict:
+        """Mark every manual-completion activity on a single course as completed.
+
+        Items whose form already shows ``completionstate=0`` are already complete
+        in Moodle's eyes (the form posts the *next* state on click) and are skipped.
+        """
+        if not self.logged_in:
+            return {"course_name": course.get("name", ""), "error": "Not logged in."}
+        self._rate_limit("course")
+        try:
+            resp = self.session.get(course["url"])
+            soup = BeautifulSoup(resp.text, "html.parser")
+        except requests.RequestException as e:
+            return {"course_name": course.get("name", ""), "error": str(e)}
+
+        course_name = self._extract_course_name(soup)
+        forms = self._parse_togglecompletion_forms(soup)
+        page_sesskey = self._extract_sesskey(resp.text)
+
+        marked: list[dict] = []
+        skipped: list[dict] = []
+        failed: list[dict] = []
+
+        for i, f in enumerate(forms):
+            if progress_callback:
+                progress_callback("activity", {"index": i + 1, "total": len(forms),
+                                               "name": f["name"], "cmid": f["cmid"]})
+            # If the form's completionstate is "0" the activity is ALREADY
+            # marked complete — clicking would unmark it. Skip.
+            if f["completionstate"] == "0":
+                skipped.append({"cmid": f["cmid"], "name": f["name"],
+                                "reason": "already_complete"})
+                if progress_callback:
+                    progress_callback("item_done",
+                                      {"name": f["name"], "status": "skipped"})
+                continue
+
+            sesskey = f["sesskey"] or page_sesskey or ""
+            if not sesskey:
+                failed.append({"cmid": f["cmid"], "name": f["name"],
+                               "error": "no_sesskey"})
+                if progress_callback:
+                    progress_callback("item_done",
+                                      {"name": f["name"], "status": "error",
+                                       "error": "no_sesskey"})
+                continue
+
+            r = self.mark_activity_complete(f["cmid"], sesskey, f["modulename"])
+            r["name"] = f["name"]
+            if r.get("status") == "marked":
+                marked.append(r)
+            else:
+                failed.append(r)
+            if progress_callback:
+                progress_callback("item_done", r)
+
+        return {
+            "course_name": course_name,
+            "manual_activities": len(forms),
+            "marked": len(marked),
+            "skipped": len(skipped),
+            "failed": len(failed),
+            "items": {"marked": marked, "skipped": skipped, "failed": failed},
+        }
+
+    def hit_rate_maxx_all(self, courses: list[dict] | None = None,
+                          progress_callback=None) -> dict:
+        if not self.logged_in:
+            return {"error": "Not logged in."}
+        if courses is None:
+            listing = self.list_courses()
+            if isinstance(listing, str):
+                return {"error": listing}
+            courses = listing
+
+        results: list[dict] = []
+        total_marked = total_skipped = total_failed = 0
+
+        for idx, co in enumerate(courses):
+            if progress_callback:
+                progress_callback("course", {"index": idx + 1, "total": len(courses),
+                                             "course": co})
+            r = self.hit_rate_maxx_course(co, progress_callback=progress_callback)
+            results.append(r)
+            total_marked += r.get("marked", 0)
+            total_skipped += r.get("skipped", 0)
+            total_failed += r.get("failed", 0)
+
+        return {
+            "summary": {
+                "courses_processed": len(results),
+                "total_marked": total_marked,
+                "total_skipped": total_skipped,
+                "total_failed": total_failed,
+            },
+            "courses": results,
+        }

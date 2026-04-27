@@ -1020,5 +1020,146 @@ def get_attendance() -> dict | str:
     }
 
 
+@mcp.tool()
+def hit_rate_maxxer(course_ids: list[str] | None = None) -> dict:
+    """
+    Mark every manual-completion activity in the given courses as completed.
+
+    Posts to the legacy Moodle endpoint /rait/course/togglecompletion.php with
+    completionstate=1 for each activity that is currently NOT complete. Activities
+    whose completion is auto-tracked (quiz pass / forum post / etc.) cannot be
+    flipped this way and are not touched.
+
+    Must be logged in first (call login tool). Use list_courses to see available
+    course IDs.
+
+    Args:
+        course_ids: List of course IDs to maxx. If None/empty, maxxes ALL courses.
+
+    Returns:
+        Summary with per-course counts of activities marked, skipped (already
+        complete), and failed.
+    """
+    if not _logged_in:
+        return {"error": "Not logged in. Call the login tool first."}
+
+    courses_result = list_courses()
+    if isinstance(courses_result, str):
+        return {"error": courses_result}
+    all_courses: list[dict] = courses_result
+
+    if course_ids:
+        id_set = set(course_ids)
+        selected = [c for c in all_courses if c["id"] in id_set]
+        missing = id_set - {c["id"] for c in selected}
+        if missing:
+            return {"error": f"Course IDs not found: {', '.join(missing)}. Use list_courses to see available IDs."}
+    else:
+        selected = all_courses
+
+    if not selected:
+        return {"error": "No courses to maxx."}
+
+    session = _get_session()
+    results: list[dict] = []
+    total_marked = total_skipped = total_failed = 0
+
+    for course in selected:
+        results.append(_maxx_single_course(session, course))
+
+    for r in results:
+        total_marked += r.get("marked", 0)
+        total_skipped += r.get("skipped", 0)
+        total_failed += r.get("failed", 0)
+
+    return {
+        "summary": {
+            "courses_processed": len(results),
+            "total_marked": total_marked,
+            "total_skipped": total_skipped,
+            "total_failed": total_failed,
+        },
+        "courses": results,
+    }
+
+
+def _maxx_single_course(session: requests.Session, course: dict) -> dict:
+    """Mark every manual-completion activity in a single course as completed."""
+    _rate_limit("course")
+    try:
+        resp = session.get(course["url"])
+        soup = BeautifulSoup(resp.text, "html.parser")
+    except requests.RequestException as e:
+        return {"course_name": course.get("name", ""), "error": str(e),
+                "marked": 0, "skipped": 0, "failed": 0}
+
+    course_name = _extract_course_name(soup)
+    forms: list[dict] = []
+    for li in soup.find_all("li", class_=re.compile(r"\bactivity\b")):
+        form = li.find("form", class_=re.compile(r"togglecompletion"))
+        if not form:
+            continue
+        inputs = {inp.get("name"): inp.get("value", "")
+                  for inp in form.find_all("input") if inp.get("name")}
+        cmid = inputs.get("id") or ""
+        if not cmid:
+            continue
+        forms.append({
+            "cmid": cmid,
+            "sesskey": inputs.get("sesskey", ""),
+            "modulename": inputs.get("modulename", ""),
+            "completionstate": inputs.get("completionstate", "1"),
+            "name": _get_activity_name(li),
+        })
+
+    sesskey_match = re.search(r'"sesskey":"([^"]+)"', resp.text) or \
+                    re.search(r'sesskey=([A-Za-z0-9]+)', resp.text)
+    page_sesskey = sesskey_match.group(1) if sesskey_match else None
+
+    marked: list[dict] = []
+    skipped: list[dict] = []
+    failed: list[dict] = []
+
+    for f in forms:
+        # completionstate=0 means the activity is currently complete (clicking
+        # would unmark). Skip those.
+        if f["completionstate"] == "0":
+            skipped.append({"cmid": f["cmid"], "name": f["name"],
+                            "reason": "already_complete"})
+            continue
+
+        sesskey = f["sesskey"] or page_sesskey or ""
+        if not sesskey:
+            failed.append({"cmid": f["cmid"], "name": f["name"],
+                           "error": "no_sesskey"})
+            continue
+
+        _rate_limit("activity")
+        try:
+            r = session.post(
+                "https://mydy.dypatil.edu/rait/course/togglecompletion.php",
+                data={"id": f["cmid"], "sesskey": sesskey,
+                      "modulename": f["modulename"], "completionstate": "1"},
+                allow_redirects=True,
+            )
+            if r.status_code in (200, 302, 303):
+                marked.append({"cmid": f["cmid"], "name": f["name"],
+                               "http_status": r.status_code})
+            else:
+                failed.append({"cmid": f["cmid"], "name": f["name"],
+                               "http_status": r.status_code})
+        except requests.RequestException as e:
+            failed.append({"cmid": f["cmid"], "name": f["name"], "error": str(e)})
+
+    return {
+        "course_name": course_name,
+        "manual_activities": len(forms),
+        "marked": len(marked),
+        "skipped": len(skipped),
+        "failed": len(failed),
+        "items": {"marked": marked, "skipped": skipped, "failed": failed},
+    }
+
+
 if __name__ == "__main__":
     mcp.run()
