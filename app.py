@@ -52,12 +52,21 @@ CURRENT_SEM_COUNT = 8  # top N courses by ID = current semester
 # ---------------------------------------------------------------------------
 
 class LoginView(Middle):
-    """Login screen with username/password inputs."""
+    """Login screen with username/password inputs and clear failure attribution."""
 
     class LoggedIn(Message):
         def __init__(self, result: dict) -> None:
             self.result = result
             super().__init__()
+
+    class RetryRequested(Message):
+        """User asked to retry login with the same credentials after a server failure."""
+        def __init__(self) -> None:
+            super().__init__()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._last_creds: dict | None = None  # remembered for one-tap retry
 
     def compose(self) -> ComposeResult:
         with Center():
@@ -67,29 +76,128 @@ class LoginView(Middle):
                 yield Static("", classes="spacer-sm")
                 yield Input(placeholder="Username / Email", id="login-user")
                 yield Input(placeholder="Password", password=True, id="login-pass")
+                yield Static("", id="login-status")
                 yield Static("", id="login-error")
-                yield Button("Login", id="btn-login", variant="warning")
+                with Horizontal(id="login-buttons"):
+                    yield Button("Login", id="btn-login", variant="warning")
+                    yield Button("Retry", id="btn-login-retry", variant="default")
+
+    def on_mount(self) -> None:
+        # Hide retry button until there is something to retry
+        self.query_one("#btn-login-retry", Button).display = False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-login":
-            self._do_login()
+            self._submit_new_login()
+        elif event.button.id == "btn-login-retry":
+            self._submit_retry()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        self._do_login()
+        self._submit_new_login()
 
-    def _do_login(self) -> None:
+    def _submit_new_login(self) -> None:
         user = self.query_one("#login-user", Input).value.strip()
         pwd = self.query_one("#login-pass", Input).value.strip()
         if not user or not pwd:
-            self.query_one("#login-error", Static).update(f"[red]Please enter both username and password.[/red]")
+            self._set_error(
+                kind="no_credentials",
+                title="Missing details",
+                body="Please enter both username and password.",
+            )
             return
-        self.query_one("#login-error", Static).update(f"[{MUTED}]Logging in...[/]")
-        self.query_one("#btn-login", Button).disabled = True
-        self.post_message(self.LoggedIn({"username": user, "password": pwd}))
+        self._last_creds = {"username": user, "password": pwd}
+        self._lock_for_attempt()
+        self.post_message(self.LoggedIn(self._last_creds))
 
-    def show_error(self, msg: str) -> None:
-        self.query_one("#login-error", Static).update(f"[red]{msg}[/red]")
-        self.query_one("#btn-login", Button).disabled = False
+    def _submit_retry(self) -> None:
+        if not self._last_creds:
+            self._submit_new_login()
+            return
+        self._lock_for_attempt()
+        self.post_message(self.RetryRequested())
+
+    def _lock_for_attempt(self) -> None:
+        self.query_one("#login-error", Static).update("")
+        self.query_one("#login-status", Static).update(
+            f"[{MUTED}]Reaching MyDy…[/{MUTED}]"
+        )
+        self.query_one("#btn-login", Button).disabled = True
+        self.query_one("#btn-login-retry", Button).disabled = True
+
+    # -- status messages from the worker ------------------------------------
+
+    def show_attempt(self, attempt: int, max_attempts: int) -> None:
+        if attempt <= 1:
+            text = f"[{MUTED}]Reaching MyDy…[/{MUTED}]"
+        else:
+            text = (
+                f"[{MUTED}]MyDy didn't respond. "
+                f"Trying again ([bold]attempt {attempt}/{max_attempts}[/bold])…[/{MUTED}]"
+            )
+        self.query_one("#login-status", Static).update(text)
+
+    def show_error(self, result: dict) -> None:
+        kind = result.get("kind", "lms_unexpected")
+        retried = result.get("retried", 0)
+
+        # Friendly content per failure kind
+        if kind == "bad_credentials":
+            title = "Login failed"
+            body = (
+                "Your username or password didn't work. "
+                "Double-check and try again — this isn't a MyDy issue."
+            )
+            color = "red"
+        elif kind == "lms_down":
+            title = "MyDy is having issues"
+            body = (
+                "Couldn't sign you in because [bold]mydy.dypatil.edu[/bold] isn't "
+                "responding properly. This is on their end, not yours. "
+                "Wait a minute and hit [bold]Retry[/bold]."
+            )
+            color = PRIMARY
+        elif kind == "network_error":
+            title = "Can't reach MyDy"
+            body = (
+                "Looks like a network problem on this device. "
+                "Check your internet connection and hit [bold]Retry[/bold]."
+            )
+            color = MUTED
+        elif kind == "no_credentials":
+            title = "Missing details"
+            body = result.get("message", "Please enter both username and password.")
+            color = "red"
+        else:  # lms_unexpected / unknown
+            title = "MyDy responded weirdly"
+            body = (
+                "MyDy answered, but not in a way we understood. "
+                "Try [bold]Retry[/bold] — or wait a minute if it keeps happening."
+            )
+            color = PRIMARY
+
+        self._set_error(kind, title, body, color, retried=retried,
+                        detail=result.get("detail"))
+
+    def _set_error(self, kind: str, title: str, body: str,
+                   color: str = "red", retried: int = 0, detail: str | None = None) -> None:
+        retried_note = ""
+        if retried:
+            retried_note = (
+                f"  [{MUTED}](we already tried {retried + 1} time"
+                f"{'s' if retried != 0 else ''})[/{MUTED}]"
+            )
+        # Tiny technical line at the bottom — useful but not scary
+        detail_line = f"\n[{MUTED}]Details: {detail}[/{MUTED}]" if detail else ""
+        self.query_one("#login-status", Static).update("")
+        self.query_one("#login-error", Static).update(
+            f"[bold {color}]{title}[/bold {color}]{retried_note}\n{body}{detail_line}"
+        )
+        # Show / hide retry depending on whether retrying makes sense
+        retry_btn = self.query_one("#btn-login-retry", Button)
+        login_btn = self.query_one("#btn-login", Button)
+        login_btn.disabled = False
+        retry_btn.disabled = False
+        retry_btn.display = kind in ("lms_down", "network_error", "lms_unexpected")
 
 
 # ---------------------------------------------------------------------------
@@ -306,6 +414,7 @@ class CourseDetailView(Vertical):
             yield Button("\u2190 Back", id="btn-back", variant="default")
             yield Static("", id="course-title")
             yield Button("Download Materials", id="btn-dl-course", variant="warning")
+            yield Button("Bring to 100%", id="btn-maxx-course", variant="warning")
         with TabbedContent(id="course-tabs"):
             with TabPane("Content", id="tab-content"):
                 yield RichLog(id="content-log", highlight=True, markup=True)
@@ -542,6 +651,194 @@ class BulkDownloadView(VerticalScroll):
 
 
 # ---------------------------------------------------------------------------
+# Hit Rate Maxxer View
+# ---------------------------------------------------------------------------
+
+class MaxxView(VerticalScroll):
+    """Multi-select courses to bring their Course Progress to 100%.
+
+    Two-step flow: Preview → Confirm. The Preview phase is read-only and
+    just fetches the customview.php data for each selected course so the
+    user can see exactly which activities will be opened (and back out if
+    they picked a course by mistake — there's no undo on MyDy's side).
+    """
+
+    class PreviewRequested(Message):
+        def __init__(self, courses: list[dict]) -> None:
+            self.courses = courses
+            super().__init__()
+
+    class MaxxConfirmed(Message):
+        def __init__(self, courses: list[dict]) -> None:
+            self.courses = courses
+            super().__init__()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._selected: set[str] = set()
+        self._courses: list[dict] = []
+        self._previewing: list[dict] = []  # courses awaiting confirm
+
+    def compose(self) -> ComposeResult:
+        yield Static(f"[bold {PRIMARY}]Hit Rate Maxxer[/]", id="mxx-title")
+        yield Static(
+            f"[{MUTED}]Brings your [bold]Course Progress[/bold] to 100% by "
+            f"opening every unviewed activity for you. "
+            f"Pick the courses you want maxxed — you'll see a preview before "
+            f"anything is actually opened.[/{MUTED}]"
+        )
+        yield Static("", classes="spacer-sm")
+        yield Static("", id="mxx-selection-count")
+        dt = DataTable(id="mxx-table", cursor_type="row")
+        dt.add_column("", key="sel")
+        dt.add_column("Course", key="name")
+        yield dt
+        with Horizontal(id="mxx-actions"):
+            yield Button("Select All", id="btn-mxx-sel-all", variant="default")
+            yield Button("Clear", id="btn-mxx-sel-none", variant="default")
+            yield Button("Preview", id="btn-mxx-run", variant="warning")
+            yield Button("Confirm", id="btn-mxx-confirm", variant="warning")
+            yield Button("Cancel", id="btn-mxx-cancel", variant="default")
+        yield Static("", classes="spacer-sm")
+        yield Static("", id="mxx-status")
+        yield ProgressBar(id="mxx-progress", total=100, show_eta=False)
+        yield RichLog(id="mxx-log", highlight=True, markup=True)
+
+    def on_mount(self) -> None:
+        # Confirm + Cancel are hidden until a preview has been fetched.
+        self.query_one("#btn-mxx-confirm", Button).display = False
+        self.query_one("#btn-mxx-cancel", Button).display = False
+
+    def populate(self, courses: list[dict]) -> None:
+        self._courses = courses
+        self._selected.clear()
+        table = self.query_one("#mxx-table", DataTable)
+        table.clear()
+        for c in courses:
+            table.add_row(
+                Text.from_markup(f"[{MUTED}]☐[/{MUTED}]"),
+                c["name"], key=c["id"],
+            )
+        self._update_count()
+
+    def _update_count(self) -> None:
+        n = len(self._selected)
+        if n == 0:
+            self.query_one("#mxx-selection-count", Static).update(
+                f"[{MUTED}]Tap a course to select it.[/{MUTED}]"
+            )
+        else:
+            word = "course" if n == 1 else "courses"
+            self.query_one("#mxx-selection-count", Static).update(
+                f"[bold {PRIMARY}]{n}[/bold {PRIMARY}] [{MUTED}]{word} selected — hit "
+                f"[bold]Preview[/bold] to see what will be viewed[/{MUTED}]"
+            )
+
+    def _set_row_check(self, table: DataTable, row_key, checked: bool) -> None:
+        if checked:
+            table.update_cell(row_key, "sel", Text.from_markup(f"[{PRIMARY}]☑[/{PRIMARY}]"))
+        else:
+            table.update_cell(row_key, "sel", Text.from_markup(f"[{MUTED}]☐[/{MUTED}]"))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        if event.data_table.id != "mxx-table":
+            return
+        table = self.query_one("#mxx-table", DataTable)
+        row_key = event.row_key
+        cid = str(row_key.value)
+        if cid in self._selected:
+            self._selected.discard(cid)
+            self._set_row_check(table, row_key, False)
+        else:
+            self._selected.add(cid)
+            self._set_row_check(table, row_key, True)
+        self._update_count()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        bid = event.button.id
+        if bid == "btn-mxx-run" and self._selected:
+            selected = [c for c in self._courses if c["id"] in self._selected]
+            self._previewing = selected
+            self._enter_preview_mode()
+            self.post_message(self.PreviewRequested(courses=selected))
+        elif bid == "btn-mxx-confirm" and self._previewing:
+            self.post_message(self.MaxxConfirmed(courses=list(self._previewing)))
+            self._enter_running_mode()
+        elif bid == "btn-mxx-cancel":
+            self._previewing = []
+            self._exit_preview_mode()
+            self.set_status(f"[{MUTED}]Cancelled. Nothing was opened.[/{MUTED}]")
+        elif bid == "btn-mxx-sel-all":
+            table = self.query_one("#mxx-table", DataTable)
+            self._selected.clear()
+            for c in self._courses:
+                self._selected.add(c["id"])
+            for rk in table.rows:
+                self._set_row_check(table, rk, True)
+            self._update_count()
+        elif bid == "btn-mxx-sel-none":
+            table = self.query_one("#mxx-table", DataTable)
+            self._selected.clear()
+            for rk in table.rows:
+                self._set_row_check(table, rk, False)
+            self._update_count()
+
+    # -- preview / confirm UI state ----------------------------------------
+
+    def _enter_preview_mode(self) -> None:
+        run_btn = self.query_one("#btn-mxx-run", Button)
+        confirm_btn = self.query_one("#btn-mxx-confirm", Button)
+        cancel_btn = self.query_one("#btn-mxx-cancel", Button)
+        run_btn.display = False
+        confirm_btn.display = True
+        confirm_btn.disabled = True  # enabled once preview data is in
+        confirm_btn.label = "Confirm — checking…"
+        cancel_btn.display = True
+        cancel_btn.disabled = False
+
+    def preview_ready(self, total_pending: int) -> None:
+        """Called by the worker once preview data has been fetched."""
+        confirm_btn = self.query_one("#btn-mxx-confirm", Button)
+        if total_pending == 0:
+            # Nothing to do — drop back to picker mode
+            self._previewing = []
+            self._exit_preview_mode()
+            return
+        confirm_btn.disabled = False
+        word = "activity" if total_pending == 1 else "activities"
+        confirm_btn.label = f"Confirm — open {total_pending} {word}"
+
+    def _enter_running_mode(self) -> None:
+        # User has confirmed — disable everything to avoid double clicks
+        for bid in ("btn-mxx-confirm", "btn-mxx-cancel"):
+            self.query_one(f"#{bid}", Button).disabled = True
+
+    def _exit_preview_mode(self) -> None:
+        self.query_one("#btn-mxx-run", Button).display = True
+        self.query_one("#btn-mxx-confirm", Button).display = False
+        self.query_one("#btn-mxx-cancel", Button).display = False
+        self._previewing = []
+
+    def reset_to_picker(self) -> None:
+        """Called after a maxx run completes — return to the picker."""
+        self._exit_preview_mode()
+
+    def set_status(self, msg: str) -> None:
+        self.query_one("#mxx-status", Static).update(msg)
+
+    def set_progress(self, value: float) -> None:
+        self.query_one("#mxx-progress", ProgressBar).update(total=100, progress=value)
+
+    def log(self, msg: str) -> None:
+        self.query_one("#mxx-log", RichLog).write(msg)
+
+    def reset_log(self) -> None:
+        self.query_one("#mxx-log", RichLog).clear()
+        self.query_one("#mxx-status", Static).update("")
+        self.query_one("#mxx-progress", ProgressBar).update(total=100, progress=0)
+
+
+# ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
 
@@ -549,6 +846,7 @@ NAV_ITEMS = [
     ("nav-dashboard", "Dashboard"),
     ("nav-all-courses", "All Courses"),
     ("nav-bulk-dl", "Bulk Download"),
+    ("nav-maxx", "Hit Rate Maxxer"),
 ]
 
 
@@ -661,6 +959,12 @@ class MydyApp(App):
         width: 100%;
         margin: 0 0 1 0;
     }}
+    #login-status {{
+        text-align: center;
+        width: 100%;
+        height: auto;
+        margin: 1 0 0 0;
+    }}
     #login-error {{
         text-align: center;
         width: 100%;
@@ -671,11 +975,20 @@ class MydyApp(App):
         width: 100%;
         margin: 1 0 0 0;
     }}
-    #btn-login {{
+    #login-buttons {{
         width: 100%;
+        height: auto;
         margin: 1 0 0 0;
+    }}
+    #btn-login {{
+        width: 1fr;
         background: {PRIMARY};
         color: {BG};
+    }}
+    #btn-login-retry {{
+        width: auto;
+        min-width: 10;
+        margin: 0 0 0 1;
     }}
     .spacer-sm {{
         height: 1;
@@ -832,6 +1145,7 @@ class MydyApp(App):
                     yield AllCoursesView(id="view-all-courses")
                     yield CourseDetailView(id="view-course")
                     yield BulkDownloadView(id="view-bulk-dl")
+                    yield MaxxView(id="view-maxx")
                     yield Static("", id="view-error")
         yield Footer()
 
@@ -846,25 +1160,46 @@ class MydyApp(App):
     # -- login -------------------------------------------------------------
 
     def on_login_view_logged_in(self, event: LoginView.LoggedIn) -> None:
+        self._last_creds = event.result
         self._do_login(event.result["username"], event.result["password"])
+
+    def on_login_view_retry_requested(self, event: LoginView.RetryRequested) -> None:
+        creds = getattr(self, "_last_creds", None)
+        if creds:
+            self._do_login(creds["username"], creds["password"])
 
     @work(thread=True, exclusive=True, group="login")
     def _do_login(self, username: str, password: str) -> None:
-        result = self.client.login(username, password)
-        if result["success"]:
+        def on_retry(info: dict) -> None:
+            self.call_from_thread(self._on_login_retry, info)
+
+        result = self.client.login(username, password, on_retry=on_retry)
+        if result.get("success"):
             self.call_from_thread(self._on_login_success, result)
         else:
             self.call_from_thread(self._on_login_failure, result)
 
+    def _on_login_retry(self, info: dict) -> None:
+        view = self.query_one("#view-login", LoginView)
+        view.show_attempt(info.get("attempt", 1), info.get("max_attempts", 3))
+
     def _on_login_success(self, result: dict) -> None:
-        self.sub_title = result["message"]
+        self.sub_title = result.get("message", "Logged in")
         self._load_dashboard()
 
     def _on_login_failure(self, result: dict) -> None:
-        self.sub_title = "Login Failed"
+        kind = result.get("kind", "lms_unexpected")
+        if kind == "bad_credentials":
+            self.sub_title = "Login failed"
+        elif kind in ("lms_down", "lms_unexpected"):
+            self.sub_title = "MyDy is having issues"
+        elif kind == "network_error":
+            self.sub_title = "No connection"
+        else:
+            self.sub_title = "Couldn't sign in"
         cs = self.query_one("#content", ContentSwitcher)
         cs.current = "view-login"
-        self.query_one("#view-login", LoginView).show_error(result["message"])
+        self.query_one("#view-login", LoginView).show_error(result)
 
     # -- dashboard ---------------------------------------------------------
 
@@ -955,6 +1290,14 @@ class MydyApp(App):
             else:
                 self._show_error("No courses loaded yet.")
 
+        elif item_id == "nav-maxx":
+            if self._courses:
+                view = self.query_one("#view-maxx", MaxxView)
+                view.populate(self._courses)
+                cs.current = "view-maxx"
+            else:
+                self._show_error("No courses loaded yet.")
+
     def on_dashboard_view_course_clicked(self, event: DashboardView.CourseClicked) -> None:
         self._open_course(event.course)
 
@@ -968,6 +1311,9 @@ class MydyApp(App):
 
         elif event.button.id == "btn-dl-course" and self._current_course:
             self._do_single_download(self._current_course)
+
+        elif event.button.id == "btn-maxx-course" and self._current_course:
+            self._do_single_maxx(self._current_course)
 
     # -- downloads ---------------------------------------------------------
 
@@ -1054,6 +1400,269 @@ class MydyApp(App):
             f"[bold green]Done![/bold green] {total_files} files, {total_failed} failed "
             f"across {len(courses)} courses.",
         )
+
+    # -- hit rate maxxer ---------------------------------------------------
+
+    def on_maxx_view_preview_requested(self, event: MaxxView.PreviewRequested) -> None:
+        self._do_maxx_preview(event.courses)
+
+    def on_maxx_view_maxx_confirmed(self, event: MaxxView.MaxxConfirmed) -> None:
+        self._do_bulk_maxx(event.courses)
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_maxx_preview(self, courses: list[dict]) -> None:
+        """Fetch progress for each selected course and show what would be opened."""
+        self.call_from_thread(self._maxx_reset)
+        word = "course" if len(courses) == 1 else "courses"
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[{MUTED}]Checking {len(courses)} {word}…[/{MUTED}]",
+        )
+        self.call_from_thread(
+            self._maxx_log,
+            f"[bold]Preview — {len(courses)} {word} selected[/bold]\n",
+        )
+
+        total_pending = 0
+        any_error = False
+        for idx, course in enumerate(courses):
+            cid = course.get("id") or self._extract_course_id(course)
+            self.call_from_thread(
+                self._maxx_set_progress,
+                ((idx + 1) / max(1, len(courses))) * 100,
+            )
+            progress = self.client.get_course_progress(cid)
+            if "error" in progress:
+                any_error = True
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"[red]Couldn't check {course['name']}: "
+                    f"{progress['error']}[/red]",
+                )
+                continue
+            pending = progress.get("not_viewed", 0)
+            viewed = progress.get("viewed", 0)
+            total = progress.get("total", 0)
+            pct = progress.get("percent", 0)
+            total_pending += pending
+
+            if pending == 0:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"  [{MUTED}]{course['name']}: already 100% — nothing to do[/{MUTED}]",
+                )
+                continue
+
+            verb = "activity" if pending == 1 else "activities"
+            self.call_from_thread(
+                self._maxx_log,
+                f"  [bold {PRIMARY}]{course['name']}[/bold {PRIMARY}] "
+                f"[{MUTED}]· currently {pct}% ({viewed}/{total})[/{MUTED}] "
+                f"[bold]→ {pending} {verb} would be opened[/bold]",
+            )
+            for item in progress["pending"][:5]:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"      [{MUTED}]· {item['name']}[/{MUTED}]",
+                )
+            if len(progress["pending"]) > 5:
+                more = len(progress["pending"]) - 5
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"      [{MUTED}]· … and {more} more[/{MUTED}]",
+                )
+
+        self.call_from_thread(self._maxx_set_progress, 100)
+
+        if total_pending == 0 and not any_error:
+            self.call_from_thread(
+                self._maxx_set_status,
+                "[bold green]Already at 100%.[/bold green] "
+                f"[{MUTED}]Nothing would change.[/{MUTED}]",
+            )
+        else:
+            verb = "activity" if total_pending == 1 else "activities"
+            self.call_from_thread(
+                self._maxx_set_status,
+                f"[bold]Ready to open [bold {PRIMARY}]{total_pending}[/bold {PRIMARY}] "
+                f"{verb} in total.[/bold] "
+                f"[{MUTED}]Hit Confirm to proceed, or Cancel to back out.[/{MUTED}]",
+            )
+
+        # Tell the view how many would be opened so it can label the Confirm button
+        self.call_from_thread(self._maxx_view_preview_ready, total_pending)
+
+    def _maxx_view_preview_ready(self, total_pending: int) -> None:
+        self.query_one("#view-maxx", MaxxView).preview_ready(total_pending)
+
+    @staticmethod
+    def _extract_course_id(course: dict) -> str:
+        cid = str(course.get("id") or "")
+        if cid:
+            return cid
+        import re as _re
+        m = _re.search(r"id=(\d+)", course.get("url", ""))
+        return m.group(1) if m else ""
+
+    def _maxx_progress_cb(self, course_name: str):
+        """Build a progress_callback that emits friendly TUI updates for one course."""
+        state = {"pending": 0}
+
+        def cb(event_type, data):
+            if event_type == "course_start":
+                state["pending"] = data.get("pending_count", 0)
+                pct_before = data.get("percent_before", 0)
+                total = data.get("total", 0)
+                if state["pending"] == 0:
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [{MUTED}]Already at 100% — nothing to do here.[/{MUTED}]",
+                    )
+                else:
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [{MUTED}]Currently {pct_before}% ({total - state['pending']}/{total}). "
+                        f"Opening {state['pending']} activit"
+                        f"{'y' if state['pending'] == 1 else 'ies'}...[/{MUTED}]",
+                    )
+            elif event_type == "activity":
+                total = data.get("total", 0) or 1
+                pct = (data["index"] / total) * 100
+                self.call_from_thread(self._maxx_set_progress, pct)
+                self.call_from_thread(
+                    self._maxx_set_status,
+                    f"[bold]{course_name}[/bold] [{MUTED}]· "
+                    f"{data['index']}/{total} · viewing[/{MUTED}] {data.get('name','')}",
+                )
+            elif event_type == "item_done":
+                name = data.get("name", "?")
+                st = data.get("status", "")
+                if st == "marked":
+                    self.call_from_thread(self._maxx_log, f"  [green]✓[/green] {name}")
+                else:
+                    err = data.get("error", data.get("http_status", "?"))
+                    self.call_from_thread(
+                        self._maxx_log,
+                        f"  [red]✗[/red] {name} [{MUTED}]({err})[/{MUTED}]",
+                    )
+        return cb
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_single_maxx(self, course: dict) -> None:
+        self.call_from_thread(self._switch_to_maxx_view_single, course)
+        self.call_from_thread(self._maxx_set_status,
+                              f"[bold]{course['name']}[/bold] [{MUTED}]· checking progress…[/{MUTED}]")
+        self.call_from_thread(self._maxx_log,
+                              f"[bold {PRIMARY}]{course['name']}[/bold {PRIMARY}]")
+
+        result = self.client.hit_rate_maxx_course(
+            course, progress_callback=self._maxx_progress_cb(course["name"]),
+        )
+        self.call_from_thread(self._maxx_set_progress, 100)
+
+        if "error" in result:
+            self.call_from_thread(
+                self._maxx_set_status,
+                f"[bold red]Couldn't maxx {course['name']}:[/bold red] {result['error']}",
+            )
+            return
+
+        self._render_course_summary(course["name"], result)
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[bold green]Done![/bold green] {course['name']} is now "
+            f"[bold]{result.get('percent_after', 0)}%[/bold] viewed.",
+        )
+
+    @work(thread=True, exclusive=True, group="maxx")
+    def _do_bulk_maxx(self, courses: list[dict]) -> None:
+        self.call_from_thread(self._maxx_reset)
+        self.call_from_thread(
+            self._maxx_log,
+            f"[bold]Maxxing {len(courses)} course{'s' if len(courses) != 1 else ''}…[/bold]\n",
+        )
+
+        total_marked = 0
+        total_failed = 0
+        courses_at_100 = 0
+
+        for idx, course in enumerate(courses):
+            self.call_from_thread(
+                self._maxx_log,
+                f"\n[bold {PRIMARY}]{idx + 1}/{len(courses)} · {course['name']}[/bold {PRIMARY}]",
+            )
+
+            result = self.client.hit_rate_maxx_course(
+                course, progress_callback=self._maxx_progress_cb(course["name"]),
+            )
+            if "error" in result:
+                self.call_from_thread(
+                    self._maxx_log,
+                    f"  [red]Couldn't maxx this one: {result['error']}[/red]",
+                )
+                continue
+
+            self._render_course_summary(course["name"], result, indent="  ")
+            total_marked += result.get("marked", 0)
+            total_failed += result.get("failed", 0)
+            if result.get("percent_after", 0) >= 100:
+                courses_at_100 += 1
+
+        self.call_from_thread(self._maxx_set_progress, 100)
+        self.call_from_thread(
+            self._maxx_log,
+            f"\n[bold green]All done.[/bold green] "
+            f"[bold]{courses_at_100}/{len(courses)}[/bold] courses are now at 100%. "
+            f"[{MUTED}]({total_marked} newly viewed, {total_failed} failed)[/{MUTED}]",
+        )
+        self.call_from_thread(
+            self._maxx_set_status,
+            f"[bold green]Finished.[/bold green] {courses_at_100} of {len(courses)} courses at 100%.",
+        )
+        self.call_from_thread(self._maxx_reset_buttons)
+
+    def _maxx_reset_buttons(self) -> None:
+        self.query_one("#view-maxx", MaxxView).reset_to_picker()
+
+    def _render_course_summary(self, name: str, result: dict, indent: str = "") -> None:
+        before = result.get("percent_before", 0)
+        after = result.get("percent_after", 0)
+        marked = result.get("marked", 0)
+        failed = result.get("failed", 0)
+        if marked == 0 and failed == 0:
+            self.call_from_thread(
+                self._maxx_log,
+                f"{indent}[{MUTED}]Already 100%, nothing to do.[/{MUTED}]",
+            )
+            return
+        bits = [f"[bold green]{after}%[/bold green]"]
+        if before != after:
+            bits.insert(0, f"[{MUTED}]{before}% →[/{MUTED}]")
+        line = f"{indent}{' '.join(bits)}  [{MUTED}]· {marked} newly viewed"
+        if failed:
+            line += f", {failed} failed"
+        line += "[/]"
+        self.call_from_thread(self._maxx_log, line)
+
+    def _switch_to_maxx_view_single(self, course: dict) -> None:
+        view = self.query_one("#view-maxx", MaxxView)
+        view.populate([course])
+        view.reset_log()
+        self.query_one("#content", ContentSwitcher).current = "view-maxx"
+
+    def _maxx_reset(self) -> None:
+        self.query_one("#view-maxx", MaxxView).reset_log()
+
+    def _maxx_set_status(self, msg: str) -> None:
+        self.query_one("#view-maxx", MaxxView).set_status(msg)
+
+    def _maxx_set_progress(self, value: float) -> None:
+        self.query_one("#view-maxx", MaxxView).set_progress(value)
+
+    def _maxx_log(self, msg: str) -> None:
+        self.query_one("#view-maxx", MaxxView).log(msg)
+
+    # -- helpers (cont) ----------------------------------------------------
 
     def _switch_to_bulk_dl_view(self) -> None:
         self.query_one("#content", ContentSwitcher).current = "view-bulk-dl"

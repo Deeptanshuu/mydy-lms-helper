@@ -9,6 +9,7 @@ import os
 import re
 import time
 import random
+import html
 from urllib.parse import unquote
 
 import requests
@@ -87,32 +88,100 @@ class MydyClient:
         return ""
 
     # -- login -------------------------------------------------------------
+    #
+    # Returns a dict with rich error categorization so the UI can clearly
+    # blame the LMS when it's flaky vs. the user when creds are wrong:
+    #   {
+    #     "success": bool,
+    #     "kind": "ok" | "bad_credentials" | "lms_down" | "network_error"
+    #             | "lms_unexpected" | "no_credentials",
+    #     "message": "<short human-readable>",
+    #     "detail": "<longer technical detail, optional>",
+    #     "http_status": <int|None>,
+    #     "retried": <int>,
+    #   }
+    # Transient failures (network_error, lms_down) are auto-retried with
+    # exponential backoff. Bad credentials are NOT retried.
 
-    def login(self, username: str = "", password: str = "") -> dict:
+    LMS_DOWN_MARKERS = (
+        "dns cache overflow", "service unavailable", "internal server error",
+        "bad gateway", "gateway timeout", "502 bad gateway", "503 ",
+        "temporarily unavailable", "maintenance",
+    )
+
+    def login(self, username: str = "", password: str = "",
+              max_attempts: int = 3, on_retry=None) -> dict:
         username = username or os.getenv("MYDY_USERNAME", "")
         password = password or os.getenv("MYDY_PASSWORD", "")
         if not username or not password:
-            return {"success": False, "message": "No credentials provided."}
+            return {
+                "success": False, "kind": "no_credentials",
+                "message": "Username and password are required.",
+                "retried": 0,
+            }
+
+        backoff = [0, 2, 5, 10]
+        last_result: dict = {}
+        for attempt in range(max_attempts):
+            if attempt > 0:
+                delay = backoff[min(attempt, len(backoff) - 1)]
+                if on_retry:
+                    on_retry({"attempt": attempt + 1, "max_attempts": max_attempts,
+                              "delay": delay, "previous": last_result})
+                time.sleep(delay)
+                # Fresh session each retry — old cookies may be stale
+                self.session = requests.Session()
+
+            last_result = self._login_once(username, password)
+            last_result["retried"] = attempt
+            if last_result["kind"] in ("ok", "bad_credentials", "no_credentials"):
+                return last_result
+            # Otherwise keep retrying transient failures
+        return last_result
+
+    def _login_once(self, username: str, password: str) -> dict:
+        try:
+            initial_resp = self.session.get(
+                f"{RAIT_URL}/login/index.php", timeout=15,
+            )
+        except requests.Timeout:
+            return self._lms_down(None, "Login page timed out — MyDy isn't responding.")
+        except requests.ConnectionError as e:
+            return {"success": False, "kind": "network_error",
+                    "message": "Can't reach the internet.",
+                    "detail": str(e), "http_status": None}
+        except requests.RequestException as e:
+            return {"success": False, "kind": "network_error",
+                    "message": "Network error while reaching MyDy.",
+                    "detail": str(e), "http_status": None}
+
+        # 5xx or DNS-cache-overflow style body → MyDy is sick
+        sick = self._is_lms_sick(initial_resp)
+        if sick:
+            return sick
 
         try:
-            initial_resp = self.session.get(f"{RAIT_URL}/login/index.php")
-
             if initial_resp.url == f"{BASE_URL}/":
                 payload = {"username": username, "wantsurl": "", "next": "Next"}
-                step1 = self.session.post(f"{BASE_URL}/index.php", data=payload)
+                step1 = self.session.post(f"{BASE_URL}/index.php", data=payload, timeout=15)
+                sick = self._is_lms_sick(step1)
+                if sick: return sick
                 if "rait/login/index.php" in step1.url and "uname=" in step1.url:
-                    moodle_resp = self.session.get(step1.url)
-                    login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
+                    moodle_resp = self.session.get(step1.url, timeout=15)
                 else:
                     direct = f"{RAIT_URL}/login/index.php?uname={username}&wantsurl="
-                    moodle_resp = self.session.get(direct)
-                    login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
+                    moodle_resp = self.session.get(direct, timeout=15)
+                sick = self._is_lms_sick(moodle_resp)
+                if sick: return sick
+                login_soup = BeautifulSoup(moodle_resp.text, "html.parser")
             else:
                 login_soup = BeautifulSoup(initial_resp.text, "html.parser")
 
             if not login_soup.find("input", {"name": "password"}):
-                self.logged_in = False
-                return {"success": False, "message": "Could not find login form. LMS may be down."}
+                return {"success": False, "kind": "lms_down",
+                        "message": "MyDy returned a broken login page.",
+                        "detail": "No password field on the login page.",
+                        "http_status": initial_resp.status_code}
 
             login_payload: dict[str, str] = {}
             for inp in login_soup.find_all("input", {"type": "hidden"}):
@@ -126,28 +195,68 @@ class MydyClient:
             if not action.startswith("http"):
                 action = f"{RAIT_URL}/login/" + action.lstrip("/")
 
-            resp = self.session.post(action, data=login_payload)
-            text_lower = resp.text.lower()
+            resp = self.session.post(action, data=login_payload, timeout=20)
+            sick = self._is_lms_sick(resp)
+            if sick: return sick
 
+            text_lower = resp.text.lower()
             has_login = BeautifulSoup(resp.text, "html.parser").find("input", {"name": "password"}) is not None
             has_error = any(x in text_lower for x in ["invalid login", "login failed", "incorrect"])
             has_success = any(x in text_lower for x in ["dashboard", "logout", "profile"])
 
-            if has_login or has_error:
+            if has_error or (has_login and not has_success):
                 self.logged_in = False
-                return {"success": False, "message": "Login failed. Check credentials."}
+                return {"success": False, "kind": "bad_credentials",
+                        "message": "That username or password didn't work.",
+                        "detail": "MyDy rejected the credentials.",
+                        "http_status": resp.status_code}
 
             if has_success or ("rait" in resp.url and "login" not in resp.url):
                 self.logged_in = True
                 masked = username[:2] + "****" + username[-2:] if len(username) > 4 else "****"
-                return {"success": True, "message": f"Logged in as {masked}", "masked_user": masked}
+                return {"success": True, "kind": "ok",
+                        "message": f"Logged in as {masked}",
+                        "masked_user": masked, "http_status": resp.status_code}
 
-            self.logged_in = False
-            return {"success": False, "message": "Login result unclear. Try again."}
+            return {"success": False, "kind": "lms_unexpected",
+                    "message": "MyDy responded in an unexpected way.",
+                    "detail": f"Final URL: {resp.url}",
+                    "http_status": resp.status_code}
 
+        except requests.Timeout:
+            return self._lms_down(None, "MyDy timed out during login.")
         except requests.RequestException as e:
-            self.logged_in = False
-            return {"success": False, "message": f"Network error: {e}"}
+            return {"success": False, "kind": "network_error",
+                    "message": "Network error during login.",
+                    "detail": str(e), "http_status": None}
+
+    @classmethod
+    def _is_lms_sick(cls, resp) -> dict | None:
+        """Return an lms_down result if the response looks like a sick server."""
+        if resp is None:
+            return None
+        if resp.status_code >= 500:
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy returned HTTP {resp.status_code}.")
+        body = (resp.text or "")[:2000].lower()
+        if any(m in body for m in cls.LMS_DOWN_MARKERS):
+            # Try to surface the marker for debugging
+            hit = next((m for m in cls.LMS_DOWN_MARKERS if m in body), "")
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy responded with: {hit!r}.")
+        # Suspiciously tiny response when expecting HTML
+        if resp.headers.get("content-type", "").startswith("text/html") and len(resp.text) < 200:
+            return cls._lms_down(resp.status_code,
+                                 f"MyDy returned only {len(resp.text)} bytes.")
+        return None
+
+    @staticmethod
+    def _lms_down(http_status, detail) -> dict:
+        return {
+            "success": False, "kind": "lms_down",
+            "message": "MyDy is having issues right now.",
+            "detail": detail, "http_status": http_status,
+        }
 
     # -- courses -----------------------------------------------------------
 
@@ -640,3 +749,171 @@ class MydyClient:
             }
         except Exception as e:
             return {"filename": url.split("/")[-1], "status": "error", "error": str(e)}
+
+    # -- hit rate maxxer ---------------------------------------------------
+    #
+    # Brings a course's "Course Progress" widget to 100% by GET-ing every
+    # not-yet-viewed activity. The widget's data source is customview.php,
+    # which lists each activity link with class="completed" or class="pending".
+    # A simple GET on a "pending" /mod/<type>/view.php?id=N flips it to
+    # "completed" and bumps the Viewed counter by 1. Verified live.
+
+    def get_course_progress(self, course_id: str) -> dict:
+        """Fetch the current viewed/total state for one course.
+
+        Returns:
+            {
+              "total": int, "viewed": int, "not_viewed": int, "percent": int,
+              "pending":   [{"url", "name"}, ...],   # not yet viewed
+              "completed": [{"url", "name"}, ...],   # already viewed
+            }
+        """
+        if not self.logged_in:
+            return {"error": "Not logged in."}
+        self._rate_limit("course")
+        try:
+            resp = self.session.get(
+                f"{RAIT_URL}/course/customview.php?id={course_id}"
+            )
+        except requests.RequestException as e:
+            return {"error": str(e)}
+        soup = BeautifulSoup(resp.text, "html.parser")
+
+        pending: list[dict] = []
+        completed: list[dict] = []
+        for a in soup.find_all("a", class_=True):
+            cls = a.get("class") or []
+            if "pending" not in cls and "completed" not in cls:
+                continue
+            href = a.get("href", "")
+            if "/mod/" not in href or "/view.php" not in href:
+                continue
+            div = a.find("div")
+            text = (div.get_text(separator=" ", strip=True)
+                    if div else a.get_text(strip=True))
+            # Source HTML uses bare "&nbsp" (no semicolon) — BeautifulSoup leaves
+            # those as-is. html.unescape handles both forms; \xa0 cleanup
+            # collapses the resulting NBSPs into normal spaces.
+            text = html.unescape(text).replace("\xa0", " ")
+            name = re.sub(r"\s+", " ", text).strip() or "Activity"
+            item = {"url": href, "name": name}
+            (completed if "completed" in cls else pending).append(item)
+
+        total = len(pending) + len(completed)
+        return {
+            "total": total,
+            "viewed": len(completed),
+            "not_viewed": len(pending),
+            "percent": round(len(completed) / total * 100) if total else 0,
+            "pending": pending,
+            "completed": completed,
+        }
+
+    @staticmethod
+    def _course_id_from(course: dict) -> str:
+        cid = str(course.get("id") or "")
+        if cid:
+            return cid
+        m = re.search(r"id=(\d+)", course.get("url", ""))
+        return m.group(1) if m else ""
+
+    def mark_activity_viewed(self, url: str) -> dict:
+        """GET an activity's view.php URL — this is what increments the widget."""
+        if not self.logged_in:
+            return {"url": url, "status": "error", "error": "Not logged in."}
+        self._rate_limit("activity")
+        try:
+            r = self.session.get(url, allow_redirects=True)
+            ok = r.status_code in (200, 302, 303)
+            return {"url": url, "status": "marked" if ok else "error",
+                    "http_status": r.status_code}
+        except requests.RequestException as e:
+            return {"url": url, "status": "error", "error": str(e)}
+
+    def hit_rate_maxx_course(self, course: dict, progress_callback=None) -> dict:
+        """Bring one course's Course Progress widget to 100%.
+
+        GETs every activity in the course's "pending" set (per customview.php).
+        Already-viewed activities are not touched. Returns before/after counts.
+        """
+        if not self.logged_in:
+            return {"course_name": course.get("name", ""), "error": "Not logged in."}
+        cid = self._course_id_from(course)
+        if not cid:
+            return {"course_name": course.get("name", ""),
+                    "error": "Course id not found."}
+
+        progress = self.get_course_progress(cid)
+        if "error" in progress:
+            return {"course_name": course.get("name", ""), "error": progress["error"]}
+
+        pending = progress["pending"]
+        if progress_callback:
+            progress_callback("course_start", {
+                "course": course.get("name", ""),
+                "total": progress["total"],
+                "viewed_before": progress["viewed"],
+                "pending_count": len(pending),
+                "percent_before": progress["percent"],
+            })
+
+        marked: list[dict] = []
+        failed: list[dict] = []
+        for i, item in enumerate(pending):
+            if progress_callback:
+                progress_callback("activity", {
+                    "index": i + 1, "total": len(pending),
+                    "name": item["name"], "url": item["url"],
+                })
+            r = self.mark_activity_viewed(item["url"])
+            r["name"] = item["name"]
+            (marked if r.get("status") == "marked" else failed).append(r)
+            if progress_callback:
+                progress_callback("item_done", r)
+
+        # Re-fetch to report the actual after-state (matches what the user sees).
+        after = self.get_course_progress(cid)
+        return {
+            "course_name": course.get("name", ""),
+            "total": progress["total"],
+            "viewed_before": progress["viewed"],
+            "viewed_after": after.get("viewed", progress["viewed"] + len(marked)),
+            "percent_before": progress["percent"],
+            "percent_after": after.get("percent", 0),
+            "marked": len(marked),
+            "skipped": progress["viewed"],          # already-viewed, untouched
+            "failed": len(failed),
+            "items": {"marked": marked, "skipped": progress["completed"],
+                      "failed": failed},
+        }
+
+    def hit_rate_maxx_all(self, courses: list[dict] | None = None,
+                          progress_callback=None) -> dict:
+        if not self.logged_in:
+            return {"error": "Not logged in."}
+        if courses is None:
+            listing = self.list_courses()
+            if isinstance(listing, str):
+                return {"error": listing}
+            courses = listing
+
+        results: list[dict] = []
+        for idx, co in enumerate(courses):
+            if progress_callback:
+                progress_callback("course", {
+                    "index": idx + 1, "total": len(courses), "course": co,
+                })
+            results.append(self.hit_rate_maxx_course(co, progress_callback=progress_callback))
+
+        total_marked = sum(r.get("marked", 0) for r in results)
+        total_failed = sum(r.get("failed", 0) for r in results)
+        already_viewed = sum(r.get("skipped", 0) for r in results)
+        return {
+            "summary": {
+                "courses_processed": len(results),
+                "total_newly_marked": total_marked,
+                "total_already_viewed": already_viewed,
+                "total_failed": total_failed,
+            },
+            "courses": results,
+        }
