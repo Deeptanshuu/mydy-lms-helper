@@ -17,6 +17,8 @@ export type TabName = "files" | "assignments" | "grades" | "announcements"
 export const TABS: TabName[] = ["files", "assignments", "grades", "announcements"]
 export type CourseDataKey = "content" | "assignments" | "grades" | "announcements"
 export const PREVIOUS_ROW = "group:previous"
+/** The dashboard: the first row of the sidebar, selected on launch. */
+export const OVERVIEW_ROW = "nav:overview"
 
 export interface CourseEntry {
   course: Course
@@ -68,7 +70,7 @@ export interface AppState {
   previousIds: string[]
   unmatched: AttendanceSubject[]
   sync: SyncState
-  /** A course id, PREVIOUS_ROW, or null. */
+  /** A course id, OVERVIEW_ROW, PREVIOUS_ROW, or null. */
   selectedId: string | null
   tab: TabName
   focus: "list" | "detail"
@@ -87,6 +89,7 @@ export interface AppState {
 }
 
 export type Row =
+  | { kind: "nav"; key: typeof OVERVIEW_ROW; label: string }
   | { kind: "course"; id: string }
   | { kind: "group"; key: typeof PREVIOUS_ROW; label: string; open: boolean; count: number }
   | { kind: "heading"; label: string }
@@ -105,7 +108,8 @@ export function listRows(s: AppState): Row[] {
     }
     return rows
   }
-  const rows: Row[] = s.currentIds.map((id) => ({ kind: "course", id }))
+  const rows: Row[] = s.order.length ? [{ kind: "nav", key: OVERVIEW_ROW, label: "Overview" }] : []
+  rows.push(...s.currentIds.map((id): Row => ({ kind: "course", id })))
   if (s.previousIds.length) {
     rows.push({ kind: "group", key: PREVIOUS_ROW, label: "Previous semesters", open: s.showPrevious, count: s.previousIds.length })
     if (s.showPrevious) rows.push(...s.previousIds.map((id): Row => ({ kind: "course", id })))
@@ -118,7 +122,7 @@ export function listRows(s: AppState): Row[] {
 }
 
 export function selectableKeys(s: AppState): string[] {
-  return listRows(s).flatMap((r) => (r.kind === "course" ? [r.id] : r.kind === "group" ? [r.key] : []))
+  return listRows(s).flatMap((r) => (r.kind === "course" ? [r.id] : r.kind === "group" || r.kind === "nav" ? [r.key] : []))
 }
 
 const emptyDownload = (): DownloadView => ({

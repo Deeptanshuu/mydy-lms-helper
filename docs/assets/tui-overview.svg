@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1044" height="682" viewBox="0 0 1044 682" role="img" aria-label="MyDy LMS Helper terminal UI">
+<style>text{font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;font-size:14px;white-space:pre}</style>
+<rect width="1044" height="682" rx="12" fill="#0D0E10"/>
+<g shape-rendering="crispEdges">
+<path fill="#08090A" d="M18 18h420v19h-420zM18 37h436.8v19h-436.8zM18 75h470.4v19h-470.4zM18 56h588v19h-588zM18 645h1008v19h-1008zM446.4 18h8.4v19h-8.4zM463.2 18h8.4v19h-8.4zM463.2 37h159.6v19h-159.6zM496.8 18h8.4v19h-8.4zM496.8 75h75.6v19h-75.6zM530.4 18h8.4v19h-8.4zM547.2 18h92.4v19h-92.4zM597.6 75h8.4v19h-8.4zM614.4 75h8.4v19h-8.4zM631.2 37h8.4v57h-8.4zM648 18h8.4v38h-8.4zM664.8 18h8.4v19h-8.4zM681.6 75h8.4v19h-8.4zM698.4 56h8.4v19h-8.4zM698.4 75h327.6v19h-327.6zM715.2 37h8.4v19h-8.4zM715.2 18h310.8v19h-310.8zM715.2 56h310.8v19h-310.8zM732 37h294v19h-294z"/>
+<path fill="#211209" d="M438 18h8.4v19h-8.4zM454.8 18h8.4v38h-8.4zM471.6 18h25.2v19h-25.2zM488.4 75h8.4v19h-8.4zM505.2 18h25.2v19h-25.2zM538.8 18h8.4v19h-8.4zM572.4 75h25.2v19h-25.2zM606 75h8.4v19h-8.4zM606 56h25.2v19h-25.2zM622.8 37h8.4v19h-8.4zM622.8 75h8.4v19h-8.4zM639.6 18h8.4v38h-8.4zM639.6 75h42v19h-42zM639.6 56h58.8v19h-58.8zM656.4 18h8.4v19h-8.4zM656.4 37h58.8v19h-58.8zM673.2 18h42v19h-42zM690 75h8.4v19h-8.4zM706.8 56h8.4v19h-8.4zM723.6 37h8.4v19h-8.4z"/>
+<path fill="#131518" d="M34.8 94h336v19h-336zM34.8 132h336v513h-336zM404.4 189h210v152h-210zM631.2 189h176.4v152h-176.4zM824.4 189h168v152h-168z"/>
+<path fill="#392214" d="M34.8 113h336v19h-336z"/>
+<path fill="#211209" d="M412.8 18h8.4v9.5h-8.4zM429.6 18h8.4v9.5h-8.4zM429.6 37h8.4v9.5h-8.4zM429.6 75h8.4v9.5h-8.4zM446.4 18h8.4v9.5h-8.4zM446.4 37h8.4v9.5h-8.4zM446.4 56h8.4v9.5h-8.4zM446.4 75h8.4v9.5h-8.4zM463.2 18h8.4v9.5h-8.4zM463.2 37h8.4v9.5h-8.4zM463.2 56h8.4v9.5h-8.4zM463.2 75h8.4v9.5h-8.4zM480 37h8.4v9.5h-8.4zM480 56h8.4v9.5h-8.4zM480 75h8.4v9.5h-8.4zM496.8 18h8.4v9.5h-8.4zM496.8 75h8.4v9.5h-8.4zM513.6 56h8.4v9.5h-8.4zM530.4 18h8.4v9.5h-8.4zM530.4 56h8.4v9.5h-8.4zM547.2 18h8.4v9.5h-8.4zM547.2 56h8.4v9.5h-8.4zM564 18h8.4v9.5h-8.4zM564 37h8.4v9.5h-8.4zM564 75h8.4v9.5h-8.4zM580.8 18h8.4v9.5h-8.4zM580.8 56h8.4v9.5h-8.4zM597.6 37h8.4v9.5h-8.4zM597.6 56h8.4v9.5h-8.4zM597.6 75h8.4v9.5h-8.4zM614.4 18h8.4v9.5h-8.4zM614.4 37h8.4v9.5h-8.4zM614.4 75h8.4v9.5h-8.4zM631.2 18h8.4v9.5h-8.4zM631.2 37h8.4v9.5h-8.4zM631.2 56h8.4v9.5h-8.4zM631.2 75h8.4v9.5h-8.4zM648 18h8.4v9.5h-8.4zM648 37h8.4v9.5h-8.4zM664.8 18h8.4v9.5h-8.4zM681.6 75h8.4v9.5h-8.4zM698.4 56h8.4v9.5h-8.4zM698.4 75h8.4v9.5h-8.4zM715.2 18h8.4v9.5h-8.4zM715.2 37h8.4v9.5h-8.4zM715.2 56h8.4v9.5h-8.4zM715.2 75h8.4v9.5h-8.4zM732 18h8.4v9.5h-8.4zM732 37h8.4v9.5h-8.4zM732 75h8.4v9.5h-8.4zM748.8 56h8.4v9.5h-8.4zM765.6 37h8.4v9.5h-8.4zM765.6 75h8.4v9.5h-8.4zM782.4 18h8.4v9.5h-8.4zM782.4 56h8.4v9.5h-8.4zM799.2 37h8.4v9.5h-8.4zM799.2 75h8.4v9.5h-8.4zM816 18h8.4v9.5h-8.4zM816 56h8.4v9.5h-8.4zM1017.6 18h8.4v9.5h-8.4z"/>
+<path fill="#08090A" d="M438 18h8.4v9.5h-8.4zM454.8 18h8.4v9.5h-8.4zM454.8 37h8.4v9.5h-8.4zM471.6 18h8.4v9.5h-8.4zM488.4 18h8.4v9.5h-8.4zM488.4 75h8.4v9.5h-8.4zM505.2 18h8.4v9.5h-8.4zM522 18h8.4v9.5h-8.4zM538.8 18h8.4v9.5h-8.4zM572.4 75h8.4v9.5h-8.4zM589.2 75h8.4v9.5h-8.4zM606 56h8.4v9.5h-8.4zM606 75h8.4v9.5h-8.4zM622.8 37h8.4v9.5h-8.4zM622.8 56h8.4v9.5h-8.4zM622.8 75h8.4v9.5h-8.4zM639.6 18h8.4v9.5h-8.4zM639.6 37h8.4v9.5h-8.4zM639.6 56h8.4v9.5h-8.4zM639.6 75h8.4v9.5h-8.4zM656.4 18h8.4v9.5h-8.4zM656.4 37h8.4v9.5h-8.4zM656.4 56h8.4v9.5h-8.4zM656.4 75h8.4v9.5h-8.4zM673.2 18h8.4v9.5h-8.4zM673.2 37h8.4v9.5h-8.4zM673.2 56h8.4v9.5h-8.4zM673.2 75h8.4v9.5h-8.4zM690 18h8.4v9.5h-8.4zM690 37h8.4v9.5h-8.4zM690 56h8.4v9.5h-8.4zM690 75h8.4v9.5h-8.4zM706.8 18h8.4v9.5h-8.4zM706.8 37h8.4v9.5h-8.4zM706.8 56h8.4v9.5h-8.4zM723.6 37h8.4v9.5h-8.4z"/>
+<path fill="#391B08" d="M681.6 18h8.4v9.5h-8.4zM681.6 37h8.4v9.5h-8.4zM681.6 56h8.4v9.5h-8.4zM698.4 37h8.4v9.5h-8.4z"/>
+<path fill="#FF6500" d="M34.8 113h4.2v19h-4.2zM34.8 37h8.4v38h-8.4zM43.2 37h8.4v9.5h-8.4zM51.6 46.5h8.4v19h-8.4zM60 37h8.4v9.5h-8.4zM68.4 37h8.4v38h-8.4zM85.2 37h8.4v19h-8.4zM93.6 46.5h8.4v28.5h-8.4zM102 37h8.4v19h-8.4zM118.8 37h8.4v38h-8.4zM127.2 37h8.4v9.5h-8.4zM127.2 65.5h8.4v9.5h-8.4zM135.6 46.5h8.4v19h-8.4zM152.4 37h8.4v19h-8.4zM160.8 46.5h8.4v28.5h-8.4zM169.2 37h8.4v19h-8.4z"/>
+<path fill="#F5F6F7" d="M429.6 227h16.8v9.5h-16.8zM446.4 227h8.4v47.5h-8.4zM463.2 227h8.4v38h-8.4zM463.2 265h25.2v9.5h-25.2zM471.6 246h8.4v9.5h-8.4zM471.6 227h16.8v9.5h-16.8zM480 246h8.4v19h-8.4zM496.8 227h8.4v9.5h-8.4zM496.8 255.5h8.4v19h-8.4zM505.2 246h8.4v9.5h-8.4zM513.6 227h8.4v19h-8.4zM513.6 265h8.4v9.5h-8.4z"/>
+</g>
+<path fill="#31363D" d="M407.9 208h1.2v114h-1.2zM412.8 197.9h8.4v1.2h-8.4zM412.8 330.9h193.2v1.2h-193.2zM522 197.9h84v1.2h-84zM609.9 208h1.2v114h-1.2zM634.9 208h1.2v114h-1.2zM639.6 197.9h8.4v1.2h-8.4zM639.6 330.9h159.6v1.2h-159.6zM774 197.9h25.2v1.2h-25.2zM802.9 208h1.2v114h-1.2zM827.9 208h1.2v114h-1.2zM832.8 197.9h8.4v1.2h-8.4zM832.8 330.9h151.2v1.2h-151.2zM908.4 197.9h75.6v1.2h-75.6zM933.6 292.8h33.6v2.4h-33.6zM987.9 208h1.2v114h-1.2z"/>
+<path fill="#6FCF97" d="M76.8 330.8h126v2.4h-126zM76.8 216.8h134.4v2.4h-134.4zM429.6 292.8h117.6v2.4h-117.6zM614.4 501.8h42v2.4h-42zM614.4 539.8h42v2.4h-42z"/>
+<path fill="#24362F" d="M202.8 330.8h16.8v2.4h-16.8zM211.2 216.8h8.4v2.4h-8.4zM555.6 292.8h33.6v2.4h-33.6z"/>
+<path fill="#F2C94C" d="M76.8 273.8h100.8v2.4h-100.8zM614.4 463.8h38.1v2.4h-38.1z"/>
+<path fill="#3B3521" d="M177.6 273.8h8.4v2.4h-8.4zM194.4 273.8h25.2v2.4h-25.2z"/>
+<path fill="#8B929A" d="M188.8 265h2.4v19h-2.4zM188.8 379h2.4v19h-2.4zM549.8 284h2.4v19h-2.4zM659.8 417h2.4v19h-2.4zM659.8 455h2.4v19h-2.4zM659.8 493h2.4v19h-2.4zM659.8 531h2.4v19h-2.4zM849.6 292.8h84v2.4h-84z"/>
+<path fill="#FF4F9A" d="M76.8 387.8h67.2v2.4h-67.2zM614.4 425.8h25.2v2.4h-25.2z"/>
+<path fill="#422132" d="M144 387.8h42v2.4h-42zM194.4 387.8h25.2v2.4h-25.2zM639.6 425.8h16.8v2.4h-16.8z"/>
+<g fill="none" stroke-width="1.2">
+<path stroke="#31363D" d="M412.8 198.5A4.3 4.3 0 0 0 408.5 202.8V208M606 198.5A4.5 4.5 0 0 1 610.5 203V208M639.6 198.5A4.1 4.1 0 0 0 635.5 202.6V208M799.2 198.5A4.3 4.3 0 0 1 803.5 202.8V208M832.8 198.5A4.3 4.3 0 0 0 828.5 202.8V208M984 198.5A4.5 4.5 0 0 1 988.5 203V208M412.8 331.5A4.3 4.3 0 0 1 408.5 327.2V322M606 331.5A4.5 4.5 0 0 0 610.5 327V322M639.6 331.5A4.1 4.1 0 0 1 635.5 327.4V322M799.2 331.5A4.3 4.3 0 0 0 803.5 327.2V322M832.8 331.5A4.3 4.3 0 0 1 828.5 327.2V322M984 331.5A4.5 4.5 0 0 0 988.5 327V322"/>
+</g>
+<text x="202.8" y="51" fill="#F5F6F7" font-weight="700" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">CSE-2023-A</text>
+<text x="295.2" y="51" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="312.0" y="51" fill="#F5F6F7" font-weight="700" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">Semester 5</text>
+<text x="202.8" y="70" fill="#8B929A" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">student@dypatil.edu</text>
+<text x="858.0" y="70" fill="#6FCF97" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="874.8" y="70" fill="#5C636B" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">synced 2 min ago</text>
+<path d="M19,5V7H15V5H19M9,5V11H5V5H9M19,13V19H15V13H19M9,17V19H5V17H9M21,3H13V9H21V3M11,3H3V13H11V3M21,11H13V21H21V11M11,15H3V21H11V15Z" fill="#F5F6F7" transform="translate(50.6 115.0) scale(0.6250)"/>
+<text x="76.8" y="127" fill="#F5F6F7" font-weight="700" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">Overview</text>
+<text x="404.4" y="127" fill="#8B929A" textLength="176.4" lengthAdjust="spacing" xml:space="preserve">OVERVIEW · SEMESTER 5</text>
+<text x="404.4" y="146" fill="#F5F6F7" font-weight="700" textLength="100.8" lengthAdjust="spacing" xml:space="preserve">Good morning</text>
+<text x="51.6" y="165" fill="#8B929A" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">THIS SEMESTER</text>
+<text x="177.6" y="165" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">4</text>
+<text x="404.4" y="165" fill="#8B929A" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">Tuesday 29 September</text>
+<text x="589.2" y="165" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="614.4" y="165" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">4 courses</text>
+<text x="706.8" y="165" fill="#5C636B" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">·  synced 2 min ago</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 191.0) scale(0.6250)"/>
+<text x="76.8" y="203" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Software Engineering          93%</text>
+<text x="429.6" y="203" fill="#8B929A" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">Attendance</text>
+<text x="656.4" y="203" fill="#8B929A" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">Due this week</text>
+<text x="849.6" y="203" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">Grades</text>
+<text x="236.4" y="222" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">miss 10</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 248.0) scale(0.6250)"/>
+<text x="76.8" y="260" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Computer Networks             72%</text>
+<text x="656.4" y="260" fill="#F5F6F7" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">2</text>
+<text x="673.2" y="260" fill="#8B929A" textLength="92.4" lengthAdjust="spacing" xml:space="preserve">assignments</text>
+<text x="849.6" y="260" fill="#F5F6F7" font-weight="700" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">73%</text>
+<text x="883.2" y="260" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">average</text>
+<text x="236.4" y="279" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">need 6</text>
+<text x="312.0" y="279" fill="#5C636B" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">1 due</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 305.0) scale(0.6250)"/>
+<text x="76.8" y="317" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Data Structures and Algorit…  88%</text>
+<text x="429.6" y="317" fill="#8B929A" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">2 of 4 above 75%</text>
+<text x="656.4" y="317" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="673.2" y="317" fill="#8B929A" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">tomorrow</text>
+<text x="849.6" y="317" fill="#8B929A" textLength="117.6" lengthAdjust="spacing" xml:space="preserve">1 of 4 courses</text>
+<text x="236.4" y="336" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">miss 8</text>
+<text x="312.0" y="336" fill="#5C636B" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">1 due</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 362.0) scale(0.6250)"/>
+<text x="76.8" y="374" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Engineering Maths III         46%</text>
+<text x="236.4" y="393" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">need 47</text>
+<text x="404.4" y="393" fill="#8B929A" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">ATTENDANCE BY COURSE</text>
+<text x="589.2" y="393" fill="#5C636B" textLength="100.8" lengthAdjust="spacing" xml:space="preserve">75% required</text>
+<text x="740.4" y="393" fill="#8B929A" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">UPCOMING DEADLINES</text>
+<text x="908.4" y="393" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">4</text>
+<text x="404.4" y="431" fill="#D2D6DB" textLength="176.4" lengthAdjust="spacing" xml:space="preserve">Engineering Maths III</text>
+<text x="681.6" y="431" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">46%</text>
+<text x="748.8" y="431" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="765.6" y="431" fill="#D2D6DB" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">Assignment 3: Trees</text>
+<text x="51.6" y="450" fill="#8B929A" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">PREVIOUS SEMESTERS</text>
+<text x="219.6" y="450" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">2</text>
+<path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" fill="#8B929A" transform="translate(235.4 438.0) scale(0.6250)"/>
+<text x="765.6" y="450" fill="#8B929A" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">Tomorrow</text>
+<text x="841.2" y="450" fill="#5C636B" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">· Data Structures…</text>
+<text x="404.4" y="469" fill="#D2D6DB" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">Computer Networks</text>
+<text x="681.6" y="469" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">72%</text>
+<text x="748.8" y="488" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="765.6" y="488" fill="#D2D6DB" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">Lab 9: Subnetting</text>
+<text x="51.6" y="507" fill="#8B929A" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">OTHER ATTENDANCE</text>
+<text x="202.8" y="507" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">1</text>
+<text x="404.4" y="507" fill="#D2D6DB" textLength="201.6" lengthAdjust="spacing" xml:space="preserve">Data Structures and Alg…</text>
+<text x="681.6" y="507" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">88%</text>
+<text x="765.6" y="507" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Thu 1 Oct</text>
+<text x="849.6" y="507" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Computer Netwo…</text>
+<text x="76.8" y="545" fill="#8B929A" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Yoga                         100%</text>
+<text x="404.4" y="545" fill="#D2D6DB" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">Software Engineering</text>
+<text x="681.6" y="545" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">93%</text>
+<text x="748.8" y="545" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">○</text>
+<text x="765.6" y="545" fill="#D2D6DB" textLength="117.6" lengthAdjust="spacing" xml:space="preserve">Lab 5: Hashing</text>
+<text x="765.6" y="564" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Tue 6 Oct</text>
+<text x="849.6" y="564" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Data Structure…</text>
+<text x="748.8" y="602" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">○</text>
+<text x="765.6" y="602" fill="#D2D6DB" textLength="218.4" lengthAdjust="spacing" xml:space="preserve">Case study: Library system</text>
+<text x="765.6" y="621" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Fri 9 Oct</text>
+<text x="849.6" y="621" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Software Engin…</text>
+<text x="34.8" y="659" fill="#D2D6DB" font-weight="700" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">↑↓</text>
+<text x="60.0" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">move</text>
+<text x="118.8" y="659" fill="#D2D6DB" font-weight="700" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">enter</text>
+<text x="169.2" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">open</text>
+<text x="228.0" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">/</text>
+<text x="244.8" y="659" fill="#5C636B" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">filter</text>
+<text x="320.4" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">r</text>
+<text x="337.2" y="659" fill="#5C636B" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">refresh</text>
+<text x="883.2" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">?</text>
+<text x="900.0" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">help</text>
+<text x="958.8" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">q</text>
+<text x="975.6" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">quit</text>
+</svg>

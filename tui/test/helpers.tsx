@@ -33,3 +33,6 @@ export async function renderWith(node: () => JSX.Element, opts: { ctx?: TestCont
   await setup.renderOnce()
   return { ...setup, ctx, frame: () => setup.captureCharFrame() }
 }
+
+/** The frame without Powerline pill caps (U+E0B0–E0BF), so "space mark" reads as it does on screen. */
+export const plain = (frame: string) => frame.replace(/[\u{E0B0}-\u{E0BF}]/gu, "")

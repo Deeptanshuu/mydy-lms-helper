@@ -1,24 +1,26 @@
 import { describe, expect, test } from "bun:test"
 import { App } from "../src/ui/App"
-import { context, fakeServices, renderWith } from "./helpers"
+import { context, fakeServices, plain, renderWith } from "./helpers"
 import { demoStore } from "../src/demo"
 
 const ACCENT = [255, 101, 0]
+const ACCENT_SOFT = [57, 34, 20]
 const rgb = (c: { buffer: Record<string, number> }) => [c.buffer[0], c.buffer[1], c.buffer[2]]
 
 describe("main screen", () => {
   test("top bar, needs-you strip, both panes and the footer", async () => {
     const t = await renderWith(() => <App />)
-    const f = t.frame()
-    expect(f).toContain("MyDy   CSE-2023-A, Semester 5")
+    const f = plain(t.frame())
+    expect(f).toContain("CSE-2023-A · Semester 5")
+    expect(f).toContain("student@dypatil.edu")
     expect(f).toContain("synced 2 min ago")
-    expect(f).toContain("needs you")
+    expect(f).toContain("NEEDS YOU")
     expect(f).toContain("Assignment 3: Trees  due tomorrow, not submitted")
     expect(f).toContain("Engineering Maths III")
     expect(f).toContain("need 47")
     expect(f).toContain("44 of 50, can miss 8 more")
     expect(f).toContain("Announcements")
-    expect(f).toContain("Previous semesters (2)")
+    expect(f).toContain("PREVIOUS SEMESTERS")
     expect(f).toContain("Yoga")
     expect(f).toContain("space mark")
     expect(t.ctx.services.calls).toContain("loadTab 812 files")
@@ -28,16 +30,18 @@ describe("main screen", () => {
     const wide = (await renderWith(() => <App />, { width: 160 })).frame()
     expect(wide).toContain("Lab 9: Subnetting  due in 2 days, not submitted")
     const f = (await renderWith(() => <App />, { width: 90 })).frame()
-    const strip = f.split("\n").find((l) => l.includes("needs you"))!
+    const strip = f.split("\n").find((l) => l.includes("NEEDS YOU"))!
     expect(strip).toContain("Assignment 3: Trees  due tomorrow, not submitted")
     expect(strip).not.toContain("due in 2 days")
   })
 
-  test("the selected course row is highlighted in the accent colour", async () => {
+  test("the selected course row gets an accent bar on an accent tint", async () => {
     const t = await renderWith(() => <App />)
     const line = t.captureSpans().lines.find((l) => l.spans.some((s) => s.text.startsWith("Data Structures and Al") && s.text.includes("…")))!
     const nameSpan = line.spans.find((s) => s.text.startsWith("Data Structures and Al") && s.text.includes("…"))!
-    expect(rgb(nameSpan.bg as never)).toEqual(ACCENT)
+    expect(rgb(nameSpan.bg as never)).toEqual(ACCENT_SOFT)
+    const bar = line.spans.find((s) => s.text.includes("▌"))!
+    expect(rgb(bar.fg as never)).toEqual(ACCENT)
   })
 
   test("without a Nerd Font every course name starts in the same column", async () => {
@@ -78,7 +82,7 @@ describe("course tabs", () => {
     expect(f).toContain("not submitted")
     expect(f).toContain("9.00 / 10.00")
     expect(f.indexOf("Assignment 3: Trees  ")).toBeLessThan(f.indexOf("Lab 5: Hashing"))
-    expect(f.indexOf("Lab 5: Hashing")).toBeLessThan(f.indexOf("Done"))
+    expect(f.indexOf("Lab 5: Hashing")).toBeLessThan(f.indexOf("DONE"))
   })
   test("grades with a pinned total", async () => {
     const store = demoStore()
@@ -140,14 +144,14 @@ describe("overlays", () => {
     expect(f).toContain("Downloading 2 courses")
     expect(f).toContain("14 of 23 files, 12.4 MB")
     expect(f).toContain("skipped 3 already saved")
-    expect(f).toContain("x cancel")
+    expect(plain(f)).toContain("x cancel")
   })
   test("signed-out toast", async () => {
     const store = demoStore()
     store.actions.setToast({ title: "Signed out of MyDy", detail: "Your password may have changed.", action: "signin" })
     const f = (await renderWith(() => <App />, { ctx: context({ store }) })).frame()
     expect(f).toContain("Signed out of MyDy")
-    expect(f).toContain("enter sign in again")
+    expect(plain(f)).toContain("enter sign in again")
   })
 })
 
@@ -189,7 +193,7 @@ describe("review fixes", () => {
     expect(t.frame()).toContain("Data Structures and")
   })
   test("footer keeps help and quit on an 80-column terminal", async () => {
-    const f = (await renderWith(() => <App />, { width: 80, height: 24 })).frame()
+    const f = plain((await renderWith(() => <App />, { width: 80, height: 24 })).frame())
     expect(f).toContain("? help")
     expect(f).toContain("q quit")
   })

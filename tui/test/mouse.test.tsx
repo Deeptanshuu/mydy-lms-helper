@@ -50,7 +50,7 @@ describe("mouse", () => {
 
   test("footer hints are buttons", async () => {
     const t = await renderWith(() => <App />)
-    const at = find(t.frame(), "? help")
+    const at = find(t.frame(), "help")
     await t.mockMouse.click(at.x, at.y)
     await t.renderOnce()
     expect(t.ctx.store.state.overlay).toBe("help")

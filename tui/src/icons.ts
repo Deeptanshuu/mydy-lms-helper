@@ -2,6 +2,8 @@ export type IconName =
   | "app" | "courses" | "marked" | "unmarked" | "deadline" | "alert" | "attendance"
   | "files" | "assignments" | "grades" | "announcements" | "section" | "done"
   | "download" | "downloading" | "refresh" | "filter" | "collapsed" | "expanded" | "keys"
+  | "overview" | "calendar" | "clock" | "account" | "trend" | "target" | "sync" | "offline" | "dot"
+  | "trophy" | "bell" | "ok" | "danger" | "timer" | "semester"
 
 // Nerd Fonts Material Design (nf-md-*) code points.
 const NERD: Record<IconName, string> = {
@@ -25,14 +27,38 @@ const NERD: Record<IconName, string> = {
   collapsed: "\u{F0142}", // chevron_right
   expanded: "\u{F0140}", // chevron_down
   keys: "\u{F030C}", // keyboard
+  overview: "\u{F0A1D}", // view_dashboard_outline
+  calendar: "\u{F00ED}", // calendar
+  clock: "\u{F0150}", // clock_outline
+  account: "\u{F0009}", // account_circle
+  trend: "\u{F0535}", // trending_up
+  target: "\u{F04FE}", // target
+  sync: "\u{F04E6}", // sync
+  offline: "\u{F05AA}", // wifi_off
+  dot: "\u{F09DE}", // circle_medium
+  trophy: "\u{F053A}", // trophy_outline
+  bell: "\u{F009C}", // bell_outline
+  ok: "\u{F05E0}", // check_circle
+  danger: "\u{F0028}", // alert_circle
+  timer: "\u{F051F}", // timer_sand
+  semester: "\u{F1180}", // school_outline
 }
 
 // Symbols every terminal font has. "" means: no icon in this mode.
+// Only characters from WGL4 (the Windows Glyph List that Consolas, Lucida Console and Courier New cover, and
+// so do Menlo, Cascadia Mono, DejaVu Sans Mono and Liberation Mono): ASCII, Latin-1 punctuation, the arrows
+// ↑↓↔↕, ■□▪▲►▼◄◊○●, √ × · • …. Not ◆ ◈ ◎ ▸ ▾ ◷ ↻ ↗ ✓ ✕: fonts like Liberation Mono and Consolas lack them and
+// draw a box. Keep every fallback one cell wide, and no emoji (test/fonts.test.ts checks all of this).
 const UNICODE: Record<IconName, string> = {
-  app: "◆", courses: "", marked: "■", unmarked: "□", deadline: "◷", alert: "▲", attendance: "",
-  files: "", assignments: "", grades: "", announcements: "", section: "▾", done: "✓",
-  download: "↓", downloading: "↓", refresh: "↻", filter: "/", collapsed: "▸", expanded: "▾", keys: "",
+  app: "♦", courses: "", marked: "■", unmarked: "□", deadline: "○", alert: "▲", attendance: "",
+  files: "", assignments: "", grades: "", announcements: "", section: "▼", done: "√",
+  download: "↓", downloading: "↓", refresh: "↕", filter: "/", collapsed: "►", expanded: "▼", keys: "",
+  overview: "◊", calendar: "", clock: "○", account: "", trend: "↑", target: "○", sync: "↕", offline: "×", dot: "●",
+  trophy: "", bell: "", ok: "√", danger: "!", timer: "○", semester: "",
 }
+
+/** Every icon name, so tests cover icons added later without listing them again. */
+export const ICON_NAMES = Object.keys(NERD) as IconName[]
 
 export function glyph(name: IconName, nerd: boolean): string {
   return (nerd ? NERD : UNICODE)[name]
@@ -57,3 +83,7 @@ const FILE_NERD: Record<FileKind, string> = {
 export function fileSlot(kind: FileKind, nerd: boolean): string {
   return nerd ? `${FILE_NERD[kind]}  ` : kind.padEnd(4) + " "
 }
+
+// Powerline "extra" half circles: rounded ends for pills. Only drawn with a Nerd Font.
+export const CAP_LEFT = "\u{E0B6}"
+export const CAP_RIGHT = "\u{E0B4}"

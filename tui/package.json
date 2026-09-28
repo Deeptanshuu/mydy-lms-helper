@@ -10,7 +10,8 @@
     "build": "bun scripts/build.ts",
     "screenshot": "bun scripts/screenshot.tsx",
     "artwork": "bun scripts/artwork.ts",
-    "site": "bun scripts/site.tsx"
+    "site": "bun scripts/site.tsx",
+    "preview": "bun scripts/preview.tsx"
   },
   "dependencies": {
     "@mydy/core": "workspace:*",

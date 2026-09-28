@@ -5,7 +5,7 @@ import type { AppStore, TabName } from "../state"
 /** Side effects the views can trigger. Implemented in src/index.tsx, faked in tests. */
 export interface Services {
   refresh(): void
-  loadTab(courseId: string, tab: TabName): void
+  loadTab(courseId: string, tab: TabName): void | Promise<void>
   openAnnouncement(summary: AnnouncementSummary): void
   startDownload(courseIds: string[]): void
   cancelDownload(): void
@@ -21,6 +21,8 @@ export interface AppContextValue {
   threshold: number
   services: Services
   now: () => Date
+  /** Animate the dither textures (off in tests and screenshots, and with --no-animations). */
+  animate?: boolean
 }
 
 const AppContext = createContext<AppContextValue>()
