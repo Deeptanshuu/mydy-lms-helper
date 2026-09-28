@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MyDy LMS Helper: a better way to use MyDy</title>
+  <meta name="description" content="A faster, clearer way to use the MyDy LMS at D.Y. Patil: attendance, deadlines, grades, announcements and notes on one screen, plus AI assistant integration for your studies. Unofficial and open source.">
+  <meta name="theme-color" content="#0E0F10">
+  <link rel="canonical" href="https://deeptanshuu.github.io/mydy-lms-helper/">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icon-128.png">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MyDy LMS Helper">
+  <meta property="og:description" content="Attendance, deadlines, grades and notes on one screen, and your AI assistant plugged into your courses.">
+  <meta property="og:url" content="https://deeptanshuu.github.io/mydy-lms-helper/">
+  <meta property="og:image" content="https://deeptanshuu.github.io/mydy-lms-helper/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="styles.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="./" aria-label="MyDy LMS Helper home">
+        <img src="assets/logo.svg" alt="" width="26" height="26">
+        <span class="brand-name">MyDy</span>
+        <span class="brand-sub">LMS Helper</span>
+      </a>
+      <nav aria-label="Sections">
+        <a href="#demo">Demo</a>
+        <a href="#better">Why</a>
+        <a href="#ai">AI</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/Deeptanshuu/mydy-lms-helper">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero wrap">
+      <h1>A better way<br>to use MyDy.</h1>
+      <p class="lede">The MyDy portal spreads your attendance, deadlines, grades and notes across page after page. MyDy LMS Helper puts them on one fast screen you can drive with the keyboard or the mouse, and lets your AI assistant work with your courses too.</p>
+      <div class="cta">
+        <a class="button primary" id="download" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
+          <span id="download-label">Download</span>
+        </a>
+        <a class="button ghost" href="#install">Other platforms and install options</a>
+      </div>
+      <p class="fineprint" id="download-note">Unofficial and open source. Your login is only ever sent to MyDy.</p>
+    </section>
+
+    <section id="demo" class="demo wrap" aria-labelledby="demo-title">
+      <h2 id="demo-title" class="visually-hidden">Live demo</h2>
+      <div class="terminal" id="terminal" tabindex="0" role="application"
+           aria-label="Interactive demo of the MyDy terminal app. Use j and k to move, tab to switch tabs, enter to open, escape to go back, question mark for help.">
+        <div class="terminal-screen" id="screen" aria-hidden="true"></div>
+        <noscript><img src="assets/tui-dashboard.svg" alt="The MyDy terminal app"></noscript>
+      </div>
+      <div class="demo-bar">
+        <div class="tour-progress" id="progress" role="group" aria-label="Tour steps"></div>
+        <div class="demo-bar-row">
+          <p class="caption" id="caption" aria-live="polite">Loading the demo…</p>
+          <div class="demo-controls">
+            <span class="step" id="step"></span>
+            <button class="linkish" id="pause" type="button">Pause</button>
+            <span class="mode" id="mode">tour</span>
+            <button class="linkish" id="replay" type="button">Replay tour</button>
+          </div>
+        </div>
+      </div>
+      <div class="keypad" role="group" aria-label="Demo keys">
+        <button type="button" data-key="k" aria-label="Move up">k <span>up</span></button>
+        <button type="button" data-key="j" aria-label="Move down">j <span>down</span></button>
+        <button type="button" data-key="enter">enter <span>open</span></button>
+        <button type="button" data-key="tab">tab <span>next tab</span></button>
+        <button type="button" data-key="shift+tab">shift+tab <span>previous</span></button>
+        <button type="button" data-key="esc">esc <span>back</span></button>
+        <button type="button" data-key="?">? <span>help</span></button>
+      </div>
+      <p class="demo-hint">This is the real app, rendered frame by frame with sample data. Click it and drive it with your keyboard, or use the buttons.</p>
+    </section>
+
+
+    <section id="better" class="better wrap" aria-labelledby="better-title">
+      <h2 id="better-title">MyDy, redesigned around what you actually check</h2>
+      <p class="section-lede">Same account, same data. Less clicking, less waiting, less maths in your head.</p>
+      <div class="compare" role="table" aria-label="The MyDy website compared with MyDy LMS Helper">
+        <div class="compare-head" role="row">
+          <span role="columnheader">You want to</span>
+          <span role="columnheader">On the MyDy website</span>
+          <span role="columnheader">With MyDy LMS Helper</span>
+        </div>
+        <div class="compare-row" role="row">
+          <span role="cell" class="task">Know if you can skip a class</span>
+          <span role="cell" class="before">Open academic status, find the subject, work out the 75% maths yourself.</span>
+          <span role="cell" class="after">Every subject says <b>can miss 8</b> or <b>attend the next 6</b>, on the first screen.</span>
+        </div>
+        <div class="compare-row" role="row">
+          <span role="cell" class="task">See what's due</span>
+          <span role="cell" class="before">Open each course, then each assignment, one page load at a time.</span>
+          <span role="cell" class="after">One <b>needs you</b> strip across every course, soonest first, only what you haven't submitted.</span>
+        </div>
+        <div class="compare-row" role="row">
+          <span role="cell" class="task">Get notes before an exam</span>
+          <span role="cell" class="before">Open every file, wait for the viewer, save them one by one.</span>
+          <span role="cell" class="after">Mark courses, press <kbd>d</kbd>. Files land in a folder per course; ones you have are skipped.</span>
+        </div>
+        <div class="compare-row" role="row">
+          <span role="cell" class="task">Read announcements</span>
+          <span role="cell" class="before">One forum per course, one post per page.</span>
+          <span role="cell" class="after">Every course's posts in a tab, readable in place.</span>
+        </div>
+        <div class="compare-row" role="row">
+          <span role="cell" class="task">Check on a bad connection</span>
+          <span role="cell" class="before">Pages time out.</span>
+          <span role="cell" class="after">Your last sync opens instantly, even offline.</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai" class="ai wrap" aria-labelledby="ai-title">
+      <h2 id="ai-title">Bring your AI assistant into your studies</h2>
+      <p class="section-lede">The built-in MCP server lets Claude Code, Claude Desktop or any MCP client read your courses, attendance, deadlines, grades and announcements, and download your notes. Ask in plain language.</p>
+      <div class="ai-grid">
+        <div class="chat" aria-label="Example conversation with an AI assistant">
+          <p class="chat-label">Example</p>
+          <p class="msg you"><span class="who">you</span>What do I need to do this week, and which subjects am I short on?</p>
+          <p class="tool">get_assignments, get_attendance</p>
+          <p class="msg ai"><span class="who">assistant</span><b>Assignment 3: Trees</b> (Data Structures) is due tomorrow at 23:59 and isn't submitted. <b>Lab 9: Subnetting</b> is due Thursday.<br><br>You're below 75% in <b>Engineering Maths III</b> (46%): you'd need to attend the next 47 classes. <b>Computer Networks</b> is at 72%: attend the next 6.</p>
+          <p class="msg you"><span class="who">you</span>Download the Unit 1 notes for Computer Networks and make me a revision plan.</p>
+          <p class="tool">get_course_content, download_course_materials</p>
+        </div>
+        <div class="prompts">
+          <h3>Things to ask</h3>
+          <ul>
+            <li>"Summarise this week's announcements across all my courses."</li>
+            <li>"Which classes can I skip on Friday without dropping below 75%?"</li>
+            <li>"Turn the mid-sem syllabus post into a checklist."</li>
+            <li>"Download everything for Operating Systems and quiz me on Unit 2."</li>
+            <li>"What's my grade so far in Data Structures, and what do I need on the final?"</li>
+          </ul>
+          <p class="muted-note">Your login stays in your own MCP config and is only sent to MyDy. The assistant sees what you ask it to look up.</p>
+          <a class="button primary small" href="#install" data-open-tab="tab-mcp">Set up the MCP server</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="features wrap" aria-labelledby="features-title">
+      <h2 id="features-title">Everything on one screen</h2>
+      <dl class="feature-list">
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>Attendance you can act on</dt>
+          <dd>Every subject against the 75% line, with how many classes you can still miss, or how many you need to attend in a row to get back.</dd>
+        </div>
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></svg>Needs you</dt>
+          <dd>Assignments due this week that you haven't submitted, and subjects below 75%, in one strip at the top of the screen.</dd>
+        </div>
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>Downloads that skip what you have</dt>
+          <dd>Mark courses with <kbd>space</kbd> and press <kbd>d</kbd>. Files land in a folder per course, and anything already downloaded is skipped.</dd>
+        </div>
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>Opens instantly, works offline</dt>
+          <dd>Your last sync is cached, so the app opens straight away and still shows your data without a connection. It refreshes in the background.</dd>
+        </div>
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/></svg>Grades and announcements</dt>
+          <dd>Every grade with a bar and the course total, and whole announcements you can read without opening a browser.</dd>
+        </div>
+        <div class="feature">
+          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M16,17H8V15H16M7,10H5V8H7M7,13H5V11H7M8,11H10V13H8M8,8H10V10H8M11,11H13V13H11M11,8H13V10H11M20,5H4C2.89,5 2,5.89 2,7V17A2,2 0 0,0 4,19H20A2,2 0 0,0 22,17V7C22,5.89 21.1,5 20,5Z"/></svg>Keyboard first, mouse friendly</dt>
+          <dd>Everything is one key away: <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>tab</kbd> for tabs, <kbd>/</kbd> to filter, <kbd>?</kbd> for the full list. Or just click, and scroll.</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section id="install" class="install wrap" aria-labelledby="install-title">
+      <h2 id="install-title">Install</h2>
+      <p class="section-lede">Three ways in. Use whichever fits how you work.</p>
+
+      <div class="tabs" role="tablist" aria-label="Install options">
+        <button role="tab" id="tab-tui" aria-controls="panel-tui" aria-selected="true">Terminal UI</button>
+        <button role="tab" id="tab-mcp" aria-controls="panel-mcp" aria-selected="false" tabindex="-1">MCP server</button>
+        <button role="tab" id="tab-ext" aria-controls="panel-ext" aria-selected="false" tabindex="-1">Chrome extension</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-tui" aria-labelledby="tab-tui">
+        <h3>Download a binary</h3>
+        <ul class="platforms" id="platforms">
+          <li><a data-asset="mydy-darwin-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS, Apple silicon</a></li>
+          <li><a data-asset="mydy-darwin-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS, Intel</a></li>
+          <li><a data-asset="mydy-windows-x64.exe" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Windows</a></li>
+          <li><a data-asset="mydy-linux-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux, x64</a></li>
+          <li><a data-asset="mydy-linux-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux, ARM64</a></li>
+        </ul>
+        <p>On macOS and Linux, make it executable first. On macOS, also clear the download quarantine, because the binary isn't notarized:</p>
+        <div class="code"><pre><code>chmod +x mydy-darwin-arm64
+xattr -d com.apple.quarantine mydy-darwin-arm64
+./mydy-darwin-arm64</code></pre><button class="copy" type="button">Copy</button></div>
+
+        <h3>Or run it from source</h3>
+        <p>With <a href="https://bun.com">Bun</a> 1.3 or newer:</p>
+        <div class="code"><pre><code>git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
+cd mydy-lms-helper
+bun install
+bun run tui</code></pre><button class="copy" type="button">Copy</button></div>
+
+        <h3>Signing in</h3>
+        <p>Sign in on the first screen and tick <strong>Remember me</strong> to keep the login in your system keychain. Or set <code>MYDY_USERNAME</code> and <code>MYDY_PASSWORD</code> in the environment or a <code>.env</code> file.</p>
+        <p>Icons use a <a href="https://www.nerdfonts.com">Nerd Font</a>. If you see empty boxes, run with <code>--no-nerd-font</code> for plain symbols.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
+        <h3>Plug your AI assistant into your courses</h3>
+        <p>The MCP server lets Claude Code, Claude Desktop or any other MCP client read your courses, attendance, assignments, grades and announcements, and download files.</p>
+        <div class="code"><pre><code>git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
+cd mydy-lms-helper
+python3 -m venv .venv
+.venv/bin/pip install -r mcp/requirements.txt</code></pre><button class="copy" type="button">Copy</button></div>
+        <p>Then add it to Claude Code:</p>
+        <div class="code"><pre><code>claude mcp add mydy-lms \
+  -e MYDY_USERNAME=your_email@dypatil.edu \
+  -e MYDY_PASSWORD=your_password \
+  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"</code></pre><button class="copy" type="button">Copy</button></div>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-ext" aria-labelledby="tab-ext" hidden>
+        <h3>Download files from the browser</h3>
+        <p>The Chrome extension uses your logged-in MyDy tab to download course files, grouped by course. No install beyond Chrome.</p>
+        <ol class="steps">
+          <li>Download the latest <code>ext-v*</code> zip from <a href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Releases</a> and extract it.</li>
+          <li>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>.</li>
+          <li>Click <strong>Load unpacked</strong> and pick the extracted folder.</li>
+          <li>Open <a href="https://mydy.dypatil.edu">mydy.dypatil.edu</a>, click the extension icon, choose courses and download.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="how wrap" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <img src="assets/how-it-works.svg" alt="The terminal UI and the MCP server sign in to MyDy and read its pages over HTTPS. The Chrome extension reuses your logged-in browser tab." width="1280" height="480" loading="lazy">
+    </section>
+
+    <section class="privacy wrap" aria-labelledby="privacy-title">
+      <div class="strip">
+        <h2 id="privacy-title" class="badge">your data</h2>
+        <p>Your email and password are only ever sent to <strong>mydy.dypatil.edu</strong>, over HTTPS. A saved login goes to your system keychain, and the cache and downloads stay on your computer. There are no servers of ours and no analytics.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <p>Unofficial and not affiliated with D.Y. Patil or MyDy. MIT license.</p>
+      <nav aria-label="Project links">
+        <a href="https://github.com/Deeptanshuu/mydy-lms-helper"><kbd>gh</kbd> GitHub</a>
+        <a href="https://github.com/Deeptanshuu/mydy-lms-helper/releases"><kbd>rel</kbd> Releases</a>
+        <a href="https://github.com/Deeptanshuu/mydy-lms-helper/issues"><kbd>bug</kbd> Report a problem</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

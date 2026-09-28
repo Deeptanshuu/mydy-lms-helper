@@ -1,0 +1,11 @@
+node_modules\
+.git\
+.github\
+dist\
+*.zip
+package.json
+package-lock.json
+exclude.txt
+scripts\
+.gitignore
+README.md

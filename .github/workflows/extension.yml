@@ -1,0 +1,106 @@
+name: Build and Release Extension
+
+on:
+  push:
+    tags:
+      - 'ext-v*'
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: extension
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: extension/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Bump version (if manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        npm run version:${{ github.event.inputs.version_type }}
+        
+    - name: Build extension
+      run: |
+        # Copy only what the extension needs (exclude.txt is xcopy syntax, which rsync doesn't understand)
+        rm -rf dist && mkdir -p dist
+        cp -r manifest.json popup.html css js icons dist/
+        
+    - name: Get version from package.json
+      id: package-version
+      run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      
+    - name: Create extension package
+      run: |
+        cd dist
+        zip -r ../mydy-extension-v${{ steps.package-version.outputs.version }}.zip .
+
+    # A manual run bumps the version: commit and tag it first, so the release tag points at the bumped source.
+    - name: Commit and tag version bump (if manual trigger)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        git add package.json manifest.json
+        git commit -m "Bump extension to v${{ steps.package-version.outputs.version }}"
+        git tag ext-v${{ steps.package-version.outputs.version }}
+        git push origin HEAD:main
+        git push origin ext-v${{ steps.package-version.outputs.version }}
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ext-v${{ steps.package-version.outputs.version }}
+        release_name: MyDY Extension v${{ steps.package-version.outputs.version }}
+        body: |
+          ## What's Changed
+          - Automated release of MyDY Moodle Downloader Extension v${{ steps.package-version.outputs.version }}
+          
+          ## Installation
+          1. Download the `mydy-extension-v${{ steps.package-version.outputs.version }}.zip` file
+          2. Extract the contents
+          3. Open Chrome and go to `chrome://extensions/`
+          4. Enable "Developer mode"
+          5. Click "Load unpacked" and select the extracted folder
+          
+          ## Chrome Web Store
+          This extension is also available on the Chrome Web Store: [Link will be added after approval]
+        draft: false
+        prerelease: false
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./extension/mydy-extension-v${{ steps.package-version.outputs.version }}.zip
+        asset_name: mydy-extension-v${{ steps.package-version.outputs.version }}.zip
+        asset_content_type: application/zip

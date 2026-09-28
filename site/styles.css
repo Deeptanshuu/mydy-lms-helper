@@ -1,0 +1,247 @@
+/* MyDy LMS Helper website. Same tokens, type and highlight treatment as the terminal app (tui/src/theme.ts). */
+:root {
+  --bg: #0e0f10;
+  --panel: #17191b;
+  --bar: #08090a;
+  --strip: #1c1e21;
+  --line: #2c2f33;
+  --text: #d8dcdf;
+  --strong: #f4f5f6;
+  --muted: #8a9096;
+  --accent: #ff6500;
+  --on-accent: #08090a;
+  --ok: #6fcf97;
+  --warn: #f2c94c;
+  --low: #f0506e;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --gutter: clamp(16px, 4vw, 32px);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.65 var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--strong); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--accent); color: var(--on-accent); }
+
+.wrap { width: min(1120px, 100% - 2 * var(--gutter)); margin-inline: auto; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: absolute; left: 8px; top: -40px; background: var(--accent); color: var(--on-accent); padding: 6px 10px; z-index: 10; }
+.skip:focus { top: 8px; }
+
+kbd, code {
+  font: inherit;
+  font-size: 0.92em;
+  background: var(--strip);
+  color: var(--strong);
+  padding: 0.05em 0.4em;
+  border-radius: 4px;
+}
+kbd { color: var(--accent); }
+
+.ic { width: 1.15em; height: 1.15em; fill: currentColor; flex: none; }
+
+/* ---- top bar: like the TUI's ---- */
+.topbar { position: sticky; top: 0; z-index: 5; background: var(--bar); }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-name { color: var(--strong); font-weight: 800; }
+.brand-sub { color: var(--muted); }
+.topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.topbar nav a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+.topbar nav a:hover { background: var(--accent); color: var(--on-accent); }
+@media (max-width: 560px) { .brand-sub { display: none; } .topbar nav a { padding: 4px 6px; } .topbar nav a[href="#demo"] { display: none; } }
+
+/* ---- hero ---- */
+.hero { padding: clamp(48px, 9vw, 104px) 0 clamp(28px, 4vw, 40px); }
+h1 {
+  margin: 0 0 20px;
+  color: var(--strong);
+  font-size: clamp(34px, 6.4vw, 68px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+.lede { max-width: 64ch; margin: 0 0 28px; color: var(--text); font-size: clamp(15px, 1.7vw, 17px); }
+.cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.button {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 11px 18px; border-radius: 6px;
+  font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; border: 0;
+}
+.button.primary { background: var(--accent); color: var(--on-accent); }
+.button.primary:hover { background: var(--strong); }
+.button.ghost { color: var(--muted); padding-inline: 0; font-weight: 500; }
+.button.ghost:hover { color: var(--strong); }
+.fineprint { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
+
+/* ---- live demo ---- */
+.demo { padding-bottom: clamp(56px, 8vw, 96px); }
+.terminal {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  overflow: hidden;
+  cursor: text;
+  box-shadow: 0 24px 60px -30px rgba(255, 101, 0, 0.25);
+}
+.terminal:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.terminal-screen { font-size: 13px; line-height: 1.32; white-space: pre; color: var(--text); }
+.terminal-screen .row { height: 1.32em; display: block; }
+.terminal-screen .ti { display: inline-block; width: 1ch; height: 1em; vertical-align: -0.15em; overflow: visible; }
+.terminal-screen .ti svg { width: 1.2em; height: 1.2em; margin-left: -0.05em; margin-top: -0.1em; fill: currentColor; }
+.terminal noscript img { width: 100%; height: auto; display: block; }
+
+.demo-bar { margin-top: 12px; padding: 10px 14px 8px; background: var(--strip); border-radius: 6px; }
+.demo-bar-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tour-progress { display: flex; gap: 3px; margin-bottom: 8px; }
+.tour-progress .seg {
+  flex: 1; height: 4px; padding: 0; border: 0; border-radius: 2px; cursor: pointer;
+  background: var(--line); overflow: hidden; position: relative;
+}
+.tour-progress .seg::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+.tour-progress .seg.done::after { transform: scaleX(1); }
+.tour-progress .seg.current::after { animation: fill var(--dur, 3s) linear forwards; }
+.tour-progress.paused .seg.current::after { animation-play-state: paused; }
+.tour-progress.hidden { visibility: hidden; }
+.tour-progress .seg:hover { background: var(--muted); }
+@keyframes fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .tour-progress .seg.current::after { animation: none; transform: scaleX(1); } }
+.step { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.caption { margin: 0; color: var(--strong); min-height: 1.65em; }
+.demo-controls { display: flex; align-items: center; gap: 14px; flex: none; }
+.mode { background: var(--accent); color: var(--on-accent); font-weight: 700; padding: 1px 8px; border-radius: 3px; font-size: 13px; }
+.mode.driving { background: var(--strong); }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkish:hover { color: var(--strong); }
+
+.keypad { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.keypad button {
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--panel); color: var(--accent); border: 1px solid var(--line); border-radius: 5px; padding: 5px 10px;
+}
+.keypad button span { color: var(--muted); }
+.keypad button:hover { border-color: var(--accent); }
+.keypad button:active { background: var(--accent); color: var(--on-accent); }
+.keypad button:active span { color: var(--on-accent); }
+.demo-hint { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+@media (max-width: 640px) { .demo-bar-row { flex-direction: column; align-items: flex-start; } .demo-controls { flex-wrap: wrap; } }
+
+/* ---- sections ---- */
+h2 { color: var(--strong); font-size: clamp(22px, 3vw, 28px); letter-spacing: -0.02em; margin: 0 0 8px; }
+h3 { color: var(--strong); font-size: 16px; margin: 28px 0 8px; }
+.section-lede { color: var(--muted); margin: 0 0 24px; }
+section.features, section.install, section.how, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 96px); }
+
+.feature-list { margin: 24px 0 0; border-top: 1px solid var(--line); }
+.feature {
+  display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 8px 32px;
+  padding: 20px 0; border-bottom: 1px solid var(--line);
+}
+.feature dt { display: flex; align-items: center; gap: 12px; color: var(--strong); font-weight: 700; }
+.feature dt .ic { color: var(--accent); }
+.feature dd { margin: 0; color: var(--text); max-width: 64ch; }
+@media (max-width: 720px) { .feature { grid-template-columns: 1fr; } .feature dd { padding-left: calc(1.15em + 12px); } }
+
+/* ---- install tabs: the TUI's tab row ---- */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.tabs [role="tab"] {
+  font: inherit; cursor: pointer; border: 0; border-radius: 4px;
+  background: transparent; color: var(--muted); padding: 4px 12px;
+}
+.tabs [role="tab"]:hover { color: var(--strong); }
+.tabs [role="tab"][aria-selected="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.panel { background: var(--panel); border-radius: 10px; padding: 8px clamp(16px, 3vw, 28px) 24px; }
+.panel p, .panel li { max-width: 72ch; }
+.platforms { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.platforms a { display: inline-block; padding: 6px 12px; border-radius: 5px; background: var(--strip); text-decoration: none; }
+.platforms a:hover { background: var(--accent); color: var(--on-accent); }
+.platforms a.unavailable { color: var(--muted); }
+.steps { padding-left: 1.4em; }
+.steps li { margin: 6px 0; }
+.steps li::marker { color: var(--accent); }
+
+.code { position: relative; margin: 10px 0 16px; }
+.code pre {
+  margin: 0; padding: 14px 16px; overflow-x: auto;
+  background: var(--bg); border-radius: 8px; border: 1px solid var(--line);
+  font-size: 13.5px; line-height: 1.55;
+}
+.code pre code { background: none; padding: 0; color: var(--text); }
+.copy {
+  position: absolute; top: 8px; right: 8px;
+  font: inherit; font-size: 12px; cursor: pointer;
+  background: var(--strip); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px;
+}
+.copy:hover { color: var(--strong); border-color: var(--accent); }
+.copy.done { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+.how img { width: 100%; height: auto; display: block; margin-top: 20px; border-radius: 16px; }
+
+/* ---- privacy: the TUI's "needs you" strip ---- */
+.privacy { padding-bottom: clamp(56px, 8vw, 96px); }
+.strip { display: flex; align-items: flex-start; gap: 16px; background: var(--strip); border-radius: 8px; padding: 16px 18px; }
+.badge {
+  flex: none; margin: 0; font-size: 14px; letter-spacing: 0;
+  background: var(--accent); color: var(--on-accent); padding: 2px 10px; border-radius: 3px;
+}
+.strip p { margin: 0; max-width: 80ch; }
+@media (max-width: 640px) { .strip { flex-direction: column; } }
+
+/* ---- footer: the TUI's key-hint bar ---- */
+.footer { background: var(--bar); color: var(--muted); font-size: 13px; }
+.footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 24px; padding: 14px 0; }
+.footer p { margin: 0; }
+.footer nav { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+.footer nav a { color: var(--muted); text-decoration: none; }
+.footer nav a:hover { color: var(--strong); }
+.footer kbd { background: none; padding: 0; }
+
+/* ---- MyDy vs MyDy LMS Helper ---- */
+.compare { border-top: 1px solid var(--line); }
+.compare-head, .compare-row { display: grid; grid-template-columns: minmax(180px, 1fr) 1.4fr 1.6fr; gap: 8px 28px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.compare-head { color: var(--muted); font-size: 13px; padding: 10px 0; }
+.compare-head span:last-child { color: var(--accent); }
+.task { color: var(--strong); font-weight: 700; }
+.before { color: var(--muted); }
+.after { color: var(--text); }
+.after b { color: var(--strong); }
+@media (max-width: 760px) {
+  .compare-head { display: none; }
+  .compare-row { grid-template-columns: 1fr; gap: 6px; }
+  .before::before { content: "MyDy website: "; color: var(--muted); }
+  .after::before { content: "Helper: "; color: var(--accent); }
+}
+
+/* ---- AI section ---- */
+.ai-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: start; }
+@media (max-width: 860px) { .ai-grid { grid-template-columns: 1fr; } }
+.chat { background: var(--panel); border-radius: 10px; padding: 18px 20px; }
+.chat-label { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.msg { margin: 0 0 14px; }
+.msg .who { display: inline-block; min-width: 10ch; font-size: 12px; font-weight: 700; }
+.msg.you .who { color: var(--muted); }
+.msg.ai .who { color: var(--accent); }
+.msg.ai { color: var(--text); }
+.msg.you { color: var(--strong); }
+.msg b { color: var(--strong); }
+.tool { margin: -6px 0 14px 10ch; font-size: 12px; color: var(--muted); }
+.tool::before { content: "tools: "; color: var(--line); }
+.prompts h3 { margin-top: 0; }
+.prompts ul { list-style: none; padding: 0; margin: 0 0 16px; }
+.prompts li { padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--text); }
+.prompts li:first-child { border-top: 1px solid var(--line); }
+.muted-note { color: var(--muted); font-size: 13px; }
+.button.small { padding: 8px 14px; font-size: 14px; }

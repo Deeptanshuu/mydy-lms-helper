@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="380" viewBox="0 0 1280 380" role="img" aria-labelledby="title desc">
+  <title id="title">MyDy LMS Helper</title>
+  <desc id="desc">Attendance, grades, assignments and course files from the MyDy portal, shown as the terminal UI's course list with an attendance bar per course.</desc>
+  <style>text { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }</style>
+  <rect width="1280" height="380" rx="16" fill="#0E0F10"/>
+  <g transform="translate(64 60) scale(1.0000)">
+    <rect width="64" height="64" rx="14" fill="#17191B" stroke="#2C2F33" stroke-width="1.00"/>
+    <polyline points="11,23 20,32 11,41" fill="none" stroke="#FF6500" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F4F5F6" transform="translate(25 13) scale(1.3500)"/>
+    <rect x="27" y="47" width="27" height="4" rx="2" fill="#FF6500"/>
+  </g>
+  <text x="62" y="196" font-size="60" fill="#F4F5F6" font-weight="700" xml:space="preserve">MyDy LMS Helper</text>
+  <text x="64" y="238" font-size="18" fill="#8A9096" xml:space="preserve">Attendance, grades, assignments and course files</text>
+  <text x="64" y="264" font-size="18" fill="#8A9096" xml:space="preserve">from the MyDy portal, without the clicking around.</text>
+  <rect x="64" y="298" width="145" height="34" rx="17" fill="none" stroke="#2C2F33"/>
+  <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z" fill="#8A9096" transform="translate(78 307) scale(0.6667)"/>
+  <text x="102" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">Terminal UI</text>
+  <rect x="219" y="298" width="136" height="34" rx="17" fill="none" stroke="#2C2F33"/>
+  <path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z" fill="#8A9096" transform="translate(233 307) scale(0.6667)"/>
+  <text x="257" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">MCP server</text>
+  <rect x="365" y="298" width="187" height="34" rx="17" fill="none" stroke="#2C2F33"/>
+  <path d="M12,20L15.46,14H15.45C15.79,13.4 16,12.73 16,12C16,10.8 15.46,9.73 14.62,9H19.41C19.79,9.93 20,10.94 20,12A8,8 0 0,1 12,20M4,12C4,10.54 4.39,9.18 5.07,8L8.54,14H8.55C9.24,15.19 10.5,16 12,16C12.45,16 12.88,15.91 13.29,15.77L10.89,19.91C7,19.37 4,16.04 4,12M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12M12,4C14.96,4 17.54,5.61 18.92,8H12C10.06,8 8.45,9.38 8.08,11.21L5.7,7.08C7.16,5.21 9.44,4 12,4M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#8A9096" transform="translate(379 307) scale(0.6667)"/>
+  <text x="403" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">Chrome extension</text>
+  <rect x="660" y="44" width="556" height="292" rx="12" fill="#17191B"/>
+  <path d="M672,44 H1204 A12,12 0 0 1 1216,56 V80 H660 V56 A12,12 0 0 1 672,44 Z" fill="#08090A"/>
+  <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#FF6500" transform="translate(676 54) scale(0.6667)"/>
+  <text x="702" y="67" font-size="14" fill="#F4F5F6" font-weight="700" xml:space="preserve">MyDy</text>
+  <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" fill="#8A9096" transform="translate(1064.8 55) scale(0.5833)"/>
+  <text x="1200" y="67" font-size="12" fill="#8A9096" text-anchor="end" xml:space="preserve">synced 2 min ago</text>
+  <rect x="672" y="96" width="532" height="32" rx="6" fill="#FF6500"/>
+  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#08090A" transform="translate(684 104) scale(0.6667)"/>
+  <text x="710" y="117" font-size="14" fill="#08090A" font-weight="700" xml:space="preserve">Data Structures</text>
+  <rect x="880" y="107" width="168" height="10" rx="3" fill="#5A2A00"/>
+  <rect x="880" y="107" width="148" height="10" rx="3" fill="#08090A"/>
+  <line x1="1006" y1="103" x2="1006" y2="121" stroke="#08090A" stroke-width="1.5"/>
+  <text x="1110" y="117" font-size="14" fill="#08090A" text-anchor="end" xml:space="preserve">88%</text>
+  <text x="1192" y="117" font-size="14" fill="#5A2A00" text-anchor="end" xml:space="preserve">miss 8</text>
+  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 144) scale(0.6667)"/>
+  <text x="710" y="157" font-size="14" fill="#D8DCDF" xml:space="preserve">Operating Systems</text>
+  <rect x="880" y="147" width="168" height="10" rx="3" fill="#2C2F33"/>
+  <rect x="880" y="147" width="136" height="10" rx="3" fill="#6FCF97"/>
+  <line x1="1006" y1="143" x2="1006" y2="161" stroke="#D8DCDF" stroke-width="1.5"/>
+  <text x="1110" y="157" font-size="14" fill="#6FCF97" text-anchor="end" xml:space="preserve">81%</text>
+  <text x="1192" y="157" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">miss 4</text>
+  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 184) scale(0.6667)"/>
+  <text x="710" y="197" font-size="14" fill="#D8DCDF" xml:space="preserve">Computer Networks</text>
+  <rect x="880" y="187" width="168" height="10" rx="3" fill="#2C2F33"/>
+  <rect x="880" y="187" width="121" height="10" rx="3" fill="#F2C94C"/>
+  <line x1="1006" y1="183" x2="1006" y2="201" stroke="#D8DCDF" stroke-width="1.5"/>
+  <text x="1110" y="197" font-size="14" fill="#F2C94C" text-anchor="end" xml:space="preserve">72%</text>
+  <text x="1192" y="197" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">need 6</text>
+  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 224) scale(0.6667)"/>
+  <text x="710" y="237" font-size="14" fill="#D8DCDF" xml:space="preserve">Engineering Maths</text>
+  <rect x="880" y="227" width="168" height="10" rx="3" fill="#2C2F33"/>
+  <rect x="880" y="227" width="77" height="10" rx="3" fill="#F0506E"/>
+  <line x1="1006" y1="223" x2="1006" y2="241" stroke="#D8DCDF" stroke-width="1.5"/>
+  <text x="1110" y="237" font-size="14" fill="#F0506E" text-anchor="end" xml:space="preserve">46%</text>
+  <text x="1192" y="237" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">need 47</text>
+  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 264) scale(0.6667)"/>
+  <text x="710" y="277" font-size="14" fill="#D8DCDF" xml:space="preserve">Software Engg.</text>
+  <rect x="880" y="267" width="168" height="10" rx="3" fill="#2C2F33"/>
+  <rect x="880" y="267" width="156" height="10" rx="3" fill="#6FCF97"/>
+  <line x1="1006" y1="263" x2="1006" y2="281" stroke="#D8DCDF" stroke-width="1.5"/>
+  <text x="1110" y="277" font-size="14" fill="#6FCF97" text-anchor="end" xml:space="preserve">93%</text>
+  <text x="1192" y="277" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">miss 12</text>
+  <path d="M660,306 H1216 V324 A12,12 0 0 1 1204,336 H672 A12,12 0 0 1 660,324 Z" fill="#08090A"/>
+  <text x="684" y="326" font-size="12" fill="#FF6500" xml:space="preserve">↑↓</text>
+  <text x="698.4" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> move</text>
+  <text x="756" y="326" font-size="12" fill="#FF6500" xml:space="preserve">space</text>
+  <text x="792" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> mark</text>
+  <text x="849.6" y="326" font-size="12" fill="#FF6500" xml:space="preserve">d</text>
+  <text x="856.8000000000001" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> download</text>
+  <text x="943.2" y="326" font-size="12" fill="#FF6500" xml:space="preserve">?</text>
+  <text x="950.4000000000001" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> help</text>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "name": "mydy-lms-helper",
+  "private": true,
+  "workspaces": ["core", "tui"],
+  "scripts": {
+    "tui": "bun run --cwd tui start",
+    "test": "bun run --cwd core test && bun run --cwd tui test",
+    "typecheck": "bun run --cwd core typecheck && bun run --cwd tui typecheck",
+    "smoke": "bun run --cwd core smoke",
+    "build": "bun run --cwd tui build"
+  }
+}
