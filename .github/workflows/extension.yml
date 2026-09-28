@@ -18,7 +18,7 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     defaults:
@@ -27,12 +27,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: extension/package-lock.json
         
@@ -81,7 +81,7 @@ jobs:
         
     # Notes come from .github/release-notes/ext-v<version>.md (an empty body if that file is missing).
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: ext-v${{ steps.package-version.outputs.version }}
         name: MyDy Downloader v${{ steps.package-version.outputs.version }}

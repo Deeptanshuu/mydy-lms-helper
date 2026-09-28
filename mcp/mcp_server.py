@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "beautifulsoup4==4.13.4",
+#     "requests==2.32.3",
+#     "mcp>=1.2,<2",  # the server uses FastMCP, which mcp 2 renamed
+# ]
+# ///
+# Run with `uv run --script mcp/mcp_server.py`: uv reads the block above and sets up Python and the
+# packages itself. A plain `python mcp_server.py` with requirements.txt installed works too.
 """
 MyDy LMS Helper - MCP Server
 

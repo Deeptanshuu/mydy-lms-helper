@@ -6,37 +6,51 @@ Lets Claude Code, Claude Desktop or any [MCP](https://modelcontextprotocol.io/) 
 
 ## Set up
 
+You need a copy of this repo and [uv](https://docs.astral.sh/uv/getting-started/installation/). uv installs the right Python and the server's packages by itself, the same way on macOS, Linux and Windows, so there's no virtualenv to manage.
+
 ```sh
 git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
 cd mydy-lms-helper
-python3 -m venv .venv
-.venv/bin/pip install -r mcp/requirements.txt
 ```
 
-**Claude Code** (run from the repo folder):
+**Claude Code** (run from the repo folder; `command -v uv` saves uv's full path, so it works whatever PATH the client sees):
 
 ```sh
-claude mcp add mydy-lms \
+claude mcp add mydy-lms -s user \
   -e MYDY_USERNAME=your_email@dypatil.edu \
   -e MYDY_PASSWORD=your_password \
-  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"
+  -- "$(command -v uv)" run --script "$PWD/mcp/mcp_server.py"
 ```
 
-**Other clients:**
+On Windows (PowerShell), use `(Get-Command uv).Source` and `"$PWD\mcp\mcp_server.py"` instead.
+
+**Other clients** (Claude Desktop, Cursor and others):
 
 ```json
 {
   "mcpServers": {
     "mydy-lms": {
-      "command": "/path/to/mydy-lms-helper/.venv/bin/python",
-      "args": ["/path/to/mydy-lms-helper/mcp/mcp_server.py"],
+      "command": "/full/path/to/uv",
+      "args": ["run", "--script", "/full/path/to/mydy-lms-helper/mcp/mcp_server.py"],
       "env": { "MYDY_USERNAME": "your_email@dypatil.edu", "MYDY_PASSWORD": "your_password" }
     }
   }
 }
 ```
 
-Use the virtualenv's Python: a bare `python` usually isn't on the PATH MCP clients see.
+Use full paths: desktop apps don't see your terminal's PATH. `which uv` (macOS, Linux) or `where uv` (Windows) prints uv's. On Windows, write paths with forward slashes or doubled backslashes.
+
+<details>
+<summary>Without uv</summary>
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r mcp/requirements.txt       # Windows: .venv\Scripts\pip install -r mcp\requirements.txt
+```
+
+Then use the virtualenv's Python as the command (`.venv/bin/python`, or `.venv\Scripts\python.exe` on Windows) with `mcp/mcp_server.py` as the argument, both as full paths.
+
+</details>
 
 ## Tools
 

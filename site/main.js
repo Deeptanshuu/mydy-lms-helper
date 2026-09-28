@@ -285,12 +285,10 @@ Setup guide: https://github.com/${REPO}/blob/main/mcp/README.md
 Read the setup guide, ask me which operating system and which AI app I use, then walk me through it one step at a time.`,
     commands: `git clone https://github.com/${REPO}.git
 cd mydy-lms-helper
-python3 -m venv .venv
-.venv/bin/pip install -r mcp/requirements.txt
-claude mcp add mydy-lms \\
+claude mcp add mydy-lms -s user \\
   -e MYDY_USERNAME=your_email@dypatil.edu \\
   -e MYDY_PASSWORD=your_password \\
-  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"`,
+  -- "$(command -v uv)" run --script "$PWD/mcp/mcp_server.py"`,
   },
 }
 
