@@ -16,6 +16,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Check the tag matches tui/package.json
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        v="v$(jq -r .version tui/package.json)"
+        [ "$GITHUB_REF_NAME" = "$v" ] || { echo "Tag $GITHUB_REF_NAME does not match tui/package.json ($v)"; exit 1; }
+
     - name: Set up Bun
       uses: oven-sh/setup-bun@v2
       with:
@@ -45,6 +51,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: tui/dist/*
+        # Notes come from .github/release-notes/<tag>.md.
+        body_path: .github/release-notes/${{ github.ref_name }}.md
         draft: false
         prerelease: false
       env:

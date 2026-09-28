@@ -1,6 +1,16 @@
+const MYDY_ORIGIN = 'https://mydy.dypatil.edu';
+const DASHBOARD_URL = 'https://mydy.dypatil.edu/rait/my/';
+// Every request to MyDy from a download run (a page or a file) waits at least this long after the
+// previous one, so it never sends a burst. The terminal app paces itself the same way.
+const REQUEST_GAP_MS = 800;
+const PAGE_TIMEOUT_MS = 30000;
+const ACTIVITY_TYPES = ['resource', 'flexpaper', 'presentation', 'casestudy', 'dyquestion'];
+
 class MydyContentScript {
     constructor() {
         this.isLoggedIn = false;
+        this.running = false;
+        this.lastRequest = 0;
         this.setupMessageListener();
         this.checkLoginStatus();
     }
@@ -19,6 +29,10 @@ class MydyContentScript {
                 case 'downloadCourses':
                     this.handleDownloadCourses(message.courses, sendResponse);
                     return true;
+
+                case 'status':
+                    sendResponse({ running: this.running });
+                    return false;
                     
                 default:
                     sendResponse({ error: 'Unknown action' });
@@ -52,15 +66,13 @@ class MydyContentScript {
                 return;
             }
 
-            // Navigate to dashboard if not already there
-            if (!window.location.href.includes('/my/') && !window.location.href.includes('/course/')) {
-                window.location.href = 'https://mydy.dypatil.edu/rait/my/';
-                // Wait for page to load
-                setTimeout(() => {
-                    this.getCourses(sendResponse);
-                }, 3000);
+            if (window.location.href.includes('/my/') || window.location.href.includes('/course/')) {
+                this.getCourses(sendResponse, document);
             } else {
-                this.getCourses(sendResponse);
+                // Read the dashboard in the background instead of leaving the page the student is on.
+                const page = await this.fetchPage(DASHBOARD_URL);
+                if (!page.doc) throw new Error("Couldn't open the MyDy dashboard");
+                this.getCourses(sendResponse, page.doc);
             }
         } catch (error) {
             console.error('Error getting courses:', error);
@@ -68,12 +80,12 @@ class MydyContentScript {
         }
     }
 
-    getCourses(sendResponse) {
+    getCourses(sendResponse, doc = document) {
         const courses = [];
         const seenIds = new Set();
 
         // Method 1: Look for course cards/boxes with proper structure
-        const courseContainers = document.querySelectorAll('.coursebox, .course-info-container, .course-listitem');
+        const courseContainers = doc.querySelectorAll('.coursebox, .course-info-container, .course-listitem');
         courseContainers.forEach(container => {
             const courseLink = container.querySelector('a[href*="/course/view.php?id="]');
             if (courseLink) {
@@ -101,7 +113,7 @@ class MydyContentScript {
         });
 
         // Method 2: Look in navigation blocks and course lists
-        const navBlocks = document.querySelectorAll('.block_navigation, .block_tree, .block_course_list');
+        const navBlocks = doc.querySelectorAll('.block_navigation, .block_tree, .block_course_list');
         navBlocks.forEach(block => {
             const courseItems = block.querySelectorAll('li, .tree_item');
             courseItems.forEach(item => {
@@ -131,7 +143,7 @@ class MydyContentScript {
         });
 
         // Method 3: Look for table rows with course information
-        const tableRows = document.querySelectorAll('tr, .course-row');
+        const tableRows = doc.querySelectorAll('tr, .course-row');
         tableRows.forEach(row => {
             const courseLink = row.querySelector('a[href*="/course/view.php?id="]');
             if (courseLink) {
@@ -159,7 +171,7 @@ class MydyContentScript {
 
         // Method 4: Fallback - scan all course links but with better name extraction
         if (courses.length === 0) {
-            const allCourseLinks = document.querySelectorAll('a[href*="/course/view.php?id="]');
+            const allCourseLinks = doc.querySelectorAll('a[href*="/course/view.php?id="]');
             allCourseLinks.forEach(link => {
                 const href = link.getAttribute('href');
                 const match = href.match(/id=(\d+)/);
@@ -289,30 +301,35 @@ class MydyContentScript {
             .trim();
     }
 
-    // Send a structured progress message to the popup (relayed by background.js).
-    //   phase:  'scan' | 'download' | 'course-done' | 'done' | 'error'
-    //   course: { index, total, name } (1-based) or null when no course is active
-    //   file:   { index, total, name } (1-based within the course) or null
-    //   totals: { downloaded, failed, found } running totals across all courses
-    sendProgress(phase, status, { course = null, file = null, totals } = {}) {
+    // Send a structured progress message. background.js keeps the latest state of the run, so the
+    // popup can show it again after being closed and reopened.
+    //   phase:   'start' | 'scan' | 'download' | 'course-done' | 'done' | 'error'
+    //   course:  { index, total, name } (1-based) or null when no course is active
+    //   file:    { index, total, name } (1-based within the course) or null
+    //   totals:  { downloaded, skipped, failed, found } running totals across all courses
+    //   courses: course names (on 'start');  results: per-course results (on 'done')
+    sendProgress(phase, status, { course = null, file = null, totals, courses, results } = {}) {
         const message = {
             action: 'updateProgress',
-            phase: phase,
-            status: status,
-            course: course,
-            file: file,
+            phase,
+            status,
+            course,
+            file,
             totals: {
                 downloaded: totals ? totals.downloaded : 0,
+                skipped: totals ? totals.skipped : 0,
                 failed: totals ? totals.failed : 0,
                 found: totals ? totals.found : 0
             }
         };
+        if (courses) message.courses = courses;
+        if (results) message.results = results;
 
         try {
             const pending = chrome.runtime.sendMessage(message);
             if (pending && typeof pending.catch === 'function') {
                 pending.catch(() => {
-                    // Popup/background might not be listening, ignore
+                    // Nobody listening right now, ignore
                 });
             }
         } catch (error) {
@@ -324,52 +341,91 @@ class MydyContentScript {
         return `${count} ${count === 1 ? singular : (plural || singular + 's')}`;
     }
 
+    // ---- polite networking ----
+
+    // Wait until REQUEST_GAP_MS has passed since the previous request to MyDy.
+    async pace() {
+        const wait = this.lastRequest + REQUEST_GAP_MS - Date.now();
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+        this.lastRequest = Date.now();
+    }
+
+    // Fetch a MyDy page as a parsed document. Unlike loading it in an iframe, this doesn't run the
+    // page's scripts or load its images. If the address turns out to be a file (a resource that
+    // redirects straight to its PDF), the body isn't read: its final address is returned so the file
+    // is downloaded once, later.
+    async fetchPage(url) {
+        await this.pace();
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), PAGE_TIMEOUT_MS);
+        try {
+            const response = await fetch(url, { credentials: 'include', signal: controller.signal });
+            const type = response.headers.get('content-type') || '';
+            if (!type.includes('text/html')) {
+                controller.abort();
+                return { fileUrl: response.url };
+            }
+            if (!response.ok) throw new Error(`MyDy answered ${response.status}`);
+            const html = await response.text();
+            return { doc: new DOMParser().parseFromString(html, 'text/html'), url: response.url };
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    absolute(value, base) {
+        try {
+            return new URL(value, base).href;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // ---- downloading ----
+
     async handleDownloadCourses(courses, sendResponse) {
+        if (this.running) {
+            sendResponse({ error: 'A download is already running in this tab.' });
+            return;
+        }
+        this.running = true;
+
         // Course/totals state lives outside the try block so the error handler can report it
-        let totalFilesFound = 0;
-        let totalFilesDownloaded = 0;
-        let totalFilesFailed = 0;
+        const totals = { downloaded: 0, skipped: 0, failed: 0, found: 0 };
         let activeCourse = null;
         const totalCourses = courses.length;
-        const currentTotals = () => ({
-            downloaded: totalFilesDownloaded,
-            failed: totalFilesFailed,
-            found: totalFilesFound
-        });
+        const currentTotals = () => ({ ...totals });
 
         try {
             const results = [];
-            let currentCourse = 0;
 
-            // Initial progress update
-            this.sendProgress('scan', `Scanning ${this.pluralize(totalCourses, 'course')}`, {
-                totals: currentTotals()
+            this.sendProgress('start', `Scanning ${this.pluralize(totalCourses, 'course')}`, {
+                totals: currentTotals(),
+                courses: courses.map((course) => course.name)
             });
 
-            for (const course of courses) {
-                currentCourse++;
-                activeCourse = { index: currentCourse, total: totalCourses, name: course.name };
+            for (let i = 0; i < courses.length; i++) {
+                const course = courses[i];
+                activeCourse = { index: i + 1, total: totalCourses, name: course.name };
 
-                // Update progress for course scanning
                 this.sendProgress('scan', `Opening ${course.name}`, {
                     course: activeCourse,
                     totals: currentTotals()
                 });
 
-                const result = await this.downloadCourse(course, currentCourse, totalCourses, currentTotals());
+                const result = await this.downloadCourse(course, i + 1, totalCourses, currentTotals());
                 results.push(result);
 
-                totalFilesFound += result.totalFound || 0;
-                totalFilesDownloaded += result.downloaded;
-                totalFilesFailed += result.failed;
+                totals.found += result.totalFound;
+                totals.downloaded += result.downloaded;
+                totals.skipped += result.skipped;
+                totals.failed += result.failed;
 
-                // Update progress after each course
                 let courseSummary;
                 if (result.totalFound > 0) {
                     courseSummary = `Finished ${course.name}: ${result.downloaded} of ${result.totalFound} files`;
-                    if (result.failed > 0) {
-                        courseSummary += `, ${result.failed} failed`;
-                    }
+                    if (result.skipped > 0) courseSummary += `, ${result.skipped} already saved`;
+                    if (result.failed > 0) courseSummary += `, ${result.failed} failed`;
                 } else {
                     courseSummary = `Finished ${course.name}: no files`;
                 }
@@ -379,11 +435,10 @@ class MydyContentScript {
                 });
             }
 
-            // Final summary update
             this.sendProgress(
                 'done',
-                `Finished: ${totalFilesDownloaded} of ${totalFilesFound} files from ${this.pluralize(totalCourses, 'course')}`,
-                { totals: currentTotals() }
+                `Finished: ${totals.downloaded} of ${totals.found} files from ${this.pluralize(totalCourses, 'course')}`,
+                { totals: currentTotals(), results }
             );
 
             sendResponse({ success: true, results: results });
@@ -394,283 +449,125 @@ class MydyContentScript {
                 totals: currentTotals()
             });
             sendResponse({ error: error.message });
+        } finally {
+            this.running = false;
         }
     }
 
-    async downloadCourse(course, courseNumber, totalCourses, baseTotals = { downloaded: 0, failed: 0, found: 0 }) {
-        return new Promise((resolve) => {
-            // Create an iframe to load the course page
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = course.url;
-            
-            const result = {
-                course: course.name,
-                downloaded: 0,
-                failed: 0,
-                files: [],
-                totalFound: 0
-            };
+    async downloadCourse(course, courseNumber, totalCourses, baseTotals) {
+        const result = {
+            course: course.name,
+            downloaded: 0,
+            skipped: 0,
+            failed: 0,
+            files: [],
+            totalFound: 0
+        };
 
-            // Progress reporting for this course: running totals = totals before this course + this course's result so far
-            const courseInfo = { index: courseNumber, total: totalCourses, name: course.name };
-            const report = (phase, status, file = null) => {
-                this.sendProgress(phase, status, {
-                    course: courseInfo,
-                    file: file,
-                    totals: {
-                        downloaded: baseTotals.downloaded + result.downloaded,
-                        failed: baseTotals.failed + result.failed,
-                        found: baseTotals.found + result.totalFound
-                    }
-                });
-            };
-
-            // Add timeout for course loading
-            const timeout = setTimeout(() => {
-                report('scan', `Timed out loading ${course.name}, skipped`);
-                document.body.removeChild(iframe);
-                resolve(result);
-            }, 30000); // 30 second timeout
-
-            iframe.onload = async () => {
-                clearTimeout(timeout);
-                
-                try {
-                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                    
-                    // First, find all downloadable files
-                    report('scan', `Scanning ${course.name}`);
-
-                    const downloadableFiles = await this.findDownloadableFiles(doc, course.name, report);
-                    result.totalFound = downloadableFiles.length;
-                    
-                    if (downloadableFiles.length === 0) {
-                        report('scan', `No files found in ${course.name}`);
-                    } else {
-                        report('scan', `Found ${this.pluralize(downloadableFiles.length, 'file')} in ${course.name}`);
-
-                        // Download each file with progress updates
-                        for (let i = 0; i < downloadableFiles.length; i++) {
-                            const file = downloadableFiles[i];
-                            const fileInfo = { index: i + 1, total: downloadableFiles.length, name: file.name };
-                            
-                            try {
-                                report('download', `Downloading ${file.name}`, fileInfo);
-
-                                await this.downloadFile(file.url, file.name, course.name);
-                                result.downloaded++;
-                                result.files.push(file.name);
-                                
-                                // Update progress with downloaded file
-                                report('download', `Downloaded ${file.name}`, fileInfo);
-
-                                // Small delay to prevent overwhelming the browser
-                                await new Promise(resolve => setTimeout(resolve, 300));
-                                
-                            } catch (error) {
-                                console.error('File download failed:', error);
-                                result.failed++;
-                                report('download', `Couldn't download ${file.name}`, fileInfo);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Course processing error:', error);
-                    result.failed++;
-                    report('scan', `Couldn't process ${course.name}: ${error.message}`);
-                }
-                
-                document.body.removeChild(iframe);
-                resolve(result);
-            };
-
-            iframe.onerror = () => {
-                clearTimeout(timeout);
-                result.failed++;
-                report('scan', `Couldn't load ${course.name}, skipped`);
-                document.body.removeChild(iframe);
-                resolve(result);
-            };
-
-            document.body.appendChild(iframe);
-        });
-    }
-
-    async findDownloadableFiles(doc, courseName, report = () => {}) {
-        const files = [];
-        const seenUrls = new Set();
-
-        // Look for different types of downloadable content
-        const selectors = [
-            'a[href*="pluginfile.php"]',
-            'a[href$=".pdf"]',
-            'a[href$=".ppt"]', 
-            'a[href$=".pptx"]',
-            'a[href$=".docx"]',
-            'a[href$=".doc"]',
-            'a[href$=".txt"]',
-            'iframe[src*="pluginfile.php"]',
-            'object[data*="pluginfile.php"]'
-        ];
-
-        // Count activity links first
-        const activityLinks = doc.querySelectorAll('a[href*="/mod/"]');
-        const relevantActivities = Array.from(activityLinks).filter(link => 
-            link.href.includes('/mod/resource/') || 
-            link.href.includes('/mod/flexpaper/') || 
-            link.href.includes('/mod/presentation/') ||
-            link.href.includes('/mod/casestudy/') ||
-            link.href.includes('/mod/dyquestion/')
-        );
-
-        selectors.forEach(selector => {
-            const elements = doc.querySelectorAll(selector);
-            elements.forEach(element => {
-                let url = null;
-                let filename = null;
-
-                if (element.tagName === 'A') {
-                    url = element.href;
-                    filename = element.textContent.trim() || this.extractFilenameFromUrl(url);
-                } else if (element.tagName === 'IFRAME') {
-                    url = element.src;
-                    filename = this.extractFilenameFromUrl(url);
-                } else if (element.tagName === 'OBJECT') {
-                    url = element.data;
-                    filename = this.extractFilenameFromUrl(url);
-                }
-
-                if (url && !seenUrls.has(url)) {
-                    seenUrls.add(url);
-                    // Ensure URL is absolute
-                    if (!url.startsWith('http')) {
-                        url = 'https://mydy.dypatil.edu' + url;
-                    }
-                    
-                    files.push({
-                        url: url,
-                        name: filename || 'unknown_file',
-                        type: this.getFileType(url)
-                    });
+        // Running totals = totals before this course + this course's result so far
+        const courseInfo = { index: courseNumber, total: totalCourses, name: course.name };
+        const report = (phase, status, file = null) => {
+            this.sendProgress(phase, status, {
+                course: courseInfo,
+                file: file,
+                totals: {
+                    downloaded: baseTotals.downloaded + result.downloaded,
+                    skipped: baseTotals.skipped + result.skipped,
+                    failed: baseTotals.failed + result.failed,
+                    found: baseTotals.found + result.totalFound
                 }
             });
+        };
+
+        try {
+            const page = await this.fetchPage(course.url);
+            if (!page.doc) throw new Error('that address is not a course page');
+
+            report('scan', `Scanning ${course.name}`);
+            const files = await this.findDownloadableFiles(page.doc, page.url, course.name, report);
+            result.totalFound = files.length;
+            report('scan', files.length ? `Found ${this.pluralize(files.length, 'file')} in ${course.name}` : `No files found in ${course.name}`);
+
+            // One file at a time: downloadFile waits for each to finish before the next starts.
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileInfo = { index: i + 1, total: files.length, name: file.name };
+                report('download', `Downloading ${file.name}`, fileInfo);
+
+                const outcome = await this.downloadFile(file.url, file.name, course.name);
+                if (outcome === 'skipped') {
+                    result.skipped++;
+                    report('download', `Already saved ${file.name}`, fileInfo);
+                } else if (outcome === 'failed') {
+                    result.failed++;
+                    report('download', `Couldn't download ${file.name}`, fileInfo);
+                } else {
+                    result.downloaded++;
+                    result.files.push(file.name);
+                    report('download', `Downloaded ${file.name}`, fileInfo);
+                }
+            }
+        } catch (error) {
+            console.error('Course processing error:', error);
+            result.failed++;
+            report('scan', `Couldn't open ${course.name}: ${error.message}`);
+        }
+        return result;
+    }
+
+    // Files linked from a page: pluginfile links, direct document links, embedded viewers and
+    // FlexPaper's PDFFile setting. Only files on MyDy itself.
+    filesInPage(doc, base) {
+        const files = [];
+        const add = (raw, name) => {
+            const url = raw && this.absolute(raw, base);
+            if (!url || !url.startsWith(MYDY_ORIGIN)) return;
+            files.push({ url, name: name || this.extractFilenameFromUrl(url), type: this.getFileType(url) });
+        };
+        doc.querySelectorAll('a[href*="pluginfile.php"], a[href$=".pdf"], a[href$=".ppt"], a[href$=".pptx"], a[href$=".doc"], a[href$=".docx"], a[href$=".txt"]')
+            .forEach((link) => add(link.getAttribute('href'), link.textContent.trim()));
+        doc.querySelectorAll('iframe[src*="pluginfile.php"]').forEach((frame) => add(frame.getAttribute('src')));
+        doc.querySelectorAll('object[data*="pluginfile.php"]').forEach((object) => add(object.getAttribute('data')));
+        doc.querySelectorAll('script').forEach((script) => {
+            for (const match of script.textContent.matchAll(/PDFFile\s*:\s*'([^']+)'/g)) add(match[1]);
+        });
+        return files;
+    }
+
+    async findDownloadableFiles(doc, courseUrl, courseName, report = () => {}) {
+        const files = [];
+        const seenUrls = new Set();
+        const keep = (list) => list.forEach((file) => {
+            if (!seenUrls.has(file.url)) {
+                seenUrls.add(file.url);
+                files.push(file);
+            }
         });
 
-        // Look for activity links that might contain files
-        for (let i = 0; i < relevantActivities.length; i++) {
-            const link = relevantActivities[i];
-            const href = link.href;
-            
-            report('scan', `Scanning activity ${i + 1} of ${relevantActivities.length} in ${courseName}`);
-            
+        keep(this.filesInPage(doc, courseUrl));
+
+        // Activities that hold files. Each is listed once, even when the page links it twice.
+        const activities = [...new Set(
+            Array.from(doc.querySelectorAll('a[href*="/mod/"]'))
+                .map((link) => this.absolute(link.getAttribute('href'), courseUrl))
+                .filter((href) => href && href.startsWith(MYDY_ORIGIN) && ACTIVITY_TYPES.some((type) => href.includes(`/mod/${type}/`)))
+        )];
+
+        for (let i = 0; i < activities.length; i++) {
+            report('scan', `Scanning activity ${i + 1} of ${activities.length} in ${courseName}`);
             try {
-                const activityFiles = await this.scanActivityForFiles(href);
-                activityFiles.forEach(file => {
-                    if (!seenUrls.has(file.url)) {
-                        seenUrls.add(file.url);
-                        files.push(file);
-                    }
-                });
+                const page = await this.fetchPage(activities[i]);
+                if (page.fileUrl) {
+                    keep([{ url: page.fileUrl, name: this.extractFilenameFromUrl(page.fileUrl), type: this.getFileType(page.fileUrl) }]);
+                } else {
+                    keep(this.filesInPage(page.doc, page.url));
+                }
             } catch (error) {
-                console.error('Error scanning activity:', error);
+                console.warn('Could not scan activity:', activities[i], error);
             }
         }
 
         return files;
-    }
-
-    async scanActivityForFiles(activityUrl) {
-        return new Promise((resolve) => {
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = activityUrl;
-            
-            const files = [];
-
-            iframe.onload = () => {
-                try {
-                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                    
-                    // Look for direct download links
-                    const downloadLinks = doc.querySelectorAll('a[href*="pluginfile.php"], a[href$=".pdf"], a[href$=".ppt"], a[href$=".pptx"]');
-                    downloadLinks.forEach(link => {
-                        let url = link.href;
-                        if (!url.startsWith('http')) {
-                            url = 'https://mydy.dypatil.edu' + url;
-                        }
-                        files.push({
-                            url: url,
-                            name: link.textContent.trim() || this.extractFilenameFromUrl(url),
-                            type: this.getFileType(url)
-                        });
-                    });
-
-                    // Look for FlexPaper PDFs in script content
-                    const scripts = doc.querySelectorAll('script');
-                    scripts.forEach(script => {
-                        const content = script.textContent;
-                        const pdfMatches = content.match(/PDFFile\s*:\s*'([^']+)'/g);
-                        if (pdfMatches) {
-                            pdfMatches.forEach(match => {
-                                const urlMatch = match.match(/'([^']+)'/);
-                                if (urlMatch) {
-                                    let url = urlMatch[1];
-                                    if (!url.startsWith('http')) {
-                                        url = 'https://mydy.dypatil.edu' + url;
-                                    }
-                                    files.push({
-                                        url: url,
-                                        name: this.extractFilenameFromUrl(url),
-                                        type: 'pdf'
-                                    });
-                                }
-                            });
-                        }
-                    });
-
-                    // Look for iframe and object sources
-                    const iframes = doc.querySelectorAll('iframe[src*="pluginfile.php"]');
-                    iframes.forEach(iframe => {
-                        let url = iframe.src;
-                        if (!url.startsWith('http')) {
-                            url = 'https://mydy.dypatil.edu' + url;
-                        }
-                        files.push({
-                            url: url,
-                            name: this.extractFilenameFromUrl(url),
-                            type: this.getFileType(url)
-                        });
-                    });
-
-                    const objects = doc.querySelectorAll('object[data*="pluginfile.php"]');
-                    objects.forEach(obj => {
-                        let url = obj.data;
-                        if (!url.startsWith('http')) {
-                            url = 'https://mydy.dypatil.edu' + url;
-                        }
-                        files.push({
-                            url: url,
-                            name: this.extractFilenameFromUrl(url),
-                            type: this.getFileType(url)
-                        });
-                    });
-
-                } catch (error) {
-                    console.error('Error accessing activity iframe:', error);
-                }
-                
-                document.body.removeChild(iframe);
-                resolve(files);
-            };
-
-            iframe.onerror = () => {
-                document.body.removeChild(iframe);
-                resolve([]);
-            };
-
-            document.body.appendChild(iframe);
-        });
     }
 
     extractFilenameFromUrl(url) {
@@ -685,7 +582,7 @@ class MydyContentScript {
     }
 
     getFileType(url) {
-        const extension = url.split('.').pop().toLowerCase();
+        const extension = url.split('?')[0].split('.').pop().toLowerCase();
         const typeMap = {
             'pdf': 'pdf',
             'ppt': 'presentation',
@@ -697,19 +594,24 @@ class MydyContentScript {
         return typeMap[extension] || 'unknown';
     }
 
+    // Returns 'downloaded', 'skipped' (already saved) or 'failed'.
     async downloadFile(url, filename, courseName) {
-        // Prefer the background worker: it saves into Downloads/MyDy/<course>/.
+        await this.pace();
+        let response;
         try {
-            const response = await chrome.runtime.sendMessage({ action: 'downloadFile', url, filename, courseName });
-            if (response && response.success) {
-                await new Promise((resolve) => setTimeout(resolve, 300));
-                return;
-            }
+            // background.js saves into Downloads/MyDy/<course>/ and answers once the file has finished.
+            response = await chrome.runtime.sendMessage({ action: 'downloadFile', url, filename, courseName });
         } catch (error) {
-            console.warn('Background download failed, using a page link instead:', error);
+            // The worker may have restarted mid-download; don't start a second copy.
+            console.warn('Download status unknown:', error);
+            return 'failed';
+        }
+        if (response && response.success) {
+            if (response.state === 'skipped') return 'skipped';
+            return response.state === 'interrupted' ? 'failed' : 'downloaded';
         }
 
-        // Fallback: let the page download it (lands in the Downloads folder itself).
+        // The worker couldn't start it: let the page download it (lands in the Downloads folder itself).
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
@@ -717,7 +619,7 @@ class MydyContentScript {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        return 'downloaded';
     }
 }
 

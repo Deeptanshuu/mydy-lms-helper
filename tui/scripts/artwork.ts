@@ -4,6 +4,7 @@
 import * as mdi from "@mdi/js"
 import { join } from "node:path"
 import { color } from "../src/theme"
+import { ditherImage, smoothstep } from "./dither-art"
 
 const MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace"
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -32,14 +33,27 @@ function keyHints(x: number, y: number, size: number, hints: Array<[string, stri
   return out.join("\n  ")
 }
 
-const svg = (width: number, height: number, title: string, desc: string, body: string[]) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title desc">
+const svg = (width: number, height: number, title: string, desc: string, body: string[], radius = 16) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title desc">
   <title id="title">${esc(title)}</title>
   <desc id="desc">${esc(desc)}</desc>
   <style>text { font-family: ${MONO}; }</style>
-  <rect width="${width}" height="${height}" rx="16" fill="${color.bg}"/>
+  <rect width="${width}" height="${height}" rx="${radius}" fill="${color.bg}"/>
   ${body.join("\n  ")}
 </svg>
 `
+
+const rgb = (hex: string): [number, number, number] => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number]
+
+/** The website hero's dithered orange waves (site/dither.js), one still frame, clipped to the card's corners. */
+function heroWaves(width: number, height: number, fade: (x: number, y: number) => number, radius = 16, time = 15): string[] {
+  // Thin the waves out where the fade says so, and a little towards the bottom edge.
+  const mask = (x: number, y: number) => fade(x, y) * (1 - 0.35 * smoothstep(0.6, 1, y / height))
+  const id = `waves-${width}x${height}`
+  return [
+    `<defs><clipPath id="${id}"><rect width="${width}" height="${height}" rx="${radius}"/></clipPath></defs>`,
+    ditherImage({ width, height, time, mask, pixelSize: 4, waveIntensity: 0.7, strength: 0.8, background: rgb(color.bg), wave: rgb(color.accent) }, 0, 0, `clip-path="url(#${id})"`),
+  ]
+}
 
 /** Logo "cap prompt": a shell chevron, the graduation cap, and an underscore cursor. 64x64 design grid. */
 function logoMarkup(x: number, y: number, size: number, outline = false): string {
@@ -59,7 +73,8 @@ function logo(): string {
 `
 }
 
-function banner(): string {
+/** The banner's content (mark, title, chips and the TUI panel) on a 1280x380 grid. */
+function bannerContent(): string[] {
   const body: string[] = []
 
   // Mark and title
@@ -116,7 +131,27 @@ function banner(): string {
   body.push(`<path d="M${px},306 H${px + pw} V324 A12,12 0 0 1 ${px + pw - 12},336 H${px + 12} A12,12 0 0 1 ${px},324 Z" fill="${color.bar}"/>`)
   body.push(keyHints(px + 24, 326, 12, [["↑↓", "move"], ["space", "mark"], ["d", "download"], ["?", "help"]]))
 
-  return svg(1280, 380, "MyDy LMS Helper", "Attendance, grades, assignments and course files from the MyDy portal, shown as the terminal UI's course list with an attendance bar per course.", body)
+  return body
+}
+
+const BANNER_TITLE = "MyDy LMS Helper"
+const BANNER_DESC = "Attendance, grades, assignments and course files from the MyDy portal, shown as the terminal UI's course list with an attendance bar per course."
+const bannerFade = (width: number) => (x: number) => 0.25 + 0.75 * smoothstep(0.34, 0.66, x / width)
+
+function banner(): string {
+  return svg(1280, 380, BANNER_TITLE, BANNER_DESC, [...heroWaves(1280, 380, bannerFade(1280)), ...bannerContent()])
+}
+
+/** The link-preview image for the website (site/og.png): the banner on a 1200x630 card. */
+function socialCard(): string {
+  const k = 1200 / 1280
+  const top = Math.round((630 - 380 * k) / 2)
+  return svg(1200, 630, BANNER_TITLE, BANNER_DESC, [
+    ...heroWaves(1200, 630, bannerFade(1200), 0),
+    `<g transform="translate(0 ${top}) scale(${k})">`,
+    ...bannerContent(),
+    "</g>",
+  ], 0)
 }
 
 function howItWorks(): string {
@@ -269,3 +304,16 @@ await Bun.write(join(dir, "how-it-works.svg"), howItWorks())
 await Bun.write(join(dir, "logo.svg"), logo())
 await Bun.write(join(dir, "mcp-chat.svg"), mcpChat())
 console.log(["banner.svg", "how-it-works.svg", "logo.svg", "mcp-chat.svg"].map((f) => `wrote ${join(dir, f)}`).join("\n"))
+
+// site/og.png (link previews need a PNG): rasterise the social card with rsvg-convert when it's installed.
+const og = join(import.meta.dir, "..", "..", "site", "og.png")
+const rsvg = Bun.which("rsvg-convert")
+if (rsvg) {
+  const card = join(dir, "..", "..", "tui", "dist", "og.svg")
+  await Bun.write(card, socialCard())
+  const run = Bun.spawnSync([rsvg, "-w", "1200", "-h", "630", card, "-o", og])
+  if (run.exitCode !== 0) throw new Error(`rsvg-convert failed: ${run.stderr.toString()}`)
+  console.log(`wrote ${og}`)
+} else {
+  console.log("rsvg-convert not found: site/og.png not updated")
+}

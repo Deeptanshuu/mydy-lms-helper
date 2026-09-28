@@ -32,7 +32,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
         cache-dependency-path: extension/package-lock.json
         
@@ -55,6 +55,14 @@ jobs:
     - name: Get version from package.json
       id: package-version
       run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+    - name: Check the tag and manifest.json match package.json
+      run: |
+        v="${{ steps.package-version.outputs.version }}"
+        [ "$(node -p "require('./manifest.json').version")" = "$v" ] || { echo "manifest.json version differs from package.json ($v)"; exit 1; }
+        if [ "${{ github.event_name }}" = "push" ] && [ "$GITHUB_REF_NAME" != "ext-v$v" ]; then
+          echo "Tag $GITHUB_REF_NAME does not match package.json version $v"; exit 1
+        fi
       
     - name: Create extension package
       run: |
@@ -71,36 +79,16 @@ jobs:
         git push origin HEAD:main
         git push origin ext-v${{ steps.package-version.outputs.version }}
         
+    # Notes come from .github/release-notes/ext-v<version>.md (an empty body if that file is missing).
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ext-v${{ steps.package-version.outputs.version }}
-        release_name: MyDy Downloader v${{ steps.package-version.outputs.version }}
-        body: |
-          ## What's Changed
-          - Automated release of the MyDy Downloader extension v${{ steps.package-version.outputs.version }}
-          
-          ## Installation
-          1. Download the `mydy-extension-v${{ steps.package-version.outputs.version }}.zip` file
-          2. Extract the contents
-          3. Open Chrome and go to `chrome://extensions/`
-          4. Enable "Developer mode"
-          5. Click "Load unpacked" and select the extracted folder
-          
-          ## Chrome Web Store
-          This extension is also available on the Chrome Web Store: [Link will be added after approval]
+        name: MyDy Downloader v${{ steps.package-version.outputs.version }}
+        body_path: .github/release-notes/ext-v${{ steps.package-version.outputs.version }}.md
+        files: extension/mydy-extension-v${{ steps.package-version.outputs.version }}.zip
+        make_latest: false
         draft: false
         prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./extension/mydy-extension-v${{ steps.package-version.outputs.version }}.zip
-        asset_name: mydy-extension-v${{ steps.package-version.outputs.version }}.zip
-        asset_content_type: application/zip

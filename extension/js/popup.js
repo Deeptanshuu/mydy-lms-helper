@@ -3,12 +3,13 @@
 //   checkLogin                  -> { loggedIn }
 //   getCourses                  -> { courses: [{ id, name }] } | { error }
 //   downloadCourses { courses } -> { success, results } | { error }
-// and draws the updateProgress messages content.js sends while it downloads:
-//   { phase, status, course: { index, total, name }, file: { index, total, name } | null, totals }
+// While a download runs, background.js keeps its state in chrome.storage.session ("run"); the popup
+// draws that, so closing and reopening it mid-download (or after) picks up where it was.
 
 const MYDY = "https://mydy.dypatil.edu/"
 const SVG_NS = "http://www.w3.org/2000/svg"
 const SELECTION_KEY = "selectedCourses"
+const RUN_KEY = "run"
 
 const $ = (id) => document.getElementById(id)
 
@@ -37,11 +38,12 @@ class Popup {
     this.courses = []
     this.selected = new Set()
     this.query = ""
-    this.run = null // the download in progress: { courses, perCourse, startDownloaded }
     this.bind()
     $("version").textContent = `v${chrome.runtime.getManifest().version}`
-    chrome.runtime.onMessage.addListener((message) => {
-      if (message.action === "updateProgress") this.onProgress(message)
+    // Follow the run while its progress is on screen.
+    chrome.storage.onChanged.addListener((changes, area) => {
+      const run = changes[RUN_KEY]?.newValue
+      if (area === "session" && run && !$("view-progress").hidden) this.showRun(run)
     })
     this.start()
   }
@@ -52,7 +54,10 @@ class Popup {
       window.close()
     })
     $("checkAgainBtn").addEventListener("click", () => this.start())
-    $("retryBtn").addEventListener("click", () => this.start())
+    $("retryBtn").addEventListener("click", async () => {
+      await this.dismissRun()
+      this.start({ ignoreRun: true })
+    })
     $("reloadTabBtn").addEventListener("click", async () => {
       if (this.tab) await chrome.tabs.reload(this.tab.id)
       window.close()
@@ -75,7 +80,11 @@ class Popup {
     )
     $("downloadAllBtn").addEventListener("click", () => this.download(this.courses))
     $("showFolderBtn").addEventListener("click", () => chrome.downloads.showDefaultFolder())
-    $("backBtn").addEventListener("click", () => this.showCourses())
+    $("backBtn").addEventListener("click", async () => {
+      await this.dismissRun()
+      if (this.courses.length) this.showCourses()
+      else this.start({ ignoreRun: true })
+    })
     document.addEventListener("keydown", (e) => {
       if (e.key === "/" && !$("view-courses").hidden && document.activeElement !== $("searchInput")) {
         e.preventDefault()
@@ -91,9 +100,17 @@ class Popup {
 
   // ---- tab and sign-in ----
 
-  async start() {
+  async start({ ignoreRun = false } = {}) {
     this.show("checking")
     ;[this.tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!ignoreRun) {
+      // A download that's running, or finished while the popup was closed.
+      const run = (await chrome.storage.session.get(RUN_KEY))[RUN_KEY]
+      if (run) {
+        this.showRun(run)
+        return
+      }
+    }
     if (!this.tab?.url?.startsWith(MYDY)) {
       this.showSignIn(false)
       return
@@ -246,23 +263,30 @@ class Popup {
 
   async download(courses) {
     if (!courses.length) return
-    this.run = { courses, perCourse: new Map(), startDownloaded: 0, current: 0 }
-    $("progressTitle").textContent = `Downloading ${plural(courses.length, "course")}`
-    $("progressCount").textContent = `0 of ${courses.length}`
-    this.setBar(0)
-    $("progressStatus").textContent = "Starting…"
-    this.renderSteps()
-    this.show("progress")
+    this.renderProgress({
+      courses: courses.map((c) => ({ name: c.name, downloaded: null })),
+      current: 0, ratio: 0, file: null, status: "Starting…",
+    })
     try {
-      // Big downloads take a while; content.js keeps going even if this popup closes.
-      const response = await this.send({ action: "downloadCourses", courses }, 60 * 60 * 1000)
-      if (response?.success) this.showDone(response.results ?? [])
-      else this.showError(response?.error ?? "The download stopped.")
+      // content.js keeps going even if this popup closes; the run's state tells the rest.
+      const response = await this.send({ action: "downloadCourses", courses }, 6 * 60 * 60 * 1000)
+      if (response?.error) this.showError(response.error)
+      else if (response?.success && !$("view-progress").hidden) this.showDone(response.results ?? [])
     } catch (error) {
-      this.showError(`The download stopped. ${error.message}`)
-    } finally {
-      this.run = null
+      const run = (await chrome.storage.session.get(RUN_KEY))[RUN_KEY]
+      if (!run) this.showError(`The download stopped. ${error.message}`)
     }
+  }
+
+  showRun(run) {
+    if (run.state === "running") this.renderProgress(run)
+    else if (run.state === "done") this.showDone(run.results ?? [])
+    else this.showError(run.error ?? "The download stopped.")
+  }
+
+  async dismissRun() {
+    await chrome.storage.session.remove(RUN_KEY)
+    chrome.action.setBadgeText({ text: "" })
   }
 
   setBar(ratio) {
@@ -271,57 +295,47 @@ class Popup {
     $("progressPct").textContent = `${pct}%`
   }
 
-  onProgress(message) {
-    if (!this.run) return
-    if (message.status) $("progressStatus").textContent = message.status
-    const { course, file, totals, phase } = message
-    if (phase === "done") this.setBar(1)
-    if (!course) return
-
-    if (course.index !== this.run.current) {
-      this.run.current = course.index
-      this.run.startDownloaded = totals?.downloaded ?? 0
-    }
-    if (phase === "course-done" && totals) {
-      this.run.perCourse.set(course.index, totals.downloaded - this.run.startDownloaded)
-    }
-    const within = phase === "course-done" ? 1 : file && file.total ? file.index / file.total : 0
-    this.setBar((course.index - 1 + within) / course.total)
-    $("progressCount").textContent = `${course.index} of ${course.total}`
-    this.renderSteps(file)
-  }
-
-  renderSteps(file = null) {
-    const { courses, current, perCourse } = this.run
+  renderProgress(run) {
+    const total = run.courses.length
+    $("progressTitle").textContent = total ? `Downloading ${plural(total, "course")}` : "Downloading"
+    $("progressCount").textContent = total ? `${run.current || 0} of ${total}` : ""
+    this.setBar(run.ratio ?? 0)
+    $("progressStatus").textContent = run.status || "Starting…"
     $("progressCourses").replaceChildren(
-      ...courses.map((course, i) => {
+      ...run.courses.map((course, i) => {
         const index = i + 1
-        const done = perCourse.has(index)
-        const state = done ? "done" : index === current ? "current" : "pending"
-        const count = done
-          ? plural(perCourse.get(index), "file")
+        const state = course.downloaded !== null ? "done" : index === run.current ? "current" : "pending"
+        const count = state === "done"
+          ? plural(course.downloaded, "file")
           : state === "current"
-            ? file ? `${file.index} of ${file.total}` : "scanning"
+            ? run.file ? `${run.file.index} of ${run.file.total}` : "scanning"
             : ""
         const name = { done: "done", current: "downloading", pending: "pending" }[state]
         return el("li", state, icon(name), el("span", "name", course.name), el("span", "count", count))
       }),
     )
+    this.show("progress")
   }
 
   showDone(results) {
     const files = results.reduce((sum, r) => sum + (r.downloaded || 0), 0)
+    const skipped = results.reduce((sum, r) => sum + (r.skipped || 0), 0)
     const failed = results.reduce((sum, r) => sum + (r.failed || 0), 0)
     const stat = (value, label, bad = false) => el("div", bad ? "stat bad" : "stat", el("b", "", String(value)), el("span", "", label))
     $("doneStats").replaceChildren(
       stat(files, files === 1 ? "file" : "files"),
       stat(results.length, results.length === 1 ? "course" : "courses"),
+      ...(skipped ? [stat(skipped, "saved before")] : []),
       ...(failed ? [stat(failed, "failed", true)] : []),
     )
     $("doneCourses").replaceChildren(
       ...results.map((r) => {
-        const count = el("span", r.failed ? "count bad" : "count",
-          r.downloaded ? plural(r.downloaded, "file") + (r.failed ? `, ${r.failed} failed` : "") : r.failed ? `${r.failed} failed` : "no files")
+        const parts = [
+          r.downloaded ? plural(r.downloaded, "file") : "",
+          r.skipped ? `${r.skipped} saved before` : "",
+          r.failed ? `${r.failed} failed` : "",
+        ].filter(Boolean)
+        const count = el("span", r.failed ? "count bad" : "count", parts.join(", ") || "no files")
         const summary = el("summary", r.failed ? "failed" : "", icon(r.failed ? "alert" : "done"), el("span", "name", r.course), count)
         const details = el("details", "", summary)
         if (r.files?.length) details.append(el("ul", "files", ...r.files.map((name) => el("li", "", name))))

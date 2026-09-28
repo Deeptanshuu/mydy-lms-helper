@@ -24,7 +24,7 @@ Every course's files from MyDy in one go, sorted into a folder per course.
 
 Part of [MyDy LMS Helper](../README.md). For attendance, grades and assignments too, use the [terminal UI](../tui/README.md).
 
-Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question modules into `Downloads/MyDy/<course>/`. It uses your signed-in browser session, never sees your password, and only talks to `mydy.dypatil.edu`. It remembers the courses you picked, and you can filter with `/` and tick with the keyboard.
+Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question modules into `Downloads/MyDy/<course>/`. It uses your signed-in browser session, never sees your password, and only talks to `mydy.dypatil.edu`. It's gentle on MyDy (one request at a time, each file fetched once), skips files you already have, and keeps showing progress if you close and reopen the popup.
 
 ## Install
 

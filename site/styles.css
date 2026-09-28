@@ -64,7 +64,8 @@ kbd { color: var(--accent); }
 @media (max-width: 560px) { .brand-sub { display: none; } .topbar nav a { padding: 4px 6px; } .topbar nav a[href="#demo"] { display: none; } }
 
 /* ---- hero: dithered waves (dither.js) behind the headline ---- */
-.hero-band { position: relative; isolation: isolate; overflow: hidden; }
+/* No overflow clipping: the hero's "Set up with AI" menu drops below the band. */
+.hero-band { position: relative; z-index: 2; isolation: isolate; }
 #hero-dither {
   position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%;
   opacity: 0; transition: opacity 1.4s ease; pointer-events: none; image-rendering: pixelated;
@@ -174,6 +175,7 @@ section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 9
 .platforms a { display: inline-block; padding: 6px 12px; border-radius: 5px; background: var(--strip); text-decoration: none; }
 .platforms a:hover { background: var(--accent); color: var(--on-accent); }
 .platforms a.unavailable { color: var(--muted); }
+.platforms a.unavailable:hover { color: var(--on-accent); }
 /* ---- privacy: the TUI's "needs you" strip ---- */
 .privacy { padding-bottom: clamp(56px, 8vw, 96px); }
 .strip { display: flex; align-items: flex-start; gap: 16px; background: var(--strip); border-radius: 8px; padding: 16px 18px; }
@@ -252,9 +254,7 @@ section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 9
 .logos svg { width: 20px; height: 20px; fill: var(--strong); flex: none; }
 
 /* ---- "Set up with AI" menu ---- */
-.prompt-actions, .card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
-.card-actions { margin-top: auto; }
-.card-actions .more { margin-top: 0; }
+.prompt-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .button.outline { background: var(--panel); color: var(--strong); border: 1px solid var(--line); }
 .button.outline:hover, .button.outline[aria-expanded="true"] { background: var(--strip); border-color: var(--muted); }
 .ai-menu { position: relative; }

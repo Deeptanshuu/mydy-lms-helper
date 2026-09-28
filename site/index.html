@@ -63,6 +63,19 @@
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
             <span id="download-label">Download</span>
           </a>
+          <div class="ai-menu" data-ai-menu="general">
+              <button class="button outline ai-menu-button" type="button" aria-haspopup="menu" aria-expanded="false">
+                <svg class="ic"><use href="#i-sparkle"/></svg>Set up with AI<svg class="ic chevron"><use href="#i-chevron"/></svg>
+              </button>
+              <div class="ai-menu-list" role="menu" aria-label="Set up with AI" hidden>
+                <button role="menuitem" type="button" data-copy="prompt"><svg class="ic"><use href="#i-sparkle"/></svg><span>Copy prompt</span></button>
+                <button role="menuitem" type="button" data-copy="commands"><svg class="ic"><use href="#i-console"/></svg><span>Copy install commands</span></button>
+                <hr role="separator">
+                <a role="menuitem" data-open="chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-openai"/></svg><span>Open in ChatGPT</span></a>
+                <a role="menuitem" data-open="claude" href="https://claude.ai/new" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-claude"/></svg><span>Open in Claude</span></a>
+                <a role="menuitem" data-open="perplexity" href="https://www.perplexity.ai/" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-perplexity"/></svg><span>Open in Perplexity</span></a>
+              </div>
+            </div>
           <a class="button ghost" href="#install">All platforms</a>
         </div>
         <p class="fineprint" id="download-note">Unofficial and open source.</p>
@@ -212,7 +225,7 @@
           </ul>
           <div class="prompt-actions">
             <a class="button primary small" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/mcp/README.md">Set up the MCP server</a>
-            <div class="ai-menu" data-ai-menu>
+            <div class="ai-menu" data-ai-menu="mcp">
             <button class="button small outline ai-menu-button" type="button" aria-haspopup="menu" aria-expanded="false">
               <svg class="ic"><use href="#i-sparkle"/></svg>Set up with AI<svg class="ic chevron"><use href="#i-chevron"/></svg>
             </button>
@@ -248,21 +261,7 @@
         <div class="card">
           <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z"/></svg>MCP server</h3>
           <p>Python, for any MCP client.</p>
-          <div class="card-actions">
-            <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/mcp/README.md">Setup guide</a>
-            <div class="ai-menu up" data-ai-menu>
-            <button class="button small outline ai-menu-button" type="button" aria-haspopup="menu" aria-expanded="false">
-              <svg class="ic"><use href="#i-sparkle"/></svg>Set up with AI<svg class="ic chevron"><use href="#i-chevron"/></svg>
-            </button>
-            <div class="ai-menu-list" role="menu" aria-label="Set up with AI" hidden>
-              <button role="menuitem" type="button" data-copy="prompt"><svg class="ic"><use href="#i-sparkle"/></svg><span>Copy prompt</span></button>
-              <button role="menuitem" type="button" data-copy="commands"><svg class="ic"><use href="#i-console"/></svg><span>Copy install commands</span></button>
-              <hr role="separator">
-              <a role="menuitem" data-open="chatgpt" href="https://chatgpt.com/" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-openai"/></svg><span>Open in ChatGPT</span></a>
-              <a role="menuitem" data-open="claude" href="https://claude.ai/new" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-claude"/></svg><span>Open in Claude</span></a>
-              <a role="menuitem" data-open="perplexity" href="https://www.perplexity.ai/" target="_blank" rel="noopener"><svg class="ic"><use href="#logo-perplexity"/></svg><span>Open in Perplexity</span></a>
-            </div>
-          </div>
+          <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/mcp/README.md">Setup guide</a>
           </div>
         </div>
         <div class="card">

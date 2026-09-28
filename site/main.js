@@ -263,21 +263,36 @@ async function setUpDemo() {
 // ---------------------------------------------------------------------------
 // "Set up with AI" menus: copy a setup prompt or the commands, or open the prompt in an assistant
 // ---------------------------------------------------------------------------
-const AI_PROMPT = `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, and download my course files.
+// Each menu says which setup it's for: data-ai-menu="general" (the whole project) or "mcp".
+const AI_SETUP = {
+  general: {
+    prompt: `Help me set up MyDy LMS Helper (https://github.com/${REPO}), an unofficial, open-source helper for the MyDy LMS at D.Y. Patil (mydy.dypatil.edu). It has a terminal app (attendance, deadlines, grades, announcements and bulk downloads on one screen), an MCP server that lets an AI assistant like you read my courses, and a Chrome extension for downloading course files.
+
+README: https://github.com/${REPO}#readme
+
+Ask me which of these I want and which operating system I use, then walk me through the setup one step at a time.`,
+    commands: `git clone https://github.com/${REPO}.git
+cd mydy-lms-helper
+bun install
+bun run tui`,
+  },
+  mcp: {
+    prompt: `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, and download my course files.
 
 Project: https://github.com/${REPO}
 Setup guide: https://github.com/${REPO}/blob/main/mcp/README.md
 
-Read the setup guide, ask me which operating system and which AI app I use, then walk me through it one step at a time.`
-
-const SETUP_COMMANDS = `git clone https://github.com/${REPO}.git
+Read the setup guide, ask me which operating system and which AI app I use, then walk me through it one step at a time.`,
+    commands: `git clone https://github.com/${REPO}.git
 cd mydy-lms-helper
 python3 -m venv .venv
 .venv/bin/pip install -r mcp/requirements.txt
 claude mcp add mydy-lms \\
   -e MYDY_USERNAME=your_email@dypatil.edu \\
   -e MYDY_PASSWORD=your_password \\
-  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"`
+  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"`,
+  },
+}
 
 const OPEN_IN = {
   chatgpt: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}`,
@@ -290,6 +305,7 @@ function setUpAiMenus() {
   const closeAll = (except) => menus.forEach((m) => m !== except && m.close?.())
 
   for (const root of menus) {
+    const setup = AI_SETUP[root.dataset.aiMenu] ?? AI_SETUP.general
     const button = root.querySelector(".ai-menu-button")
     const list = root.querySelector('[role="menu"]')
     const items = [...list.querySelectorAll('[role="menuitem"]')]
@@ -328,7 +344,7 @@ function setUpAiMenus() {
 
     for (const item of items) {
       if (item.dataset.open) {
-        item.href = OPEN_IN[item.dataset.open](AI_PROMPT)
+        item.href = OPEN_IN[item.dataset.open](setup.prompt)
         item.addEventListener("click", () => root.close())
       }
       if (item.dataset.copy) {
@@ -336,7 +352,7 @@ function setUpAiMenus() {
         const original = label.textContent
         item.addEventListener("click", async () => {
           try {
-            await navigator.clipboard.writeText(item.dataset.copy === "prompt" ? AI_PROMPT : SETUP_COMMANDS)
+            await navigator.clipboard.writeText(item.dataset.copy === "prompt" ? setup.prompt : setup.commands)
             label.textContent = "Copied"
             item.classList.add("done")
           } catch {
