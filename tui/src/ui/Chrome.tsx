@@ -1,7 +1,7 @@
 import { useTerminalDimensions } from "@opentui/solid"
 import { createMemo, For, Show } from "solid-js"
 import { needsYouFor } from "../derive"
-import { formatAge } from "../format"
+import { fit, formatAge } from "../format"
 import { slot } from "../icons"
 import type { AppState } from "../state"
 import { color } from "../theme"
@@ -55,6 +55,26 @@ export function NeedsYouStrip() {
     { text: "r", fg: color.accent },
     { text: " to retry.", fg: color.muted },
   ]
+  const dims = useTerminalDimensions()
+  const badge = () => ` ${slot("alert", nerd)}needs you `
+  // Only what fits: whole items first, then a title on its own. Never cut a word at the edge.
+  const shown = createMemo(() => {
+    let room = dims().width - 4 - [...badge()].length
+    const out: Array<{ item: ReturnType<typeof items>[number]; title: string; detail: string }> = []
+    for (const item of items().slice(0, 2)) {
+      const title = [...item.title].length
+      const full = 3 + title + 2 + [...item.detail].length
+      if (full <= room) {
+        out.push({ item, title: item.title, detail: item.detail })
+        room -= full
+        continue
+      }
+      if (out.length === 0) out.push({ item, title: fit(item.title, room - 3).trimEnd(), detail: "" })
+      else if (3 + title <= room) out.push({ item, title: item.title, detail: "" })
+      break
+    }
+    return out
+  })
   const open = (courseId: string, kind: "attendance" | "deadline") => {
     store.actions.select(courseId)
     store.actions.setTab(kind === "deadline" ? "assignments" : "files")
@@ -67,15 +87,15 @@ export function NeedsYouStrip() {
         fallback={<Line bg={color.strip} paddingX={2} segs={offline()} />}
       >
         <box flexDirection="row" height={1} flexShrink={0} backgroundColor={color.strip} paddingX={2}>
-          <Line segs={[{ text: ` ${slot("alert", nerd)}needs you `, bg: color.accent, fg: color.onAccent, bold: true }]} />
-          <For each={items().slice(0, 2)}>
-            {(item) => (
+          <Line segs={[{ text: badge(), bg: color.accent, fg: color.onAccent, bold: true }]} />
+          <For each={shown()}>
+            {(entry) => (
               <Line
                 segs={[
-                  { text: `   ${item.title}`, fg: item.severity === "low" ? color.low : color.warn },
-                  { text: `  ${item.detail}`, fg: color.muted },
+                  { text: `   ${entry.title}`, fg: entry.item.severity === "low" ? color.low : color.warn },
+                  ...(entry.detail ? [{ text: `  ${entry.detail}`, fg: color.muted }] : []),
                 ]}
-                onMouseDown={() => open(item.courseId, item.kind)}
+                onMouseDown={() => open(entry.item.courseId, entry.item.kind)}
               />
             )}
           </For>

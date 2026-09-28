@@ -24,6 +24,15 @@ describe("main screen", () => {
     expect(t.ctx.services.calls).toContain("loadTab 812 files")
   })
 
+  test("the needs-you strip drops what doesn't fit instead of cutting it off", async () => {
+    const wide = (await renderWith(() => <App />, { width: 160 })).frame()
+    expect(wide).toContain("Lab 9: Subnetting  due in 2 days, not submitted")
+    const f = (await renderWith(() => <App />, { width: 90 })).frame()
+    const strip = f.split("\n").find((l) => l.includes("needs you"))!
+    expect(strip).toContain("Assignment 3: Trees  due tomorrow, not submitted")
+    expect(strip).not.toContain("due in 2 days")
+  })
+
   test("the selected course row is highlighted in the accent colour", async () => {
     const t = await renderWith(() => <App />)
     const line = t.captureSpans().lines.find((l) => l.spans.some((s) => s.text.startsWith("Data Structures and Al") && s.text.includes("…")))!

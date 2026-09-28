@@ -98,8 +98,10 @@ h1 {
   box-shadow: 0 24px 60px -30px rgba(255, 101, 0, 0.25);
 }
 .terminal:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.terminal-screen { font-size: 13px; line-height: 1.32; white-space: pre; color: var(--text); }
-.terminal-screen .row { height: 1.32em; display: block; }
+.terminal-screen { width: fit-content; margin-inline: auto; font-size: 13px; line-height: var(--rh, 17px); white-space: pre; color: var(--text); }
+.terminal-screen .row { display: block; height: var(--rh, 17px); }
+/* Inline backgrounds only cover the glyph box; inline-block runs fill the whole cell height, like a terminal. */
+.terminal-screen .row > span { display: inline-block; height: 100%; vertical-align: top; }
 .terminal-screen .ti { display: inline-block; width: 1ch; height: 1em; vertical-align: -0.15em; overflow: visible; }
 .terminal-screen .ti svg { width: 1.2em; height: 1.2em; margin-left: -0.05em; margin-top: -0.1em; fill: currentColor; }
 .terminal noscript img { width: 100%; height: auto; display: block; }
@@ -143,53 +145,21 @@ h1 {
 h2 { color: var(--strong); font-size: clamp(22px, 3vw, 28px); letter-spacing: -0.02em; margin: 0 0 8px; }
 h3 { color: var(--strong); font-size: 16px; margin: 28px 0 8px; }
 .section-lede { color: var(--muted); margin: 0 0 24px; }
-section.features, section.install, section.how, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 96px); }
+section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 96px); }
 
-.feature-list { margin: 24px 0 0; border-top: 1px solid var(--line); }
-.feature {
-  display: grid; grid-template-columns: minmax(220px, 1fr) 2fr; gap: 8px 32px;
-  padding: 20px 0; border-bottom: 1px solid var(--line);
-}
-.feature dt { display: flex; align-items: center; gap: 12px; color: var(--strong); font-weight: 700; }
-.feature dt .ic { color: var(--accent); }
-.feature dd { margin: 0; color: var(--text); max-width: 64ch; }
-@media (max-width: 720px) { .feature { grid-template-columns: 1fr; } .feature dd { padding-left: calc(1.15em + 12px); } }
-
-/* ---- install tabs: the TUI's tab row ---- */
-.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.tabs [role="tab"] {
-  font: inherit; cursor: pointer; border: 0; border-radius: 4px;
-  background: transparent; color: var(--muted); padding: 4px 12px;
-}
-.tabs [role="tab"]:hover { color: var(--strong); }
-.tabs [role="tab"][aria-selected="true"] { background: var(--accent); color: var(--on-accent); font-weight: 700; }
-.panel { background: var(--panel); border-radius: 10px; padding: 8px clamp(16px, 3vw, 28px) 24px; }
-.panel p, .panel li { max-width: 72ch; }
+/* ---- install cards ---- */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+.card { display: flex; flex-direction: column; gap: 12px; background: var(--panel); border-radius: 10px; padding: 20px; }
+.card h3 { display: flex; align-items: center; gap: 10px; margin: 0; }
+.card h3 .ic { color: var(--accent); }
+.card p { margin: 0; color: var(--muted); }
+.card .more { margin-top: auto; align-self: flex-start; }
+.card .more::after { content: " →"; color: var(--accent); }
 .platforms { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .platforms a { display: inline-block; padding: 6px 12px; border-radius: 5px; background: var(--strip); text-decoration: none; }
 .platforms a:hover { background: var(--accent); color: var(--on-accent); }
 .platforms a.unavailable { color: var(--muted); }
-.steps { padding-left: 1.4em; }
-.steps li { margin: 6px 0; }
-.steps li::marker { color: var(--accent); }
-
-.code { position: relative; margin: 10px 0 16px; }
-.code pre {
-  margin: 0; padding: 14px 16px; overflow-x: auto;
-  background: var(--bg); border-radius: 8px; border: 1px solid var(--line);
-  font-size: 13.5px; line-height: 1.55;
-}
-.code pre code { background: none; padding: 0; color: var(--text); }
-.copy {
-  position: absolute; top: 8px; right: 8px;
-  font: inherit; font-size: 12px; cursor: pointer;
-  background: var(--strip); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px;
-}
-.copy:hover { color: var(--strong); border-color: var(--accent); }
-.copy.done { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
-
-.how img { width: 100%; height: auto; display: block; margin-top: 20px; border-radius: 16px; }
-
 /* ---- privacy: the TUI's "needs you" strip ---- */
 .privacy { padding-bottom: clamp(56px, 8vw, 96px); }
 .strip { display: flex; align-items: flex-start; gap: 16px; background: var(--strip); border-radius: 8px; padding: 16px 18px; }
@@ -209,39 +179,60 @@ section.features, section.install, section.how, section.better, section.ai { pad
 .footer nav a:hover { color: var(--strong); }
 .footer kbd { background: none; padding: 0; }
 
-/* ---- MyDy vs MyDy LMS Helper ---- */
-.compare { border-top: 1px solid var(--line); }
-.compare-head, .compare-row { display: grid; grid-template-columns: minmax(180px, 1fr) 1.4fr 1.6fr; gap: 8px 28px; padding: 16px 0; border-bottom: 1px solid var(--line); }
-.compare-head { color: var(--muted); font-size: 13px; padding: 10px 0; }
-.compare-head span:last-child { color: var(--accent); }
-.task { color: var(--strong); font-weight: 700; }
-.before { color: var(--muted); }
-.after { color: var(--text); }
-.after b { color: var(--strong); }
-@media (max-width: 760px) {
-  .compare-head { display: none; }
-  .compare-row { grid-template-columns: 1fr; gap: 6px; }
-  .before::before { content: "MyDy website: "; color: var(--muted); }
-  .after::before { content: "Helper: "; color: var(--accent); }
+/* ---- MyDy vs MyDy LMS Helper: cards with a slice of the app in each ---- */
+.bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+.bento-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; background: var(--panel); border-radius: 12px; padding: 20px; }
+.bento-card.lead { grid-column: span 2; display: grid; grid-template-columns: 1fr 1.15fr; gap: 28px; align-items: center; padding: 28px; }
+.lead-text { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 960px) { .bento { grid-template-columns: 1fr 1fr; } .bento-card.lead { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .bento { grid-template-columns: 1fr; } .bento-card.lead { grid-template-columns: 1fr; padding: 20px; } }
+.kicker { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--accent); font-size: 13px; font-weight: 700; }
+.bento-card h3 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
+.lead h3 { font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; }
+.was { margin: 0; color: var(--muted); font-size: 13px; }
+.was s { text-decoration-color: rgba(240, 80, 110, 0.6); }
+.tag { display: inline-block; margin-right: 8px; padding: 0 6px; border: 1px solid var(--line); border-radius: 3px; font-size: 11px; }
+.now { margin: 0; color: var(--text); }
+
+.tui {
+  margin-top: auto; min-width: 0; overflow: hidden;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 12px 14px; font-size: 13px; line-height: 1.75; white-space: nowrap;
 }
+.lead .tui { margin-top: 0; }
+.tl { display: flex; align-items: center; gap: 1ch; min-width: 0; }
+.tl.split { justify-content: space-between; }
+.tl > span { overflow: hidden; text-overflow: ellipsis; }
+.tl .ic { width: 1.25em; height: 1.25em; }
+.pill { display: inline-flex; align-items: center; gap: 1ch; padding: 0 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.drawer { margin: 10px -14px -12px; padding: 10px 14px 12px; background: var(--panel); border-top: 1px solid var(--line); }
+.bar { flex: 1; height: 0.7em; background: var(--line); }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.c-accent { color: var(--accent); } .c-strong { color: var(--strong); } .c-muted { color: var(--muted); }
+.c-ok { color: var(--ok); } .c-warn { color: var(--warn); } .c-low { color: var(--low); }
 
 /* ---- AI section ---- */
 .ai-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: start; }
 @media (max-width: 860px) { .ai-grid { grid-template-columns: 1fr; } }
-.chat { background: var(--panel); border-radius: 10px; padding: 18px 20px; }
-.chat-label { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
-.msg { margin: 0 0 14px; }
-.msg .who { display: inline-block; min-width: 10ch; font-size: 12px; font-weight: 700; }
-.msg.you .who { color: var(--muted); }
-.msg.ai .who { color: var(--accent); }
-.msg.ai { color: var(--text); }
-.msg.you { color: var(--strong); }
+.chat { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border-radius: 10px; padding: 16px; }
+/* A terminal transcript: marker column, text that keeps its indent when it wraps. */
+.msg, .tool { display: grid; grid-template-columns: 2ch 1fr; margin: 0; }
+.msg::before, .tool::before { font-weight: 700; }
+.msg.you { background: var(--strip); color: var(--strong); padding: 8px 12px; border-radius: 6px; }
+.msg.you::before { content: ">"; color: var(--accent); }
+.msg.ai { color: var(--text); padding: 0 12px; }
+.msg.ai::before { content: "●"; color: var(--accent); }
 .msg b { color: var(--strong); }
-.tool { margin: -6px 0 14px 10ch; font-size: 12px; color: var(--muted); }
-.tool::before { content: "tools: "; color: var(--line); }
-.prompts h3 { margin-top: 0; }
+.tool { color: var(--muted); font-size: 13px; padding: 0 12px; white-space: pre-wrap; }
+.tool::before { content: "●"; color: var(--ok); }
 .prompts ul { list-style: none; padding: 0; margin: 0 0 16px; }
 .prompts li { padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--text); }
 .prompts li:first-child { border-top: 1px solid var(--line); }
-.muted-note { color: var(--muted); font-size: 13px; }
 .button.small { padding: 8px 14px; font-size: 14px; }
+
+/* ---- assistants that can use the MCP server ---- */
+.works-with { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin: 0 0 24px; }
+.works-label { color: var(--muted); font-size: 13px; }
+.logos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.logos li { display: flex; align-items: center; gap: 8px; color: var(--text); font-size: 14px; }
+.logos svg { width: 20px; height: 20px; fill: var(--strong); flex: none; }

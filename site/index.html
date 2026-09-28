@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MyDy LMS Helper: a better way to use MyDy</title>
-  <meta name="description" content="A faster, clearer way to use the MyDy LMS at D.Y. Patil: attendance, deadlines, grades, announcements and notes on one screen, plus AI assistant integration for your studies. Unofficial and open source.">
+  <meta name="description" content="Attendance, deadlines and grades from the MyDy LMS on one screen, every course's notes in one download, and your AI assistant plugged into your courses. Unofficial and open source.">
   <meta name="theme-color" content="#0E0F10">
   <link rel="canonical" href="https://deeptanshuu.github.io/mydy-lms-helper/">
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
@@ -42,15 +42,15 @@
   <main id="main">
     <section class="hero wrap">
       <h1>A better way<br>to use MyDy.</h1>
-      <p class="lede">The MyDy portal spreads your attendance, deadlines, grades and notes across page after page. MyDy LMS Helper puts them on one fast screen you can drive with the keyboard or the mouse, and lets your AI assistant work with your courses too.</p>
+      <p class="lede">Attendance, deadlines and grades on one screen. Every course's notes in one download. And your AI assistant, plugged into your courses.</p>
       <div class="cta">
         <a class="button primary" id="download" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">
           <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
           <span id="download-label">Download</span>
         </a>
-        <a class="button ghost" href="#install">Other platforms and install options</a>
+        <a class="button ghost" href="#install">All platforms</a>
       </div>
-      <p class="fineprint" id="download-note">Unofficial and open source. Your login is only ever sent to MyDy.</p>
+      <p class="fineprint" id="download-note">Unofficial and open source.</p>
     </section>
 
     <section id="demo" class="demo wrap" aria-labelledby="demo-title">
@@ -81,182 +81,163 @@
         <button type="button" data-key="esc">esc <span>back</span></button>
         <button type="button" data-key="?">? <span>help</span></button>
       </div>
-      <p class="demo-hint">This is the real app, rendered frame by frame with sample data. Click it and drive it with your keyboard, or use the buttons.</p>
+      <p class="demo-hint">The real app with sample data. Click it and use your keyboard.</p>
     </section>
 
-
     <section id="better" class="better wrap" aria-labelledby="better-title">
-      <h2 id="better-title">MyDy, redesigned around what you actually check</h2>
-      <p class="section-lede">Same account, same data. Less clicking, less waiting, less maths in your head.</p>
-      <div class="compare" role="table" aria-label="The MyDy website compared with MyDy LMS Helper">
-        <div class="compare-head" role="row">
-          <span role="columnheader">You want to</span>
-          <span role="columnheader">On the MyDy website</span>
-          <span role="columnheader">With MyDy LMS Helper</span>
-        </div>
-        <div class="compare-row" role="row">
-          <span role="cell" class="task">Know if you can skip a class</span>
-          <span role="cell" class="before">Open academic status, find the subject, work out the 75% maths yourself.</span>
-          <span role="cell" class="after">Every subject says <b>can miss 8</b> or <b>attend the next 6</b>, on the first screen.</span>
-        </div>
-        <div class="compare-row" role="row">
-          <span role="cell" class="task">See what's due</span>
-          <span role="cell" class="before">Open each course, then each assignment, one page load at a time.</span>
-          <span role="cell" class="after">One <b>needs you</b> strip across every course, soonest first, only what you haven't submitted.</span>
-        </div>
-        <div class="compare-row" role="row">
-          <span role="cell" class="task">Get notes before an exam</span>
-          <span role="cell" class="before">Open every file, wait for the viewer, save them one by one.</span>
-          <span role="cell" class="after">Mark courses, press <kbd>d</kbd>. Files land in a folder per course; ones you have are skipped.</span>
-        </div>
-        <div class="compare-row" role="row">
-          <span role="cell" class="task">Read announcements</span>
-          <span role="cell" class="before">One forum per course, one post per page.</span>
-          <span role="cell" class="after">Every course's posts in a tab, readable in place.</span>
-        </div>
-        <div class="compare-row" role="row">
-          <span role="cell" class="task">Check on a bad connection</span>
-          <span role="cell" class="before">Pages time out.</span>
-          <span role="cell" class="after">Your last sync opens instantly, even offline.</span>
-        </div>
+      <h2 id="better-title">Less clicking than MyDy</h2>
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <symbol id="i-dl" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></symbol>
+        <symbol id="i-dling" viewBox="0 0 24 24"><path d="M13,2.03C17.73,2.5 21.5,6.25 21.95,11C22.5,16.5 18.5,21.38 13,21.93V19.93C16.64,19.5 19.5,16.61 19.96,12.97C20.5,8.58 17.39,4.59 13,4.05V2.05L13,2.03M11,2.06V4.06C9.57,4.26 8.22,4.84 7.1,5.74L5.67,4.26C7.19,3 9.05,2.25 11,2.06M4.26,5.67L5.69,7.1C4.8,8.23 4.24,9.58 4.05,11H2.05C2.25,9.04 3,7.19 4.26,5.67M2.06,13H4.06C4.24,14.42 4.81,15.77 5.69,16.9L4.27,18.33C3.03,16.81 2.26,14.96 2.06,13M7.1,18.37C8.23,19.25 9.58,19.82 11,20V22C9.04,21.79 7.18,21 5.67,19.74L7.1,18.37M12,16.5L7.5,12H11V8H13V12H16.5L12,16.5Z"/></symbol>
+        <symbol id="i-done" viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></symbol>
+        <symbol id="i-on" viewBox="0 0 24 24"><path d="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></symbol>
+        <symbol id="i-off" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/></symbol>
+        <symbol id="i-att" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></symbol>
+        <symbol id="i-due" viewBox="0 0 24 24"><path d="M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z"/></symbol>
+        <symbol id="i-alert" viewBox="0 0 24 24"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></symbol>
+        <symbol id="i-sync" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></symbol>
+        <symbol id="i-post" viewBox="0 0 24 24"><path d="M12,8H4A2,2 0 0,0 2,10V14A2,2 0 0,0 4,16H5V20A1,1 0 0,0 6,21H8A1,1 0 0,0 9,20V16H12L17,20V4L12,8M21.5,12C21.5,13.71 20.54,15.26 19,16V8C20.53,8.75 21.5,10.3 21.5,12Z"/></symbol>
+      </svg>
+
+      <div class="bento">
+        <article class="bento-card lead">
+          <div class="lead-text">
+            <p class="kicker"><svg class="ic"><use href="#i-dl"/></svg>Bulk download</p>
+            <h3>Every course's notes, in one go</h3>
+            <p class="was"><span class="tag">MyDy</span><s>Open each file, wait for the viewer, save, repeat</s></p>
+            <p class="now">Mark courses with <kbd>space</kbd>, press <kbd>d</kbd>. One folder per course; files you already have are skipped.</p>
+          </div>
+          <div class="tui" aria-hidden="true">
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Data Structures and Algorithms</span></div>
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Computer Networks</span></div>
+            <div class="tl"><svg class="ic c-muted"><use href="#i-off"/></svg><span class="c-muted">Software Engineering</span></div>
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Engineering Maths III</span></div>
+            <div class="drawer" id="dl-demo">
+              <div class="tl split"><span class="tl"><svg class="ic c-accent"><use id="dl-icon" href="#i-dling"/></svg><b class="c-strong" id="dl-title">Downloading 3 courses</b></span><span class="c-muted" id="dl-count">41 of 58 files</span></div>
+              <div class="tl"><span class="bar"><i id="dl-bar" style="width:71%"></i></span><b class="c-strong" id="dl-pct">71%</b></div>
+              <div class="tl c-muted"><span id="dl-file">Computer Networks/OSI layers.pdf</span></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="bento-card">
+          <p class="kicker"><svg class="ic"><use href="#i-att"/></svg>Attendance</p>
+          <h3>Know if you can skip</h3>
+          <p class="was"><span class="tag">MyDy</span><s>Do the 75% maths yourself</s></p>
+          <div class="tui" aria-hidden="true">
+            <div class="tl split"><span>Software Engineering</span><span><span class="c-ok">93%</span> <span class="c-muted">miss 10</span></span></div>
+            <div class="tl split"><span>Computer Networks</span><span><span class="c-warn">72%</span> <span class="c-muted">need 6</span></span></div>
+            <div class="tl split"><span>Engineering Maths III</span><span><span class="c-low">46%</span> <span class="c-muted">need 47</span></span></div>
+          </div>
+        </article>
+
+        <article class="bento-card">
+          <p class="kicker"><svg class="ic"><use href="#i-due"/></svg>Deadlines</p>
+          <h3>See what's due</h3>
+          <p class="was"><span class="tag">MyDy</span><s>Open every course, then every assignment</s></p>
+          <div class="tui" aria-hidden="true">
+            <div class="tl"><span class="pill"><svg class="ic"><use href="#i-alert"/></svg>needs you</span></div>
+            <div class="tl split"><span class="c-warn">Assignment 3: Trees</span><span class="c-muted">tomorrow</span></div>
+            <div class="tl split"><span class="c-warn">Lab 9: Subnetting</span><span class="c-muted">in 2 days</span></div>
+          </div>
+        </article>
+
+        <article class="bento-card">
+          <p class="kicker"><svg class="ic"><use href="#i-sync"/></svg>Offline</p>
+          <h3>Opens instantly</h3>
+          <p class="was"><span class="tag">MyDy</span><s>Pages time out on bad Wi-Fi</s></p>
+          <div class="tui" aria-hidden="true">
+            <div class="tl split"><b class="c-strong">MyDy</b><span class="tl c-muted"><svg class="ic"><use href="#i-sync"/></svg>synced 2 min ago</span></div>
+            <div class="tl"><span class="c-low">Can't reach mydy.dypatil.edu.</span></div>
+            <div class="tl"><span class="c-muted">Your last sync still works.</span></div>
+          </div>
+        </article>
+
+        <article class="bento-card">
+          <p class="kicker"><svg class="ic"><use href="#i-post"/></svg>Grades and posts</p>
+          <h3>Read in place</h3>
+          <p class="was"><span class="tag">MyDy</span><s>One forum per course, one post per page</s></p>
+          <div class="tui" aria-hidden="true">
+            <div class="tl split"><span>Mid-semester exam</span><span><b class="c-strong">18</b><span class="c-muted"> / 25</span></span></div>
+            <div class="tl split"><span>Unit test 1</span><span><b class="c-strong">14</b><span class="c-muted"> / 25</span></span></div>
+            <div class="tl split"><span class="c-strong">Mid-sem syllabus uploaded</span><span class="c-muted">Mon</span></div>
+          </div>
+        </article>
       </div>
     </section>
 
     <section id="ai" class="ai wrap" aria-labelledby="ai-title">
-      <h2 id="ai-title">Bring your AI assistant into your studies</h2>
-      <p class="section-lede">The built-in MCP server lets Claude Code, Claude Desktop or any MCP client read your courses, attendance, deadlines, grades and announcements, and download your notes. Ask in plain language.</p>
+      <h2 id="ai-title">Ask your AI about your courses</h2>
+      <p class="section-lede">An MCP server for your assistant: courses, attendance, deadlines, grades, announcements and downloads.</p>
+      <div class="works-with">
+        <span class="works-label">Works with</span>
+        <ul class="logos" aria-label="Assistants that can use the MCP server">
+            <li title="Claude Desktop and Claude Code"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"/></svg>Claude</li>
+            <li title="OpenAI Codex"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M9.205 8.658v-2.26c0-.19.072-.333.238-.428l4.543-2.616c.619-.357 1.356-.523 2.117-.523 2.854 0 4.662 2.212 4.662 4.566 0 .167 0 .357-.024.547l-4.71-2.759a.797.797 0 00-.856 0l-5.97 3.473zm10.609 8.8V12.06c0-.333-.143-.57-.429-.737l-5.97-3.473 1.95-1.118a.433.433 0 01.476 0l4.543 2.617c1.309.76 2.189 2.378 2.189 3.948 0 1.808-1.07 3.473-2.76 4.163zM7.802 12.703l-1.95-1.142c-.167-.095-.239-.238-.239-.428V5.899c0-2.545 1.95-4.472 4.591-4.472 1 0 1.927.333 2.712.928L8.23 5.067c-.285.166-.428.404-.428.737v6.898zM12 15.128l-2.795-1.57v-3.33L12 8.658l2.795 1.57v3.33L12 15.128zm1.796 7.23c-1 0-1.927-.332-2.712-.927l4.686-2.712c.285-.166.428-.404.428-.737v-6.898l1.974 1.142c.167.095.238.238.238.428v5.233c0 2.545-1.974 4.472-4.614 4.472zm-5.637-5.303l-4.544-2.617c-1.308-.761-2.188-2.378-2.188-3.948A4.482 4.482 0 014.21 6.327v5.423c0 .333.143.571.428.738l5.947 3.449-1.95 1.118a.432.432 0 01-.476 0zm-.262 3.9c-2.688 0-4.662-2.021-4.662-4.519 0-.19.024-.38.047-.57l4.686 2.71c.286.167.571.167.856 0l5.97-3.448v2.26c0 .19-.07.333-.237.428l-4.543 2.616c-.619.357-1.356.523-2.117.523zm5.899 2.83a5.947 5.947 0 005.827-4.756C22.287 18.339 24 15.84 24 13.296c0-1.665-.713-3.282-1.998-4.448.119-.5.19-.999.19-1.498 0-3.401-2.759-5.947-5.946-5.947-.642 0-1.26.095-1.88.31A5.962 5.962 0 0010.205 0a5.947 5.947 0 00-5.827 4.757C1.713 5.447 0 7.945 0 10.49c0 1.666.713 3.283 1.998 4.448-.119.5-.19 1-.19 1.499 0 3.401 2.759 5.946 5.946 5.946.642 0 1.26-.095 1.88-.309a5.96 5.96 0 004.162 1.713z"/></svg>Codex</li>
+            <li title="Perplexity for Mac"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22.3977 7.0896h-2.3106V.0676l-7.5094 6.3542V.1577h-1.1554v6.1966L4.4904 0v7.0896H1.6023v10.3976h2.8882V24l6.932-6.3591v6.2005h1.1554v-6.0469l6.9318 6.1807v-6.4879h2.8882V7.0896zm-3.4657-4.531v4.531h-5.355l5.355-4.531zm-13.2862.0676 4.8691 4.4634H5.6458V2.6262zM2.7576 16.332V8.245h7.8476l-6.1149 6.1147v1.9723H2.7576zm2.8882 5.0404v-3.8852h.0001v-2.6488l5.7763-5.7764v7.0111l-5.7764 5.2993zm12.7086.0248-5.7766-5.1509V9.0618l5.7766 5.7766v6.5588zm2.8882-5.0652h-1.733v-1.9723L13.3948 8.245h7.8478v8.087z"/></svg>Perplexity</li>
+            <li title="Gemini CLI"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"/></svg>Gemini CLI</li>
+            <li title="Cursor"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M11.503.131 1.891 5.678a.84.84 0 0 0-.42.726v11.188c0 .3.162.575.42.724l9.609 5.55a1 1 0 0 0 .998 0l9.61-5.55a.84.84 0 0 0 .42-.724V6.404a.84.84 0 0 0-.42-.726L12.497.131a1.01 1.01 0 0 0-.996 0M2.657 6.338h18.55c.263 0 .43.287.297.515L12.23 22.918c-.062.107-.229.064-.229-.06V12.335a.59.59 0 0 0-.295-.51l-9.11-5.257c-.109-.063-.064-.23.061-.23"/></svg>Cursor</li>
+            <li title="GitHub Copilot in VS Code"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M23.922 16.997C23.061 18.492 18.063 22.02 12 22.02 5.937 22.02.939 18.492.078 16.997A.641.641 0 0 1 0 16.741v-2.869a.883.883 0 0 1 .053-.22c.372-.935 1.347-2.292 2.605-2.656.167-.429.414-1.055.644-1.517a10.098 10.098 0 0 1-.052-1.086c0-1.331.282-2.499 1.132-3.368.397-.406.89-.717 1.474-.952C7.255 2.937 9.248 1.98 11.978 1.98c2.731 0 4.767.957 6.166 2.093.584.235 1.077.546 1.474.952.85.869 1.132 2.037 1.132 3.368 0 .368-.014.733-.052 1.086.23.462.477 1.088.644 1.517 1.258.364 2.233 1.721 2.605 2.656a.841.841 0 0 1 .053.22v2.869a.641.641 0 0 1-.078.256Zm-11.75-5.992h-.344a4.359 4.359 0 0 1-.355.508c-.77.947-1.918 1.492-3.508 1.492-1.725 0-2.989-.359-3.782-1.259a2.137 2.137 0 0 1-.085-.104L4 11.746v6.585c1.435.779 4.514 2.179 8 2.179 3.486 0 6.565-1.4 8-2.179v-6.585l-.098-.104s-.033.045-.085.104c-.793.9-2.057 1.259-3.782 1.259-1.59 0-2.738-.545-3.508-1.492a4.359 4.359 0 0 1-.355-.508Zm2.328 3.25c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm-5 0c.549 0 1 .451 1 1v2c0 .549-.451 1-1 1-.549 0-1-.451-1-1v-2c0-.549.451-1 1-1Zm3.313-6.185c.136 1.057.403 1.913.878 2.497.442.544 1.134.938 2.344.938 1.573 0 2.292-.337 2.657-.751.384-.435.558-1.15.558-2.361 0-1.14-.243-1.847-.705-2.319-.477-.488-1.319-.862-2.824-1.025-1.487-.161-2.192.138-2.533.529-.269.307-.437.808-.438 1.578v.021c0 .265.021.562.063.893Zm-1.626 0c.042-.331.063-.628.063-.894v-.02c-.001-.77-.169-1.271-.438-1.578-.341-.391-1.046-.69-2.533-.529-1.505.163-2.347.537-2.824 1.025-.462.472-.705 1.179-.705 2.319 0 1.211.175 1.926.558 2.361.365.414 1.084.751 2.657.751 1.21 0 1.902-.394 2.344-.938.475-.584.742-1.44.878-2.497Z"/></svg>Copilot</li>
+        </ul>
+      </div>
       <div class="ai-grid">
         <div class="chat" aria-label="Example conversation with an AI assistant">
-          <p class="chat-label">Example</p>
-          <p class="msg you"><span class="who">you</span>What do I need to do this week, and which subjects am I short on?</p>
-          <p class="tool">get_assignments, get_attendance</p>
-          <p class="msg ai"><span class="who">assistant</span><b>Assignment 3: Trees</b> (Data Structures) is due tomorrow at 23:59 and isn't submitted. <b>Lab 9: Subnetting</b> is due Thursday.<br><br>You're below 75% in <b>Engineering Maths III</b> (46%): you'd need to attend the next 47 classes. <b>Computer Networks</b> is at 72%: attend the next 6.</p>
-          <p class="msg you"><span class="who">you</span>Download the Unit 1 notes for Computer Networks and make me a revision plan.</p>
-          <p class="tool">get_course_content, download_course_materials</p>
+          <p class="msg you"><span>What's due this week, and where am I short on attendance?</span></p>
+          <p class="tool"><span>get_assignments()  get_attendance()</span></p>
+          <p class="msg ai"><span><b>Assignment 3: Trees</b> is due tomorrow and isn't submitted. You're below 75% in <b>Engineering Maths III</b> (attend the next 47) and <b>Computer Networks</b> (the next 6).</span></p>
+          <p class="msg you"><span>Download the Networks Unit 1 notes and quiz me.</span></p>
+          <p class="tool"><span>download_course_materials()</span></p>
         </div>
         <div class="prompts">
-          <h3>Things to ask</h3>
           <ul>
-            <li>"Summarise this week's announcements across all my courses."</li>
-            <li>"Which classes can I skip on Friday without dropping below 75%?"</li>
+            <li>"Which classes can I skip on Friday?"</li>
             <li>"Turn the mid-sem syllabus post into a checklist."</li>
-            <li>"Download everything for Operating Systems and quiz me on Unit 2."</li>
-            <li>"What's my grade so far in Data Structures, and what do I need on the final?"</li>
+            <li>"What do I need on the final to get an A?"</li>
           </ul>
-          <p class="muted-note">Your login stays in your own MCP config and is only sent to MyDy. The assistant sees what you ask it to look up.</p>
-          <a class="button primary small" href="#install" data-open-tab="tab-mcp">Set up the MCP server</a>
+          <a class="button primary small" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/mcp/README.md">Set up the MCP server</a>
         </div>
       </div>
-    </section>
-
-    <section id="features" class="features wrap" aria-labelledby="features-title">
-      <h2 id="features-title">Everything on one screen</h2>
-      <dl class="feature-list">
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></svg>Attendance you can act on</dt>
-          <dd>Every subject against the 75% line, with how many classes you can still miss, or how many you need to attend in a row to get back.</dd>
-        </div>
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></svg>Needs you</dt>
-          <dd>Assignments due this week that you haven't submitted, and subjects below 75%, in one strip at the top of the screen.</dd>
-        </div>
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>Downloads that skip what you have</dt>
-          <dd>Mark courses with <kbd>space</kbd> and press <kbd>d</kbd>. Files land in a folder per course, and anything already downloaded is skipped.</dd>
-        </div>
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg>Opens instantly, works offline</dt>
-          <dd>Your last sync is cached, so the app opens straight away and still shows your data without a connection. It refreshes in the background.</dd>
-        </div>
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"/></svg>Grades and announcements</dt>
-          <dd>Every grade with a bar and the course total, and whole announcements you can read without opening a browser.</dd>
-        </div>
-        <div class="feature">
-          <dt><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M16,17H8V15H16M7,10H5V8H7M7,13H5V11H7M8,11H10V13H8M8,8H10V10H8M11,11H13V13H11M11,8H13V10H11M20,5H4C2.89,5 2,5.89 2,7V17A2,2 0 0,0 4,19H20A2,2 0 0,0 22,17V7C22,5.89 21.1,5 20,5Z"/></svg>Keyboard first, mouse friendly</dt>
-          <dd>Everything is one key away: <kbd>j</kbd> <kbd>k</kbd> to move, <kbd>tab</kbd> for tabs, <kbd>/</kbd> to filter, <kbd>?</kbd> for the full list. Or just click, and scroll.</dd>
-        </div>
-      </dl>
     </section>
 
     <section id="install" class="install wrap" aria-labelledby="install-title">
       <h2 id="install-title">Install</h2>
-      <p class="section-lede">Three ways in. Use whichever fits how you work.</p>
-
-      <div class="tabs" role="tablist" aria-label="Install options">
-        <button role="tab" id="tab-tui" aria-controls="panel-tui" aria-selected="true">Terminal UI</button>
-        <button role="tab" id="tab-mcp" aria-controls="panel-mcp" aria-selected="false" tabindex="-1">MCP server</button>
-        <button role="tab" id="tab-ext" aria-controls="panel-ext" aria-selected="false" tabindex="-1">Chrome extension</button>
+      <div class="cards">
+        <div class="card">
+          <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13,19V16H21V19H13M8.5,13L2.47,7H6.71L11.67,11.95C12.25,12.54 12.25,13.5 11.67,14.07L6.74,19H2.5L8.5,13Z"/></svg>Terminal UI</h3>
+          <p>One binary, no install.</p>
+          <ul class="platforms" id="platforms">
+            <li><a data-asset="mydy-darwin-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS arm64</a></li>
+            <li><a data-asset="mydy-darwin-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS x64</a></li>
+            <li><a data-asset="mydy-windows-x64.exe" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Windows</a></li>
+            <li><a data-asset="mydy-linux-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux x64</a></li>
+            <li><a data-asset="mydy-linux-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux arm64</a></li>
+          </ul>
+          <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/tui/README.md">Setup guide</a>
+        </div>
+        <div class="card">
+          <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z"/></svg>MCP server</h3>
+          <p>Python, for any MCP client.</p>
+          <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/mcp/README.md">Setup guide</a>
+        </div>
+        <div class="card">
+          <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22,13.5C22,15.26 20.7,16.72 19,16.96V20A2,2 0 0,1 17,22H13.2V21.7A2.7,2.7 0 0,0 10.5,19C9,19 7.8,20.21 7.8,21.7V22H4A2,2 0 0,1 2,20V16.2H2.3C3.79,16.2 5,15 5,13.5C5,12 3.79,10.8 2.3,10.8H2V7A2,2 0 0,1 4,5H7.04C7.28,3.3 8.74,2 10.5,2C12.26,2 13.72,3.3 13.96,5H17A2,2 0 0,1 19,7V10.04C20.7,10.28 22,11.74 22,13.5M17,15H18.5A1.5,1.5 0 0,0 20,13.5A1.5,1.5 0 0,0 18.5,12H17V7H12V5.5A1.5,1.5 0 0,0 10.5,4A1.5,1.5 0 0,0 9,5.5V7H4V9.12C5.76,9.8 7,11.5 7,13.5C7,15.5 5.75,17.2 4,17.88V20H6.12C6.8,18.25 8.5,17 10.5,17C12.5,17 14.2,18.25 14.88,20H17V15Z"/></svg>Chrome extension</h3>
+          <p>Download course files from your browser.</p>
+          <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/extension/README.md">Install guide</a>
+        </div>
       </div>
-
-      <div class="panel" role="tabpanel" id="panel-tui" aria-labelledby="tab-tui">
-        <h3>Download a binary</h3>
-        <ul class="platforms" id="platforms">
-          <li><a data-asset="mydy-darwin-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS, Apple silicon</a></li>
-          <li><a data-asset="mydy-darwin-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS, Intel</a></li>
-          <li><a data-asset="mydy-windows-x64.exe" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Windows</a></li>
-          <li><a data-asset="mydy-linux-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux, x64</a></li>
-          <li><a data-asset="mydy-linux-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Linux, ARM64</a></li>
-        </ul>
-        <p>On macOS and Linux, make it executable first. On macOS, also clear the download quarantine, because the binary isn't notarized:</p>
-        <div class="code"><pre><code>chmod +x mydy-darwin-arm64
-xattr -d com.apple.quarantine mydy-darwin-arm64
-./mydy-darwin-arm64</code></pre><button class="copy" type="button">Copy</button></div>
-
-        <h3>Or run it from source</h3>
-        <p>With <a href="https://bun.com">Bun</a> 1.3 or newer:</p>
-        <div class="code"><pre><code>git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
-cd mydy-lms-helper
-bun install
-bun run tui</code></pre><button class="copy" type="button">Copy</button></div>
-
-        <h3>Signing in</h3>
-        <p>Sign in on the first screen and tick <strong>Remember me</strong> to keep the login in your system keychain. Or set <code>MYDY_USERNAME</code> and <code>MYDY_PASSWORD</code> in the environment or a <code>.env</code> file.</p>
-        <p>Icons use a <a href="https://www.nerdfonts.com">Nerd Font</a>. If you see empty boxes, run with <code>--no-nerd-font</code> for plain symbols.</p>
-      </div>
-
-      <div class="panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
-        <h3>Plug your AI assistant into your courses</h3>
-        <p>The MCP server lets Claude Code, Claude Desktop or any other MCP client read your courses, attendance, assignments, grades and announcements, and download files.</p>
-        <div class="code"><pre><code>git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
-cd mydy-lms-helper
-python3 -m venv .venv
-.venv/bin/pip install -r mcp/requirements.txt</code></pre><button class="copy" type="button">Copy</button></div>
-        <p>Then add it to Claude Code:</p>
-        <div class="code"><pre><code>claude mcp add mydy-lms \
-  -e MYDY_USERNAME=your_email@dypatil.edu \
-  -e MYDY_PASSWORD=your_password \
-  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"</code></pre><button class="copy" type="button">Copy</button></div>
-      </div>
-
-      <div class="panel" role="tabpanel" id="panel-ext" aria-labelledby="tab-ext" hidden>
-        <h3>Download files from the browser</h3>
-        <p>The Chrome extension uses your logged-in MyDy tab to download course files, grouped by course. No install beyond Chrome.</p>
-        <ol class="steps">
-          <li>Download the latest <code>ext-v*</code> zip from <a href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Releases</a> and extract it.</li>
-          <li>Open <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>.</li>
-          <li>Click <strong>Load unpacked</strong> and pick the extracted folder.</li>
-          <li>Open <a href="https://mydy.dypatil.edu">mydy.dypatil.edu</a>, click the extension icon, choose courses and download.</li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="how wrap" aria-labelledby="how-title">
-      <h2 id="how-title">How it works</h2>
-      <img src="assets/how-it-works.svg" alt="The terminal UI and the MCP server sign in to MyDy and read its pages over HTTPS. The Chrome extension reuses your logged-in browser tab." width="1280" height="480" loading="lazy">
     </section>
 
     <section class="privacy wrap" aria-labelledby="privacy-title">
       <div class="strip">
         <h2 id="privacy-title" class="badge">your data</h2>
-        <p>Your email and password are only ever sent to <strong>mydy.dypatil.edu</strong>, over HTTPS. A saved login goes to your system keychain, and the cache and downloads stay on your computer. There are no servers of ours and no analytics.</p>
+        <p>Your login only goes to <strong>mydy.dypatil.edu</strong>. No servers of ours, no analytics.</p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="wrap footer-inner">
-      <p>Unofficial and not affiliated with D.Y. Patil or MyDy. MIT license.</p>
+      <p>Unofficial, not affiliated with D.Y. Patil or MyDy. MIT license. Logos belong to their owners.</p>
       <nav aria-label="Project links">
         <a href="https://github.com/Deeptanshuu/mydy-lms-helper"><kbd>gh</kbd> GitHub</a>
         <a href="https://github.com/Deeptanshuu/mydy-lms-helper/releases"><kbd>rel</kbd> Releases</a>

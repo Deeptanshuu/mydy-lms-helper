@@ -21,59 +21,17 @@ Download your course files from the MyDy portal (mydy.dypatil.edu) in a couple o
 </tr>
 </table>
 
-Part of [MyDy LMS Helper](../README.md). For attendance, grades and assignments as well as downloads, use the [terminal UI](../README.md#terminal-ui).
+Part of [MyDy LMS Helper](../README.md). For attendance, grades and assignments too, use the [terminal UI](../tui/README.md).
 
-## Features
-
-- Finds your courses from the MyDy dashboard
-- Downloads every course's files in one go, or just the courses you pick
-- Groups downloads by course
-- Shows progress as files come in
-- Spaces out requests so it doesn't hammer the server
-- Uses your credentials only for the current session and never stores them
-
-## What it can download
-
-- Direct file links (PDFs, PowerPoints, documents)
-- FlexPaper embedded PDFs
-- Presentation modules
-- Case study materials
-- DY Question modules
+Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question modules, grouped by course. It uses your logged-in browser session, never stores your password, and only talks to `mydy.dypatil.edu`.
 
 ## Install
 
-1. Download the latest `ext-v*` zip from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases) and extract it, or clone [mydy-lms-helper](https://github.com/Deeptanshuu/mydy-lms-helper).
-2. Open `chrome://extensions/` and turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick the extracted folder, or the `extension/` folder of your clone.
-4. The extension appears in your toolbar.
+1. Download the latest `ext-v*` zip from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases) and extract it (or use this folder).
+2. Open `chrome://extensions/`, turn on **Developer mode**, click **Load unpacked** and pick the folder.
+3. Open [mydy.dypatil.edu](https://mydy.dypatil.edu), sign in, click the extension icon, choose courses and download.
 
-## Use
-
-1. Go to [mydy.dypatil.edu](https://mydy.dypatil.edu).
-2. Click the extension icon.
-3. Sign in to MyDy in that tab if you aren't already; the extension uses your browser session.
-4. Choose courses, or select all.
-5. Click download. Files are saved to your browser's download folder.
-
-## How it works
-
-| Part | File | Job |
-|---|---|---|
-| Popup | `popup.html`, `js/popup.js` | Sign-in check and course selection |
-| Content script | `js/content.js` | Runs on MyDy pages, finds courses and their files |
-| Service worker | `js/background.js` | Saves files with Chrome's downloads API |
-
-It only asks for access to `mydy.dypatil.edu` plus the downloads, storage, cookies and active-tab permissions. It has no analytics or tracking, and everything goes over HTTPS.
-
-## Troubleshooting
-
-**Login fails**
-- Check that you can log in to MyDy normally first.
-- Refresh the MyDy page, then open the extension again.
-
-**No courses found**
-- This is expected between semesters.
-- Make sure you're enrolled in courses. Previous semesters' courses should still show up.
+No courses showing? That's normal between semesters. Otherwise refresh the MyDy tab and reopen the extension.
 
 ## Development
 
@@ -88,4 +46,4 @@ Releases are built by [`.github/workflows/extension.yml`](../.github/workflows/e
 
 ## Disclaimer
 
-For educational use only. You're responsible for following your institution's terms of service and copyright policies.
+Unofficial, for educational use. Follow your institution's terms of service.

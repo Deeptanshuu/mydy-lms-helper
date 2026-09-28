@@ -200,7 +200,6 @@ await mkdir(join(SITE, "assets"), { recursive: true })
 const demo = { cols: COLS, rows: ROWS, bg: color.bg, palette, icons: ICONS, rowTable, frames, start, edges, autoplay }
 await Bun.write(join(SITE, "demo.json"), JSON.stringify(demo))
 await copyFile(join(ROOT, "docs", "assets", "logo.svg"), join(SITE, "assets", "logo.svg"))
-await copyFile(join(ROOT, "docs", "assets", "how-it-works.svg"), join(SITE, "assets", "how-it-works.svg"))
 await copyFile(join(ROOT, "docs", "assets", "tui-dashboard.svg"), join(SITE, "assets", "tui-dashboard.svg"))
 await copyFile(join(ROOT, "extension", "icons", "icon-32.png"), join(SITE, "assets", "favicon-32.png"))
 await copyFile(join(ROOT, "extension", "icons", "icon-128.png"), join(SITE, "assets", "icon-128.png"))

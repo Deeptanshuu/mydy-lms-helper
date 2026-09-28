@@ -52,60 +52,11 @@ async function setUpDownloads() {
   const url = platform && assetUrl(PLATFORMS[platform].asset)
   if (url) {
     button.href = url
-    note.textContent = `${release.tag_name}. Unofficial and open source. Your login is only ever sent to MyDy.`
+    note.textContent = `${release.tag_name}. Unofficial and open source.`
   } else {
     button.href = RELEASES
     label.textContent = "Get it from Releases"
-    if (!release) note.textContent = "Binaries for this version arrive with the next release. Until then, run it from source with Bun (see Install)."
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Install tabs (WAI-ARIA tabs pattern) and copy buttons
-// ---------------------------------------------------------------------------
-function setUpTabs() {
-  const tabs = [...document.querySelectorAll('[role="tab"]')]
-  const select = (tab) => {
-    for (const t of tabs) {
-      const on = t === tab
-      t.setAttribute("aria-selected", String(on))
-      t.tabIndex = on ? 0 : -1
-      document.getElementById(t.getAttribute("aria-controls")).hidden = !on
-    }
-  }
-  // Links elsewhere on the page can open a specific install tab.
-  for (const link of document.querySelectorAll("[data-open-tab]")) {
-    link.addEventListener("click", () => select(document.getElementById(link.dataset.openTab)))
-  }
-  tabs.forEach((tab, i) => {
-    tab.addEventListener("click", () => select(tab))
-    tab.addEventListener("keydown", (e) => {
-      const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0
-      if (!step) return
-      e.preventDefault()
-      const next = tabs[(i + step + tabs.length) % tabs.length]
-      select(next)
-      next.focus()
-    })
-  })
-}
-
-function setUpCopy() {
-  for (const button of document.querySelectorAll(".copy")) {
-    button.addEventListener("click", async () => {
-      const code = button.parentElement.querySelector("code").textContent
-      try {
-        await navigator.clipboard.writeText(code)
-        button.textContent = "Copied"
-        button.classList.add("done")
-      } catch {
-        button.textContent = "Select and copy"
-      }
-      setTimeout(() => {
-        button.textContent = "Copy"
-        button.classList.remove("done")
-      }, 1600)
-    })
+    if (!release) note.textContent = "No binaries released yet. Run it from source: see the setup guide under Install."
   }
 }
 
@@ -155,7 +106,10 @@ async function setUpDemo() {
     const charPerPx = probe.getBoundingClientRect().width / 1000
     probe.remove()
     const width = terminal.clientWidth - 32
-    screen.style.fontSize = `${Math.min(14, Math.max(4, width / (demo.cols * charPerPx)))}px`
+    const size = Math.min(16, Math.max(4, width / (demo.cols * charPerPx)))
+    screen.style.fontSize = `${size}px`
+    // Whole-pixel rows, so backgrounds meet without hairline gaps.
+    screen.style.setProperty("--rh", `${Math.round(size * 1.3)}px`)
   }
 
   const show = (frame) => {
@@ -306,7 +260,48 @@ async function setUpDemo() {
   }).observe(terminal)
 }
 
+// ---------------------------------------------------------------------------
+// Bulk download card: plays the download drawer while it's on screen
+// ---------------------------------------------------------------------------
+function setUpDownloadCard() {
+  const drawer = document.getElementById("dl-demo")
+  if (!drawer || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+  const $ = (id) => document.getElementById(id)
+  const files = [
+    "Data Structures and Algorithms/Lecture 1 - Arrays.pdf",
+    "Data Structures and Algorithms/Linked Lists.pptx",
+    "Data Structures and Algorithms/Stack applications.pdf",
+    "Data Structures and Algorithms/Queue lab manual.docx",
+    "Computer Networks/OSI layers.pdf",
+    "Computer Networks/Subnetting practice sheet.pdf",
+    "Engineering Maths III/Laplace transforms notes.pdf",
+    "Engineering Maths III/Tutorial 1.pdf",
+  ]
+  const total = 58
+  const skipped = 6
+  let done = 0
+  let timer = null
+  const render = () => {
+    const finished = done >= total
+    const pct = Math.round((done / total) * 100)
+    $("dl-icon").setAttribute("href", finished ? "#i-done" : "#i-dling")
+    $("dl-title").textContent = finished ? "Download finished" : "Downloading 3 courses"
+    $("dl-count").textContent = `${done} of ${total} files`
+    $("dl-bar").style.width = `${pct}%`
+    $("dl-pct").textContent = `${pct}%`
+    $("dl-file").textContent = finished ? `skipped ${skipped} already saved` : files[done % files.length]
+  }
+  const tick = () => {
+    done = done >= total ? 0 : done + 1
+    render()
+    timer = setTimeout(tick, done >= total ? 2600 : 90 + (done % 7) * 25)
+  }
+  new IntersectionObserver(([entry]) => {
+    clearTimeout(timer)
+    if (entry.isIntersecting) tick()
+  }).observe(drawer)
+}
+
 setUpDownloads()
-setUpTabs()
-setUpCopy()
 setUpDemo()
+setUpDownloadCard()
