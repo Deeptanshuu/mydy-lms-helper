@@ -22,7 +22,14 @@ claude mcp add mydy-lms -s user \
   -- "$(command -v uv)" run --script "$PWD/mcp/mcp_server.py"
 ```
 
-On Windows (PowerShell), use `(Get-Command uv).Source` and `"$PWD\mcp\mcp_server.py"` instead.
+On Windows (PowerShell):
+
+```powershell
+claude mcp add mydy-lms -s user `
+  -e MYDY_USERNAME=your_email@dypatil.edu `
+  -e MYDY_PASSWORD=your_password `
+  -- "$((Get-Command uv).Source)" run --script "$PWD\mcp\mcp_server.py"
+```
 
 **Other clients** (Claude Desktop, Cursor and others):
 
