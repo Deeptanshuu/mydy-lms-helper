@@ -1,177 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>MyDY Moodle Downloader</title>
-    <link rel="stylesheet" href="css/popup.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>MyDy Downloader</title>
+  <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-    <div class="popup-container">
-        <!-- Position Helper (only shows if popup is cut off) -->
-        <div id="positionHelper" class="position-helper" style="display: none;">
-            <div class="helper-content">
-                <span class="helper-icon">📌</span>
-                <span class="helper-text">Popup cut off? Try pinning this extension to your toolbar for better positioning!</span>
-                <button class="helper-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
-            </div>
-        </div>
-        
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo-wrapper">
-                        <img src="icons/logo.png" alt="Moodle Downloader" class="logo">
-                    </div>
-                    <div class="logo-glow"></div>
-                </div>
-                <div class="header-text">
-                    <div class="brand-info">
-                        <h1 class="title">LMS Course Downloader</h1>
-                        <div class="title-accent"></div>
-                    </div>
-                    <span class="subtitle-icon"></span>
-                        Made with ❤️ by <a href="https://www.deeptanshu.tech" target="_blank" class="author-link">Deeptanshu</a>
-                    </p>
-                </div>
-                <div class="header-decoration">
-                    <div class="decoration-dots">
-                        <span class="dot dot-1"></span>
-                        <span class="dot dot-2"></span>
-                        <span class="dot dot-3"></span>
-                    </div>
-                </div>
-            </div>
-        </header>
-        
-        <!-- Not Logged In Section -->
-        <div id="notLoggedInSection" class="section">
-            <div class="card">
-                <div class="card-header">
-                    <div class="status-icon status-warning">🔐</div>
-                    <h2 class="card-title">Authentication Required</h2>
-                </div>
-                <div class="card-content">
-                    <p class="card-description">Please log in to MyDY Moodle in your browser first, then return to this extension.</p>
-                </div>
-                <div class="card-footer">
-                    <button id="checkLoginBtn" class="btn btn-primary">
-                        <span class="btn-text">Check Login Status</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Courses Section -->
-        <div id="coursesSection" class="section hidden">
-            <div class="card">
-                <div class="card-header">
-                    <div class="status-icon status-success">📚</div>
-                    <h2 class="card-title">Available Courses</h2>
-                </div>
-                <div class="card-content">
-                    <div class="alert alert-warning">
-                        <div class="alert-icon">⚠️</div>
-                        <div class="alert-content">
-                            <p class="alert-title">Enrollment Required</p>
-                            <p class="alert-description">Only courses you are enrolled in will be downloaded and you can still download previous courses you were enrolled in.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Search Bar -->
-                    <div class="search-container">
-                        <div class="search-wrapper">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" id="courseSearchInput" class="search-input" placeholder="Search courses by name...">
-                            <button id="clearSearchBtn" class="clear-search" style="display: none;">×</button>
-                        </div>
-                        <div id="searchResults" class="search-results"></div>
-                    </div>
-                    
-                    <div id="coursesList" class="courses-container">
-                        <!-- Courses will be populated here -->
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <div class="button-group">
-                        <button id="downloadAllBtn" class="btn btn-primary">Download All</button>
-                        <button id="downloadSelectedBtn" class="btn btn-secondary">Download Selected</button>
-                        <button id="refreshCoursesBtn" class="btn btn-outline">
-                            <span class="btn-icon">🔄</span>
-                            Refresh
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Progress Section -->
-        <div id="progressSection" class="section hidden">
-            <div class="card">
-                <div class="card-header">
-                    <div class="status-icon status-loading">📥</div>
-                    <h2 class="card-title">Downloading Materials</h2>
-                </div>
-                <div class="card-content">
-                    <div class="loading-container">
-                        <div class="loading-spinner"></div>
-                        <div id="statusText" class="status-text">Starting download...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Results Section -->
-        <div id="resultsSection" class="section hidden">
-            <div class="card">
-                <div class="card-header">
-                    <div class="status-icon status-success">📊</div>
-                    <h2 class="card-title">Download Complete</h2>
-                </div>
-                <div class="card-content">
-                    <div id="summaryText" class="summary-stats"></div>
-                    <div id="filesList" class="files-grid"></div>
-                </div>
-                <div class="card-footer">
-                    <button id="resetBtn" class="btn btn-outline">Start Over</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Error Section -->
-        <div id="errorSection" class="section hidden">
-            <div class="card">
-                <div class="card-header">
-                    <div class="status-icon status-error">❌</div>
-                    <h2 class="card-title">Error Occurred</h2>
-                </div>
-                <div class="card-content">
-                    <div class="alert alert-destructive">
-                        <div class="alert-icon">⚠️</div>
-                        <div class="alert-content">
-                            <div id="errorText" class="alert-description"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <button id="retryBtn" class="btn btn-primary">Try Again</button>
-                </div>
-            </div>
-        </div>
+  <!-- Material Design Icons: the same glyphs as the terminal app's Nerd Font icons -->
+  <svg width="0" height="0" class="sprite" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></symbol>
+    <symbol id="i-on" viewBox="0 0 24 24"><path d="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></symbol>
+    <symbol id="i-off" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></symbol>
+    <symbol id="i-downloading" viewBox="0 0 24 24"><path d="M13,2.03C17.73,2.5 21.5,6.25 21.95,11C22.5,16.5 18.5,21.38 13,21.93V19.93C16.64,19.5 19.5,16.61 19.96,12.97C20.5,8.58 17.39,4.59 13,4.05V2.05L13,2.03M11,2.06V4.06C9.57,4.26 8.22,4.84 7.1,5.74L5.67,4.26C7.19,3 9.05,2.25 11,2.06M4.26,5.67L5.69,7.1C4.8,8.23 4.24,9.58 4.05,11H2.05C2.25,9.04 3,7.19 4.26,5.67M2.06,13H4.06C4.24,14.42 4.81,15.77 5.69,16.9L4.27,18.33C3.03,16.81 2.26,14.96 2.06,13M7.1,18.37C8.23,19.25 9.58,19.82 11,20V22C9.04,21.79 7.18,21 5.67,19.74L7.1,18.37M12,16.5L7.5,12H11V8H13V12H16.5L12,16.5Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></symbol>
+    <symbol id="i-done" viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path d="M10 12C12.21 12 14 10.21 14 8S12.21 4 10 4 6 5.79 6 8 7.79 12 10 12M10 6C11.11 6 12 6.9 12 8S11.11 10 10 10 8 9.11 8 8 8.9 6 10 6M12 20H2V17C2 14.33 7.33 13 10 13C11 13 12.38 13.19 13.71 13.56C13.41 14.12 13.23 14.74 13.21 15.39C12.23 15.1 11.11 14.9 10 14.9C7.03 14.9 3.9 16.36 3.9 17V18.1H12C12 18.13 12 18.17 12 18.2V20M20.8 17V15.5C20.8 14.1 19.4 13 18 13C16.6 13 15.2 14.1 15.2 15.5V17C14.6 17 14 17.6 14 18.2V21.7C14 22.4 14.6 23 15.2 23H20.7C21.4 23 22 22.4 22 21.8V18.3C22 17.6 21.4 17 20.8 17M19.5 17H16.5V15.5C16.5 14.7 17.2 14.2 18 14.2C18.8 14.2 19.5 14.7 19.5 15.5V17Z"/></symbol>
+    <symbol id="i-open" viewBox="0 0 24 24"><path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M6.1,10L4,18V8H21A2,2 0 0,0 19,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H19C19.9,20 20.7,19.4 20.9,18.5L23.2,10H6.1M19,18H6L7.6,12H20.6L19,18Z"/></symbol>
+    <symbol id="i-pending" viewBox="0 0 24 24"><path d="M12,10A2,2 0 0,0 10,12C10,13.11 10.9,14 12,14C13.11,14 14,13.11 14,12A2,2 0 0,0 12,10Z"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="#17191B"/>
+        <polyline points="11,23 20,32 11,41" fill="none" stroke="#FF6500" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F4F5F6" transform="translate(25 13) scale(1.35)"/>
+        <rect x="27" y="47" width="27" height="4" rx="2" fill="#FF6500"/>
+      </svg>
+      <span class="brand-name">MyDy</span>
+      <span class="brand-sub">Downloader</span>
     </div>
-    
-    <script src="js/popup.js"></script>
-    <script>
-        // Check if popup might be cut off and show helper
-        setTimeout(() => {
-            if (window.innerHeight < 750 || window.innerWidth < 630) {
-                document.getElementById('positionHelper').style.display = 'block';
-            }
-        }, 1000);
-    </script>
+    <button id="refreshBtn" class="icon-button" type="button" title="Reload courses" aria-label="Reload courses" hidden>
+      <svg class="ic"><use href="#i-refresh"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <!-- Checking the tab -->
+    <section id="view-checking" class="view">
+      <div class="notice">
+        <p class="muted">Checking your MyDy tab…</p>
+        <div class="indeterminate"><i></i></div>
+      </div>
+    </section>
+
+    <!-- Not on MyDy, or signed out -->
+    <section id="view-signin" class="view" hidden>
+      <div class="notice">
+        <svg class="notice-icon ic"><use href="#i-lock"/></svg>
+        <h1 id="signinTitle">Sign in to MyDy</h1>
+        <p id="signinText" class="muted">Sign in on mydy.dypatil.edu in this tab, then check again.</p>
+        <div class="actions">
+          <button id="openMydyBtn" class="button primary" type="button"><svg class="ic"><use href="#i-open"/></svg>Open MyDy</button>
+          <button id="checkAgainBtn" class="button" type="button">Check again</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Course picker -->
+    <section id="view-courses" class="view" hidden>
+      <label class="search">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input id="searchInput" type="text" placeholder="Filter courses" autocomplete="off" spellcheck="false">
+        <button id="clearSearchBtn" class="icon-button small" type="button" aria-label="Clear filter" hidden><svg class="ic"><use href="#i-close"/></svg></button>
+      </label>
+      <div class="list-head">
+        <span id="courseCount" class="muted">Courses</span>
+        <button id="selectAllBtn" class="linkish" type="button">Select all</button>
+      </div>
+      <ul id="courseList" class="courses" role="listbox" aria-multiselectable="true" aria-label="Courses"></ul>
+      <p class="hint">Files save to <code>Downloads/MyDy/&lt;course&gt;/</code></p>
+      <div class="actions bottom">
+        <button id="downloadSelectedBtn" class="button primary grow" type="button" disabled><svg class="ic"><use href="#i-download"/></svg><span>Select courses</span></button>
+        <button id="downloadAllBtn" class="button" type="button">All</button>
+      </div>
+    </section>
+
+    <!-- Downloading: the terminal app's download drawer -->
+    <section id="view-progress" class="view" hidden>
+      <div class="drawer">
+        <div class="drawer-head">
+          <span class="drawer-title"><svg class="ic accent"><use href="#i-downloading"/></svg><b id="progressTitle">Downloading</b></span>
+          <span id="progressCount" class="muted"></span>
+        </div>
+        <div class="bar-row"><span class="bar"><i id="progressBar"></i></span><b id="progressPct">0%</b></div>
+        <p id="progressStatus" class="muted ellipsis">Starting…</p>
+      </div>
+      <ul id="progressCourses" class="steps"></ul>
+      <p class="hint">You can close this popup: downloads carry on while the MyDy tab stays open.</p>
+    </section>
+
+    <!-- Finished -->
+    <section id="view-done" class="view" hidden>
+      <div class="drawer">
+        <div class="drawer-head">
+          <span class="drawer-title"><svg class="ic ok"><use href="#i-done"/></svg><b>Download finished</b></span>
+        </div>
+        <div id="doneStats" class="stats"></div>
+      </div>
+      <ul id="doneCourses" class="results"></ul>
+      <div class="actions bottom">
+        <button id="showFolderBtn" class="button primary grow" type="button"><svg class="ic"><use href="#i-folder"/></svg>Show downloads</button>
+        <button id="backBtn" class="button" type="button">Back</button>
+      </div>
+    </section>
+
+    <!-- Something failed -->
+    <section id="view-error" class="view" hidden>
+      <div class="notice">
+        <svg class="notice-icon ic low"><use href="#i-alert"/></svg>
+        <h1>Something went wrong</h1>
+        <p id="errorText" class="muted"></p>
+        <div class="actions">
+          <button id="reloadTabBtn" class="button primary" type="button"><svg class="ic"><use href="#i-refresh"/></svg>Reload MyDy tab</button>
+          <button id="retryBtn" class="button" type="button">Try again</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a href="https://deeptanshuu.github.io/mydy-lms-helper/" target="_blank" rel="noopener">Part of MyDy LMS Helper</a>
+    <span id="version" class="muted"></span>
+  </footer>
+
+  <script src="js/popup.js"></script>
 </body>
 </html>

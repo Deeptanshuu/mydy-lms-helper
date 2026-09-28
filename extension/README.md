@@ -2,9 +2,9 @@
 
 <img src="icons/logo.png" alt="" width="96">
 
-# MyDY Moodle Downloader
+# MyDy Downloader
 
-Download your course files from the MyDy portal (mydy.dypatil.edu) in a couple of clicks.
+Every course's files from MyDy in one go, sorted into a folder per course.
 
 [![Extension release](https://img.shields.io/github/v/release/Deeptanshuu/mydy-lms-helper?filter=ext-v*&label=extension&style=flat-square&color=FF6500)](https://github.com/Deeptanshuu/mydy-lms-helper/releases)
 [![Chrome MV3](https://img.shields.io/badge/chrome-manifest%20v3-17191B?style=flat-square&logo=googlechrome&logoColor=white)](manifest.json)
@@ -16,14 +16,15 @@ Download your course files from the MyDy portal (mydy.dypatil.edu) in a couple o
 
 <table>
 <tr>
-<td width="50%"><img alt="Extension popup" src="https://github.com/user-attachments/assets/6ae0af24-a82a-4e29-b3a4-57cd27b05fda"></td>
-<td width="50%"><img alt="Extension popup" src="https://github.com/user-attachments/assets/5f18fec2-d637-469a-9011-c7675c9a9c81"></td>
+<td width="33%"><img alt="Pick courses: filter, tick the ones you want, download" src="../docs/assets/extension-courses.png"></td>
+<td width="33%"><img alt="Downloading: overall progress, the current file, and each course's status" src="../docs/assets/extension-progress.png"></td>
+<td width="33%"><img alt="Finished: files per course, with anything that failed flagged" src="../docs/assets/extension-done.png"></td>
 </tr>
 </table>
 
 Part of [MyDy LMS Helper](../README.md). For attendance, grades and assignments too, use the [terminal UI](../tui/README.md).
 
-Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question modules, grouped by course. It uses your logged-in browser session, never stores your password, and only talks to `mydy.dypatil.edu`.
+Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question modules into `Downloads/MyDy/<course>/`. It uses your signed-in browser session, never sees your password, and only talks to `mydy.dypatil.edu`. It remembers the courses you picked, and you can filter with `/` and tick with the keyboard.
 
 ## Install
 
@@ -40,6 +41,7 @@ cd extension
 npm install
 npm run build:webstore   # builds dist/ and a Chrome Web Store zip
 npm run version:patch    # bumps package.json and manifest.json together
+npm run screenshots      # re-renders the README screenshots with headless Chrome
 ```
 
 Releases are built by [`.github/workflows/extension.yml`](../.github/workflows/extension.yml) when an `ext-v*` tag is pushed.

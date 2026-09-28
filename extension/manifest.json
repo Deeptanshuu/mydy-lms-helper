@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "MyDY Moodle Downloader",
-  "version": "1.0.1",
-  "description": "Download course materials from MyDY Moodle portal",
+  "name": "MyDy Downloader",
+  "version": "1.1.0",
+  "description": "Download your MyDy course files in one go, sorted into a folder per course. Part of MyDy LMS Helper.",
   "permissions": [
     "activeTab",
     "downloads",
@@ -14,7 +14,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "MyDY Moodle Downloader",
+    "default_title": "MyDy Downloader",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png",

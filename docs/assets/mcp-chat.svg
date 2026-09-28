@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="528" viewBox="0 0 1280 528" role="img" aria-labelledby="title desc">
+  <title id="title">An AI assistant using the MyDy MCP tools</title>
+  <desc id="desc">A chat where an AI assistant calls the MyDy MCP tools to list what is due this week, find courses below 75% attendance, and download course notes.</desc>
+  <style>text { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }</style>
+  <rect width="1280" height="528" rx="16" fill="#0E0F10"/>
+  <path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z" fill="#FF6500" transform="translate(48 30) scale(1.1667)"/>
+  <text x="88" y="53" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">mydy-lms</text>
+  <text x="207.6" y="53" font-size="18" fill="#8A9096" xml:space="preserve">MCP server</text>
+  <text x="1232" y="53" font-size="18" fill="#8A9096" text-anchor="end" xml:space="preserve">8 tools</text>
+  <rect x="48" y="78" width="1184" height="418" rx="10" fill="#17191B"/>
+  <rect x="68" y="98" width="1144" height="48" rx="6" fill="#1C1E21"/>
+  <text x="84" y="129.7" font-size="22" fill="#FF6500" font-weight="700" xml:space="preserve">&gt;</text>
+  <text x="110.4" y="129.7" font-size="22" fill="#F4F5F6" xml:space="preserve">What's due this week, and where am I short on attendance?</text>
+  <text x="84" y="179.3" font-size="18" fill="#6FCF97" font-weight="700" xml:space="preserve">●</text>
+  <text x="105.6" y="179.3" font-size="18" fill="#8A9096" xml:space="preserve">get_assignments()  get_attendance()</text>
+  <text x="84" y="223.7" font-size="22" fill="#FF6500" font-weight="700" xml:space="preserve">●</text>
+  <text x="110.4" y="223.7" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">Assignment 3: Trees</text>
+  <text x="361.2" y="223.7" font-size="22" fill="#D8DCDF" xml:space="preserve"> is due tomorrow and isn't submitted. </text>
+  <text x="862.8" y="223.7" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">Lab 9: Subnetting</text>
+  <text x="1087.2" y="223.7" font-size="22" fill="#D8DCDF" xml:space="preserve"> is due</text>
+  <text x="110.4" y="255.7" font-size="22" fill="#D8DCDF" xml:space="preserve">in 2 days. You're below 75% in </text>
+  <text x="519.6" y="255.7" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">Engineering Maths III</text>
+  <text x="796.8" y="255.7" font-size="22" fill="#D8DCDF" xml:space="preserve"> (attend the next 47) and</text>
+  <text x="110.4" y="287.7" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">Computer Networks</text>
+  <text x="334.8" y="287.7" font-size="22" fill="#D8DCDF" xml:space="preserve"> (the next 6).</text>
+  <rect x="68" y="310" width="1144" height="48" rx="6" fill="#1C1E21"/>
+  <text x="84" y="341.7" font-size="22" fill="#FF6500" font-weight="700" xml:space="preserve">&gt;</text>
+  <text x="110.4" y="341.7" font-size="22" fill="#F4F5F6" xml:space="preserve">Download the Unit 1 notes for Computer Networks and quiz me on them.</text>
+  <text x="84" y="391.3" font-size="18" fill="#6FCF97" font-weight="700" xml:space="preserve">●</text>
+  <text x="105.6" y="391.3" font-size="18" fill="#8A9096" xml:space="preserve">get_course_content()  download_course_materials()</text>
+  <text x="84" y="435.7" font-size="22" fill="#FF6500" font-weight="700" xml:space="preserve">●</text>
+  <text x="110.4" y="435.7" font-size="22" fill="#D8DCDF" xml:space="preserve">Saved </text>
+  <text x="189.6" y="435.7" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">2 files</text>
+  <text x="282" y="435.7" font-size="22" fill="#D8DCDF" xml:space="preserve"> to MyDy/Computer Networks. First question: which OSI layer handles</text>
+  <text x="110.4" y="467.7" font-size="22" fill="#D8DCDF" xml:space="preserve">routing between networks?</text>
+</svg>

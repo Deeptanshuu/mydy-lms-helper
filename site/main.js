@@ -1,4 +1,4 @@
-// MyDy LMS Helper website: download button, install tabs, copy buttons and the live TUI demo.
+// MyDy LMS Helper website: download button, the live TUI demo, the bulk download card and the "Set up with AI" menus.
 const REPO = "Deeptanshuu/mydy-lms-helper"
 const RELEASES = `https://github.com/${REPO}/releases`
 
@@ -261,6 +261,103 @@ async function setUpDemo() {
 }
 
 // ---------------------------------------------------------------------------
+// "Set up with AI" menus: copy a setup prompt or the commands, or open the prompt in an assistant
+// ---------------------------------------------------------------------------
+const AI_PROMPT = `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, and download my course files.
+
+Project: https://github.com/${REPO}
+Setup guide: https://github.com/${REPO}/blob/main/mcp/README.md
+
+Read the setup guide, ask me which operating system and which AI app I use, then walk me through it one step at a time.`
+
+const SETUP_COMMANDS = `git clone https://github.com/${REPO}.git
+cd mydy-lms-helper
+python3 -m venv .venv
+.venv/bin/pip install -r mcp/requirements.txt
+claude mcp add mydy-lms \\
+  -e MYDY_USERNAME=your_email@dypatil.edu \\
+  -e MYDY_PASSWORD=your_password \\
+  -- "$PWD/.venv/bin/python" "$PWD/mcp/mcp_server.py"`
+
+const OPEN_IN = {
+  chatgpt: (q) => `https://chatgpt.com/?q=${encodeURIComponent(q)}`,
+  claude: (q) => `https://claude.ai/new?q=${encodeURIComponent(q)}`,
+  perplexity: (q) => `https://www.perplexity.ai/search?q=${encodeURIComponent(q)}`,
+}
+
+function setUpAiMenus() {
+  const menus = [...document.querySelectorAll("[data-ai-menu]")]
+  const closeAll = (except) => menus.forEach((m) => m !== except && m.close?.())
+
+  for (const root of menus) {
+    const button = root.querySelector(".ai-menu-button")
+    const list = root.querySelector('[role="menu"]')
+    const items = [...list.querySelectorAll('[role="menuitem"]')]
+    const open = (focus) => {
+      closeAll(root)
+      list.hidden = false
+      button.setAttribute("aria-expanded", "true")
+      if (focus) items[focus === "last" ? items.length - 1 : 0].focus()
+    }
+    root.close = (refocus = false) => {
+      if (list.hidden) return
+      list.hidden = true
+      button.setAttribute("aria-expanded", "false")
+      if (refocus) button.focus()
+    }
+
+    button.addEventListener("click", () => (list.hidden ? open() : root.close()))
+    button.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault()
+        open(e.key === "ArrowUp" ? "last" : "first")
+      }
+    })
+    list.addEventListener("keydown", (e) => {
+      const i = items.indexOf(document.activeElement)
+      const go = (n) => items[(n + items.length) % items.length].focus()
+      if (e.key === "ArrowDown") go(i + 1)
+      else if (e.key === "ArrowUp") go(i - 1)
+      else if (e.key === "Home") go(0)
+      else if (e.key === "End") go(items.length - 1)
+      else if (e.key === "Escape") root.close(true)
+      else if (e.key === "Tab") root.close()
+      else return
+      e.preventDefault()
+    })
+
+    for (const item of items) {
+      if (item.dataset.open) {
+        item.href = OPEN_IN[item.dataset.open](AI_PROMPT)
+        item.addEventListener("click", () => root.close())
+      }
+      if (item.dataset.copy) {
+        const label = item.querySelector("span")
+        const original = label.textContent
+        item.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(item.dataset.copy === "prompt" ? AI_PROMPT : SETUP_COMMANDS)
+            label.textContent = "Copied"
+            item.classList.add("done")
+          } catch {
+            label.textContent = "Couldn't copy"
+          }
+          setTimeout(() => {
+            label.textContent = original
+            item.classList.remove("done")
+            root.close()
+          }, 1200)
+        })
+      }
+    }
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-ai-menu]")) closeAll()
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Bulk download card: plays the download drawer while it's on screen
 // ---------------------------------------------------------------------------
 function setUpDownloadCard() {
@@ -305,3 +402,4 @@ function setUpDownloadCard() {
 setUpDownloads()
 setUpDemo()
 setUpDownloadCard()
+setUpAiMenus()

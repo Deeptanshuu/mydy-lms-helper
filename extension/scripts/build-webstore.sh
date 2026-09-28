@@ -7,7 +7,7 @@ VERSION=$(node -p "require('./package.json').version")
 BUILD_DIR="dist"
 PACKAGE_NAME="mydy-extension-v${VERSION}-webstore"
 
-echo "Building MyDY Extension v${VERSION} for Chrome Web Store..."
+echo "Building MyDy Downloader v${VERSION} for Chrome Web Store..."
 
 # Clean previous builds
 rm -rf $BUILD_DIR

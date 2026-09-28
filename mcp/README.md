@@ -2,6 +2,8 @@
 
 Lets Claude Code, Claude Desktop or any [MCP](https://modelcontextprotocol.io/) client read your MyDy courses, attendance, deadlines, grades and announcements, and download your notes. Part of [MyDy LMS Helper](../README.md).
 
+<img src="../docs/assets/mcp-chat.svg" alt="An AI assistant using the MyDy MCP tools to list what's due, check attendance and download notes" width="100%">
+
 ## Set up
 
 ```sh

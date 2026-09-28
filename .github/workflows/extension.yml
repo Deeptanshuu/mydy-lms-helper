@@ -78,10 +78,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ext-v${{ steps.package-version.outputs.version }}
-        release_name: MyDY Extension v${{ steps.package-version.outputs.version }}
+        release_name: MyDy Downloader v${{ steps.package-version.outputs.version }}
         body: |
           ## What's Changed
-          - Automated release of MyDY Moodle Downloader Extension v${{ steps.package-version.outputs.version }}
+          - Automated release of the MyDy Downloader extension v${{ steps.package-version.outputs.version }}
           
           ## Installation
           1. Download the `mydy-extension-v${{ steps.package-version.outputs.version }}.zip` file

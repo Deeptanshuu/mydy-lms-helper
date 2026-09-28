@@ -289,60 +289,115 @@ class MydyContentScript {
             .trim();
     }
 
+    // Send a structured progress message to the popup (relayed by background.js).
+    //   phase:  'scan' | 'download' | 'course-done' | 'done' | 'error'
+    //   course: { index, total, name } (1-based) or null when no course is active
+    //   file:   { index, total, name } (1-based within the course) or null
+    //   totals: { downloaded, failed, found } running totals across all courses
+    sendProgress(phase, status, { course = null, file = null, totals } = {}) {
+        const message = {
+            action: 'updateProgress',
+            phase: phase,
+            status: status,
+            course: course,
+            file: file,
+            totals: {
+                downloaded: totals ? totals.downloaded : 0,
+                failed: totals ? totals.failed : 0,
+                found: totals ? totals.found : 0
+            }
+        };
+
+        try {
+            const pending = chrome.runtime.sendMessage(message);
+            if (pending && typeof pending.catch === 'function') {
+                pending.catch(() => {
+                    // Popup/background might not be listening, ignore
+                });
+            }
+        } catch (error) {
+            // Extension context may be invalidated (e.g. reloaded mid-download), ignore
+        }
+    }
+
+    pluralize(count, singular, plural) {
+        return `${count} ${count === 1 ? singular : (plural || singular + 's')}`;
+    }
+
     async handleDownloadCourses(courses, sendResponse) {
+        // Course/totals state lives outside the try block so the error handler can report it
+        let totalFilesFound = 0;
+        let totalFilesDownloaded = 0;
+        let totalFilesFailed = 0;
+        let activeCourse = null;
+        const totalCourses = courses.length;
+        const currentTotals = () => ({
+            downloaded: totalFilesDownloaded,
+            failed: totalFilesFailed,
+            found: totalFilesFound
+        });
+
         try {
             const results = [];
-            let totalCourses = courses.length;
             let currentCourse = 0;
-            let totalFilesFound = 0;
-            let totalFilesDownloaded = 0;
 
             // Initial progress update
-            chrome.runtime.sendMessage({
-                action: 'updateProgress',
-                status: `🔍 Scanning ${totalCourses} courses for downloadable content...`
+            this.sendProgress('scan', `Scanning ${this.pluralize(totalCourses, 'course')}`, {
+                totals: currentTotals()
             });
 
             for (const course of courses) {
                 currentCourse++;
-                
+                activeCourse = { index: currentCourse, total: totalCourses, name: course.name };
+
                 // Update progress for course scanning
-                chrome.runtime.sendMessage({
-                    action: 'updateProgress',
-                    status: `🎯 Processing course: ${course.name} (${currentCourse}/${totalCourses})`
+                this.sendProgress('scan', `Opening ${course.name}`, {
+                    course: activeCourse,
+                    totals: currentTotals()
                 });
 
-                const result = await this.downloadCourse(course, currentCourse, totalCourses);
+                const result = await this.downloadCourse(course, currentCourse, totalCourses, currentTotals());
                 results.push(result);
-                
+
                 totalFilesFound += result.totalFound || 0;
                 totalFilesDownloaded += result.downloaded;
+                totalFilesFailed += result.failed;
 
                 // Update progress after each course
-                chrome.runtime.sendMessage({
-                    action: 'updateProgress',
-                    status: `✅ Completed ${course.name}: ${result.downloaded} files downloaded, ${result.failed} failed`
+                let courseSummary;
+                if (result.totalFound > 0) {
+                    courseSummary = `Finished ${course.name}: ${result.downloaded} of ${result.totalFound} files`;
+                    if (result.failed > 0) {
+                        courseSummary += `, ${result.failed} failed`;
+                    }
+                } else {
+                    courseSummary = `Finished ${course.name}: no files`;
+                }
+                this.sendProgress('course-done', courseSummary, {
+                    course: activeCourse,
+                    totals: currentTotals()
                 });
             }
 
             // Final summary update
-            chrome.runtime.sendMessage({
-                action: 'updateProgress',
-                status: `🎉 Download completed! ${totalFilesDownloaded}/${totalFilesFound} files downloaded from ${totalCourses} courses`
-            });
+            this.sendProgress(
+                'done',
+                `Finished: ${totalFilesDownloaded} of ${totalFilesFound} files from ${this.pluralize(totalCourses, 'course')}`,
+                { totals: currentTotals() }
+            );
 
             sendResponse({ success: true, results: results });
         } catch (error) {
             console.error('Download error:', error);
-            chrome.runtime.sendMessage({
-                action: 'updateProgress',
-                status: `❌ Download failed: ${error.message}`
+            this.sendProgress('error', `Download failed: ${error.message}`, {
+                course: activeCourse,
+                totals: currentTotals()
             });
             sendResponse({ error: error.message });
         }
     }
 
-    async downloadCourse(course, courseNumber, totalCourses) {
+    async downloadCourse(course, courseNumber, totalCourses, baseTotals = { downloaded: 0, failed: 0, found: 0 }) {
         return new Promise((resolve) => {
             // Create an iframe to load the course page
             const iframe = document.createElement('iframe');
@@ -357,12 +412,23 @@ class MydyContentScript {
                 totalFound: 0
             };
 
+            // Progress reporting for this course: running totals = totals before this course + this course's result so far
+            const courseInfo = { index: courseNumber, total: totalCourses, name: course.name };
+            const report = (phase, status, file = null) => {
+                this.sendProgress(phase, status, {
+                    course: courseInfo,
+                    file: file,
+                    totals: {
+                        downloaded: baseTotals.downloaded + result.downloaded,
+                        failed: baseTotals.failed + result.failed,
+                        found: baseTotals.found + result.totalFound
+                    }
+                });
+            };
+
             // Add timeout for course loading
             const timeout = setTimeout(() => {
-                chrome.runtime.sendMessage({
-                    action: 'updateProgress',
-                    status: `⚠️ Timeout loading ${course.name} - skipping`
-                });
+                report('scan', `Timed out loading ${course.name}, skipped`);
                 document.body.removeChild(iframe);
                 resolve(result);
             }, 30000); // 30 second timeout
@@ -371,53 +437,33 @@ class MydyContentScript {
                 clearTimeout(timeout);
                 
                 try {
-                    chrome.runtime.sendMessage({
-                        action: 'updateProgress',
-                        status: `📚 Course page loaded: ${course.name}`
-                    });
-
                     const doc = iframe.contentDocument || iframe.contentWindow.document;
                     
                     // First, find all downloadable files
-                    chrome.runtime.sendMessage({
-                        action: 'updateProgress',
-                        status: `🔍 Scanning for activities in ${course.name}...`
-                    });
+                    report('scan', `Scanning ${course.name}`);
 
-                    const downloadableFiles = await this.findDownloadableFiles(doc, course.name);
+                    const downloadableFiles = await this.findDownloadableFiles(doc, course.name, report);
                     result.totalFound = downloadableFiles.length;
                     
                     if (downloadableFiles.length === 0) {
-                        chrome.runtime.sendMessage({
-                            action: 'updateProgress',
-                            status: `⚠️ No downloadable files found in ${course.name}`
-                        });
+                        report('scan', `No files found in ${course.name}`);
                     } else {
-                        chrome.runtime.sendMessage({
-                            action: 'updateProgress',
-                            status: `✅ Found ${downloadableFiles.length} downloadable files in ${course.name}`
-                        });
+                        report('scan', `Found ${this.pluralize(downloadableFiles.length, 'file')} in ${course.name}`);
 
                         // Download each file with progress updates
                         for (let i = 0; i < downloadableFiles.length; i++) {
                             const file = downloadableFiles[i];
-                            const fileProgress = `(${i + 1}/${downloadableFiles.length})`;
+                            const fileInfo = { index: i + 1, total: downloadableFiles.length, name: file.name };
                             
                             try {
-                                chrome.runtime.sendMessage({
-                                    action: 'updateProgress',
-                                    status: `⬇️ Downloading ${fileProgress}: ${file.name}`
-                                });
+                                report('download', `Downloading ${file.name}`, fileInfo);
 
                                 await this.downloadFile(file.url, file.name, course.name);
                                 result.downloaded++;
                                 result.files.push(file.name);
                                 
                                 // Update progress with downloaded file
-                                chrome.runtime.sendMessage({
-                                    action: 'updateProgress',
-                                    downloadedFile: file.name
-                                });
+                                report('download', `Downloaded ${file.name}`, fileInfo);
 
                                 // Small delay to prevent overwhelming the browser
                                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -425,20 +471,14 @@ class MydyContentScript {
                             } catch (error) {
                                 console.error('File download failed:', error);
                                 result.failed++;
-                                chrome.runtime.sendMessage({
-                                    action: 'updateProgress',
-                                    status: `❌ Failed to download: ${file.name}`
-                                });
+                                report('download', `Couldn't download ${file.name}`, fileInfo);
                             }
                         }
                     }
                 } catch (error) {
                     console.error('Course processing error:', error);
                     result.failed++;
-                    chrome.runtime.sendMessage({
-                        action: 'updateProgress',
-                        status: `❌ Error processing ${course.name}: ${error.message}`
-                    });
+                    report('scan', `Couldn't process ${course.name}: ${error.message}`);
                 }
                 
                 document.body.removeChild(iframe);
@@ -448,10 +488,7 @@ class MydyContentScript {
             iframe.onerror = () => {
                 clearTimeout(timeout);
                 result.failed++;
-                chrome.runtime.sendMessage({
-                    action: 'updateProgress',
-                    status: `❌ Failed to load ${course.name}`
-                });
+                report('scan', `Couldn't load ${course.name}, skipped`);
                 document.body.removeChild(iframe);
                 resolve(result);
             };
@@ -460,15 +497,9 @@ class MydyContentScript {
         });
     }
 
-    async findDownloadableFiles(doc, courseName) {
+    async findDownloadableFiles(doc, courseName, report = () => {}) {
         const files = [];
         const seenUrls = new Set();
-
-        // Update progress
-        chrome.runtime.sendMessage({
-            action: 'updateProgress',
-            status: `🔍 Scanning ${courseName} for downloadable content...`
-        });
 
         // Look for different types of downloadable content
         const selectors = [
@@ -492,11 +523,6 @@ class MydyContentScript {
             link.href.includes('/mod/casestudy/') ||
             link.href.includes('/mod/dyquestion/')
         );
-
-        chrome.runtime.sendMessage({
-            action: 'updateProgress',
-            status: `📋 Found ${relevantActivities.length} activities to scan in ${courseName}`
-        });
 
         selectors.forEach(selector => {
             const elements = doc.querySelectorAll(selector);
@@ -536,10 +562,7 @@ class MydyContentScript {
             const link = relevantActivities[i];
             const href = link.href;
             
-            chrome.runtime.sendMessage({
-                action: 'updateProgress',
-                status: `🔍 Scanning activity ${i + 1}/${relevantActivities.length} in ${courseName}...`
-            });
+            report('scan', `Scanning activity ${i + 1} of ${relevantActivities.length} in ${courseName}`);
             
             try {
                 const activityFiles = await this.scanActivityForFiles(href);
@@ -675,23 +698,26 @@ class MydyContentScript {
     }
 
     async downloadFile(url, filename, courseName) {
-        return new Promise((resolve, reject) => {
-            // Create a download link
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.style.display = 'none';
-            
-            // Add to DOM and trigger download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Resolve after a short delay to allow download to start
-            setTimeout(() => {
-                resolve();
-            }, 500);
-        });
+        // Prefer the background worker: it saves into Downloads/MyDy/<course>/.
+        try {
+            const response = await chrome.runtime.sendMessage({ action: 'downloadFile', url, filename, courseName });
+            if (response && response.success) {
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                return;
+            }
+        } catch (error) {
+            console.warn('Background download failed, using a page link instead:', error);
+        }
+
+        // Fallback: let the page download it (lands in the Downloads folder itself).
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        await new Promise((resolve) => setTimeout(resolve, 500));
     }
 }
 

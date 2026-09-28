@@ -37,3 +37,7 @@ __pycache__/
 
 # Brainstorming companion mockups
 .superpowers/
+
+# Extension screenshot/preview harness pages
+/extension/.screenshot.html
+/extension/.preview.html

@@ -1,4 +1,4 @@
-// Writes docs/assets/banner.svg and docs/assets/how-it-works.svg in the TUI's look:
+// Writes docs/assets/banner.svg, how-it-works.svg, logo.svg and mcp-chat.svg in the TUI's look:
 // the same monospace font, brand colours, and Material Design icons (the icons Nerd Fonts' nf-md-* glyphs are).
 // Run: bun run --cwd tui artwork
 import * as mdi from "@mdi/js"
@@ -159,8 +159,113 @@ function howItWorks(): string {
   return svg(1280, 480, "How each part talks to MyDy", "The terminal UI and the MCP server log in with your credentials and parse MyDy's HTML over HTTP. The Chrome extension reuses your logged-in browser tab.", body)
 }
 
+/** One line of a transcript, split into bold/regular runs, each with its character column. */
+type Run = { text: string; bold: boolean; col: number }
+
+/** Wraps `**bold**`-marked text to `maxChars` columns on word boundaries; returns each line as positioned runs. */
+function wrapRuns(source: string, maxChars: number): Run[][] {
+  const flags: boolean[] = []
+  let plain = ""
+  source.split("**").forEach((seg, i) => {
+    for (const ch of seg) {
+      plain += ch
+      flags.push(i % 2 === 1)
+    }
+  })
+  const spans: Array<[number, number]> = []
+  let lineStart = 0
+  let lineEnd = 0
+  for (const m of plain.matchAll(/\S+/g)) {
+    const start = m.index ?? 0
+    const end = start + m[0].length
+    if (lineEnd > lineStart && end - lineStart > maxChars) {
+      spans.push([lineStart, lineEnd])
+      lineStart = start
+    }
+    lineEnd = end
+  }
+  spans.push([lineStart, lineEnd])
+  return spans.map(([from, to]) => {
+    const runs: Run[] = []
+    for (let i = from; i < to; i++) {
+      const last = runs[runs.length - 1]
+      if (last && last.bold === flags[i]) last.text += plain[i]
+      else runs.push({ text: plain[i], bold: flags[i], col: i - from })
+    }
+    return runs
+  })
+}
+
+/** A short AI-assistant conversation using the MCP tools, laid out like the website's .chat transcript. */
+function mcpChat(): string {
+  const W = 1280
+  const PX = 48
+  const PW = W - PX * 2
+  const PAD = 20
+  const GAP = 14
+  const bx = PX + PAD
+  const bw = PW - PAD * 2
+  const INSET = 16
+  const SIZE = 22
+  const LH = 32
+  const TOOL = 18
+  const TOOL_LH = 26
+
+  const body: string[] = []
+  // Header row
+  body.push(icon(mdi.mdiRobotOutline, PX, 30, 28, color.accent))
+  body.push(text(PX + 40, 53, 22, color.strong, "mydy-lms", { bold: true }))
+  body.push(text(PX + 40 + "mydy-lms".length * cw(22) + 14, 53, 18, color.muted, "MCP server"))
+  body.push(text(W - PX, 53, 18, color.muted, "8 tools", { anchor: "end" }))
+
+  const panelTop = 78
+  const content: string[] = []
+  let y = panelTop + PAD
+
+  /** Renders wrapped runs; the marker sits in a 2-character column and wrapped lines keep the indent. */
+  const flow = (top: number, size: number, lh: number, ink: string, source: string, marker: string, markerColor: string) => {
+    const textX = bx + INSET + 2 * cw(size)
+    const maxChars = Math.floor((bx + bw - INSET - textX) / cw(size))
+    const lines = wrapRuns(source, maxChars)
+    lines.forEach((runs, i) => {
+      const base = top + i * lh + lh / 2 + size * 0.35
+      if (i === 0) content.push(text(bx + INSET, base, size, markerColor, marker, { bold: true }))
+      for (const r of runs) content.push(text(+(textX + r.col * cw(size)).toFixed(2), base, size, r.bold ? color.strong : ink, r.text, { bold: r.bold }))
+    })
+    return lines.length * lh
+  }
+
+  const you = (msg: string) => {
+    const lines = wrapRuns(msg, Math.floor((bx + bw - INSET - (bx + INSET + 2 * cw(SIZE))) / cw(SIZE))).length
+    const h = lines * LH + 16
+    content.push(`<rect x="${bx}" y="${y}" width="${bw}" height="${h}" rx="6" fill="${color.strip}"/>`)
+    flow(y + 8, SIZE, LH, color.strong, msg, ">", color.accent)
+    y += h + GAP
+  }
+  const tool = (calls: string) => {
+    y += flow(y, TOOL, TOOL_LH, color.muted, calls, "●", color.ok) + GAP
+  }
+  const ai = (msg: string) => {
+    y += flow(y, SIZE, LH, color.text, msg, "●", color.accent) + GAP
+  }
+
+  you("What's due this week, and where am I short on attendance?")
+  tool("get_assignments()  get_attendance()")
+  ai("**Assignment 3: Trees** is due tomorrow and isn't submitted. **Lab 9: Subnetting** is due in 2 days. You're below 75% in **Engineering Maths III** (attend the next 47) and **Computer Networks** (the next 6).")
+  you("Download the Unit 1 notes for Computer Networks and quiz me on them.")
+  tool("get_course_content()  download_course_materials()")
+  ai("Saved **2 files** to MyDy/Computer Networks. First question: which OSI layer handles routing between networks?")
+
+  const panelBottom = y - GAP + PAD
+  body.push(`<rect x="${PX}" y="${panelTop}" width="${PW}" height="${panelBottom - panelTop}" rx="10" fill="${color.panel}"/>`)
+  body.push(...content)
+
+  return svg(W, panelBottom + 32, "An AI assistant using the MyDy MCP tools", "A chat where an AI assistant calls the MyDy MCP tools to list what is due this week, find courses below 75% attendance, and download course notes.", body)
+}
+
 const dir = join(import.meta.dir, "..", "..", "docs", "assets")
 await Bun.write(join(dir, "banner.svg"), banner())
 await Bun.write(join(dir, "how-it-works.svg"), howItWorks())
 await Bun.write(join(dir, "logo.svg"), logo())
-console.log(["banner.svg", "how-it-works.svg", "logo.svg"].map((f) => `wrote ${join(dir, f)}`).join("\n"))
+await Bun.write(join(dir, "mcp-chat.svg"), mcpChat())
+console.log(["banner.svg", "how-it-works.svg", "logo.svg", "mcp-chat.svg"].map((f) => `wrote ${join(dir, f)}`).join("\n"))
