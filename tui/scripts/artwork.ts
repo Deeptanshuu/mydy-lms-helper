@@ -142,16 +142,46 @@ function banner(): string {
   return svg(1280, 380, BANNER_TITLE, BANNER_DESC, [...heroWaves(1280, 380, bannerFade(1280)), ...bannerContent()])
 }
 
-/** The link-preview image for the website (site/og.png): the banner on a 1200x630 card. */
-function socialCard(): string {
-  const k = 1200 / 1280
-  const top = Math.round((630 - 380 * k) / 2)
-  return svg(1200, 630, BANNER_TITLE, BANNER_DESC, [
-    ...heroWaves(1200, 630, bannerFade(1200), 0),
-    `<g transform="translate(0 ${top}) scale(${k})">`,
-    ...bannerContent(),
-    "</g>",
-  ], 0)
+/**
+ * The link-preview image for the website (site/og.png): the name and what it does across the top, the real
+ * Overview screenshot underneath, running off the bottom edge. The screenshot is docs/assets/tui-overview.svg
+ * (from `bun run --cwd tui screenshot`), embedded as-is so the card always shows the app as it is.
+ */
+async function socialCard(): Promise<string> {
+  const W = 1200
+  const H = 630
+  const body: string[] = []
+  // Waves toward the top right, well away from the title.
+  body.push(...heroWaves(W, H, (x, y) => smoothstep(0.6, 0.92, x / W) * (1 - smoothstep(0.05, 0.4, y / H)), 0))
+
+  body.push(logoMarkup(60, 48, 64, true))
+  body.push(text(144, 92, 46, color.strong, "MyDy LMS Helper", { bold: true }))
+  body.push(text(146, 124, 19, color.muted, "Attendance, deadlines, grades and files from MyDy, in your terminal."))
+
+  let chipX = W - 60
+  for (const [path, label] of [[mdi.mdiGoogleChrome, "Chrome extension"], [mdi.mdiRobotOutline, "MCP server"], [mdi.mdiConsole, "Terminal UI"]] as const) {
+    const w = Math.ceil(14 + 16 + 8 + label.length * cw(14) + 14)
+    chipX -= w
+    body.push(`<rect x="${chipX}" y="58" width="${w}" height="34" rx="17" fill="${color.bg}" stroke="${color.line}"/>`)
+    body.push(icon(path, chipX + 14, 67, 16, color.muted))
+    body.push(text(chipX + 38, 80, 14, color.text, label))
+    chipX -= 10
+  }
+
+  const shot = await Bun.file(join(dir, "tui-overview.svg")).text()
+  const [, sw = "1044", sh = "682"] = /width="([\d.]+)" height="([\d.]+)"/.exec(shot) ?? []
+  // Its stylesheet would apply to the whole card (SVG styles are document-wide), so scope it to the screenshot.
+  const inner = shot.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "").replace("<style>text{", "<style>.shot text{")
+  const width = 1000
+  const height = Math.round((width * Number(sh)) / Number(sw))
+  const x = (W - width) / 2
+  const y = 172
+  body.push(`<defs><filter id="shot-shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter></defs>`)
+  body.push(`<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="${color.bg}" filter="url(#shot-shadow)"/>`)
+  body.push(`<svg class="shot" x="${x}" y="${y}" width="${width}" height="${height}" viewBox="0 0 ${sw} ${sh}">${inner}</svg>`)
+  body.push(`<rect x="${x + 0.5}" y="${y + 0.5}" width="${width - 1}" height="${height - 1}" rx="14" fill="none" stroke="${color.lineStrong}"/>`)
+
+  return svg(W, H, BANNER_TITLE, "MyDy LMS Helper: the terminal UI's Overview, with attendance, deadlines and grades for the semester.", body, 0)
 }
 
 function howItWorks(): string {
@@ -305,15 +335,16 @@ await Bun.write(join(dir, "logo.svg"), logo())
 await Bun.write(join(dir, "mcp-chat.svg"), mcpChat())
 console.log(["banner.svg", "how-it-works.svg", "logo.svg", "mcp-chat.svg"].map((f) => `wrote ${join(dir, f)}`).join("\n"))
 
-// site/og.png (link previews need a PNG): rasterise the social card with rsvg-convert when it's installed.
+// site/og.png (link previews need a PNG): write the card to tui/dist/og.svg, then rasterise it with
+// rsvg-convert when it's installed (or open the SVG in any browser and save a 1200x630 PNG).
 const og = join(import.meta.dir, "..", "..", "site", "og.png")
+const card = join(dir, "..", "..", "tui", "dist", "og.svg")
+await Bun.write(card, await socialCard())
 const rsvg = Bun.which("rsvg-convert")
 if (rsvg) {
-  const card = join(dir, "..", "..", "tui", "dist", "og.svg")
-  await Bun.write(card, socialCard())
   const run = Bun.spawnSync([rsvg, "-w", "1200", "-h", "630", card, "-o", og])
   if (run.exitCode !== 0) throw new Error(`rsvg-convert failed: ${run.stderr.toString()}`)
   console.log(`wrote ${og}`)
 } else {
-  console.log("rsvg-convert not found: site/og.png not updated")
+  console.log(`wrote ${card}; rsvg-convert not found, so site/og.png was not updated`)
 }
