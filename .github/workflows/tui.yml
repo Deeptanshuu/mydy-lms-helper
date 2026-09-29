@@ -39,6 +39,14 @@ jobs:
     - name: Build TUI binaries
       run: bun run --cwd tui build --all
 
+    # The Chrome extension ships with every release too, as mydy-extension.zip (the same files as extension.yml).
+    - name: Package the Chrome extension
+      run: |
+        mkdir -p tui/dist/extension
+        cp -r extension/manifest.json extension/popup.html extension/css extension/js extension/icons tui/dist/extension/
+        (cd tui/dist/extension && zip -qr ../mydy-extension.zip .)
+        rm -rf tui/dist/extension
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v7
       with:

@@ -1,4 +1,4 @@
-// MyDy Downloader popup.
+// MyDy Extension popup.
 // Talks to js/content.js in the MyDy tab:
 //   checkLogin                  -> { loggedIn }
 //   getCourses                  -> { courses: [{ id, name }] } | { error }

@@ -7,7 +7,7 @@ const version = packageJson.version;
 const buildDir = 'dist';
 const packageName = `mydy-extension-v${version}-webstore.zip`;
 
-console.log(`Building MyDy Downloader v${version} for Chrome Web Store...`);
+console.log(`Building MyDy Extension v${version} for Chrome Web Store...`);
 
 // Clean previous builds
 if (fs.existsSync(buildDir)) {

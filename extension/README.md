@@ -2,7 +2,7 @@
 
 <img src="icons/logo.png" alt="" width="96">
 
-# MyDy Downloader
+# MyDy Extension
 
 Every course's files from MyDy in one go, sorted into a folder per course.
 
@@ -28,7 +28,7 @@ Downloads resources, FlexPaper PDFs, presentations, case studies and DY Question
 
 ## Install
 
-1. Download the latest `ext-v*` zip from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases) and extract it (or use this folder).
+1. Download `mydy-extension.zip` from the [latest release](https://github.com/Deeptanshuu/mydy-lms-helper/releases/latest) and extract it (or use this folder).
 2. Open `chrome://extensions/`, turn on **Developer mode**, click **Load unpacked** and pick the folder.
 3. Open [mydy.dypatil.edu](https://mydy.dypatil.edu), sign in, click the extension icon, choose courses and download.
 

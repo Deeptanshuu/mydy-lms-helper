@@ -1,5 +1,5 @@
 {
-  "name": "mydy-moodle-downloader",
+  "name": "mydy-extension",
   "version": "1.1.0",
   "description": "Chrome extension that downloads your MyDy course files in one go. Part of MyDy LMS Helper.",
   "scripts": {

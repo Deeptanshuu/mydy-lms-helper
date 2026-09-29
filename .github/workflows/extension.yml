@@ -84,7 +84,7 @@ jobs:
       uses: softprops/action-gh-release@v3
       with:
         tag_name: ext-v${{ steps.package-version.outputs.version }}
-        name: MyDy Downloader v${{ steps.package-version.outputs.version }}
+        name: MyDy Extension v${{ steps.package-version.outputs.version }}
         body_path: .github/release-notes/ext-v${{ steps.package-version.outputs.version }}.md
         files: extension/mydy-extension-v${{ steps.package-version.outputs.version }}.zip
         make_latest: false
