@@ -47,6 +47,10 @@ jobs:
         (cd tui/dist/extension && zip -qr ../mydy-extension.zip .)
         rm -rf tui/dist/extension
 
+    # The one-line installers (site/install.sh, site/install.ps1) check their download against this.
+    - name: Checksums
+      run: cd tui/dist && sha256sum mydy-* > SHA256SUMS && cat SHA256SUMS
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v7
       with:

@@ -59,10 +59,10 @@
         <h1>A better way<br>to use MyDy.</h1>
         <p class="lede">A terminal app that opens on an Overview of your attendance, deadlines and grades. Every course's notes in one download. And your AI assistant, plugged into your courses.</p>
         <div class="cta">
-          <a class="button primary" id="download" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
-            <span id="download-label">Download</span>
-          </a>
+          <button class="button primary" id="install-copy" type="button">
+            <svg class="ic"><use href="#i-console"/></svg>
+            <span id="install-label">Copy install command</span>
+          </button>
           <div class="ai-menu" data-ai-menu="general">
               <button class="button outline ai-menu-button" type="button" aria-haspopup="menu" aria-expanded="false">
                 <svg class="ic"><use href="#i-sparkle"/></svg>Set up with AI<svg class="ic chevron"><use href="#i-chevron"/></svg>
@@ -78,7 +78,8 @@
             </div>
           <a class="button ghost" href="#install">All platforms</a>
         </div>
-        <p class="fineprint" id="download-note">Unofficial and open source.</p>
+        <pre class="cmd hero-cmd"><code id="install-cmd">curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh</code></pre>
+        <p class="fineprint" id="download-note">Paste it in your terminal, then run <code>mydy</code>. Unofficial and open source.</p>
       </div>
     </section>
 
@@ -246,7 +247,13 @@
       <div class="cards">
         <div class="card">
           <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13,19V16H21V19H13M8.5,13L2.47,7H6.71L11.67,11.95C12.25,12.54 12.25,13.5 11.67,14.07L6.74,19H2.5L8.5,13Z"/></svg>Terminal UI</h3>
-          <p>One binary, no install. Icons turn on by themselves when your terminal can draw them; <code>mydy --install-font</code> installs JetBrainsMono Nerd Font.</p>
+          <p>One line installs it, and running it again updates it.</p>
+          <p class="cmd-label">macOS and Linux</p>
+          <pre class="cmd"><code>curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh</code></pre>
+          <p class="cmd-label">Windows (PowerShell)</p>
+          <pre class="cmd"><code>irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex</code></pre>
+          <p>Icons turn on by themselves when your terminal can draw them; <code>mydy --install-font</code> installs JetBrainsMono Nerd Font.</p>
+          <p class="cmd-label">Or download a binary</p>
           <ul class="platforms" id="platforms">
             <li><a data-asset="mydy-darwin-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS arm64</a></li>
             <li><a data-asset="mydy-darwin-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS x64</a></li>

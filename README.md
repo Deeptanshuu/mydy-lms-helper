@@ -25,7 +25,19 @@ Each folder has its own README with setup and details.
 
 ## Quick start
 
-Grab the binary for your system from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases), or run from source with [Bun](https://bun.com):
+macOS and Linux:
+
+```sh
+curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex
+```
+
+Then run `mydy`. Binaries are also on [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases), or run from source with [Bun](https://bun.com):
 
 ```sh
 git clone https://github.com/Deeptanshuu/mydy-lms-helper.git
