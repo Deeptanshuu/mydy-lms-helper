@@ -1,18 +1,9 @@
-// MyDy LMS Helper website: download button, the live TUI demo, the bulk download card and the "Set up with AI" menus.
+// MyDy LMS Helper website: install command, the live TUI demo, the bulk download card and the "Set up with AI" menus.
 const REPO = "Deeptanshuu/mydy-lms-helper"
-const RELEASES = `https://github.com/${REPO}/releases`
 
 // ---------------------------------------------------------------------------
-// Download: pick the visitor's platform, link the newest TUI release that has a binary for it.
+// Install: the one-line installer for the visitor's system, and links to the newest TUI release's binaries.
 // ---------------------------------------------------------------------------
-const PLATFORMS = {
-  macArm: { asset: "mydy-darwin-arm64", label: "macOS" },
-  macIntel: { asset: "mydy-darwin-x64", label: "macOS (Intel)" },
-  windows: { asset: "mydy-windows-x64.exe", label: "Windows" },
-  linux: { asset: "mydy-linux-x64", label: "Linux" },
-  linuxArm: { asset: "mydy-linux-arm64", label: "Linux (ARM64)" },
-}
-
 function detectPlatform() {
   const ua = navigator.userAgent
   const platform = navigator.userAgentData?.platform ?? ""
@@ -23,12 +14,44 @@ function detectPlatform() {
   return null
 }
 
+const INSTALL = {
+  unix: { command: "curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh", where: "your terminal" },
+  windows: { command: "irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex", where: "PowerShell" },
+}
+
+/** Copies `text`, then shows `done` on `label` for a moment. */
+async function copyWithFeedback(text, label, done = "Copied") {
+  const original = label.textContent
+  try {
+    await navigator.clipboard.writeText(text)
+    label.textContent = done
+  } catch {
+    label.textContent = "Couldn't copy"
+  }
+  setTimeout(() => (label.textContent = original), 1600)
+}
+
+// A browser download of the unsigned macOS binary is quarantined ("damaged"), so the site leads with the
+// one-line installer, which fetches it with curl. Direct binary links stay in the Install section.
 async function setUpDownloads() {
-  const button = document.getElementById("download")
-  const label = document.getElementById("download-label")
-  const note = document.getElementById("download-note")
   const platform = detectPlatform()
-  label.textContent = platform ? `Download for ${PLATFORMS[platform].label}` : "Downloads"
+  const install = platform === "windows" ? INSTALL.windows : INSTALL.unix
+  const button = document.getElementById("install-copy")
+  const label = document.getElementById("install-label")
+  const note = document.getElementById("download-note")
+  document.getElementById("install-cmd").textContent = install.command
+  note.innerHTML = `Paste it in ${install.where}, then run <code>mydy</code>. Unofficial and open source.`
+  button.addEventListener("click", () => copyWithFeedback(install.command, label, `Copied, paste it in ${install.where}`))
+
+  // Every command block gets a copy button.
+  for (const pre of document.querySelectorAll("pre.cmd")) {
+    const copy = document.createElement("button")
+    copy.type = "button"
+    copy.className = "cmd-copy"
+    copy.textContent = "Copy"
+    copy.addEventListener("click", () => copyWithFeedback(pre.querySelector("code").textContent.trim(), copy))
+    pre.append(copy)
+  }
 
   let release = null
   try {
@@ -48,16 +71,7 @@ async function setUpDownloads() {
     if (url) link.href = url
     else link.classList.add("unavailable")
   }
-
-  const url = platform && assetUrl(PLATFORMS[platform].asset)
-  if (url) {
-    button.href = url
-    note.textContent = `${release.tag_name}. Unofficial and open source.`
-  } else {
-    button.href = RELEASES
-    label.textContent = "Get it from Releases"
-    if (!release) note.textContent = "No binaries released yet. Run it from source: see the setup guide under Install."
-  }
+  if (release) note.innerHTML = `Paste it in ${install.where}, then run <code>mydy</code>. ${release.tag_name}, unofficial and open source.`
 }
 
 // ---------------------------------------------------------------------------
@@ -421,10 +435,12 @@ const AI_SETUP = {
 README: https://github.com/${REPO}#readme
 
 Ask me which of these I want and which operating system I use, then walk me through the setup one step at a time.`,
-    commands: `git clone https://github.com/${REPO}.git
-cd mydy-lms-helper
-bun install
-bun run tui`,
+    commands: `# macOS and Linux
+curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh
+# Windows (PowerShell)
+irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex
+# then
+mydy`,
   },
   mcp: {
     prompt: `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, and download my course files.

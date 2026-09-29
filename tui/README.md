@@ -8,11 +8,24 @@ Attendance, deadlines, grades, announcements and course files from MyDy on one s
 
 ## Install
 
-Download the binary for your system from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases) and run it:
+macOS and Linux:
 
 ```sh
-chmod +x mydy-darwin-arm64
-xattr -d com.apple.quarantine mydy-darwin-arm64   # macOS only: the binary isn't notarized
+curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex
+```
+
+Then run `mydy`. The installer picks the build for your system, checks it against the release's checksums and puts it in `~/.local/bin` (Windows: `%LOCALAPPDATA%\Programs\mydy`, added to your PATH). `MYDY_VERSION=v6.0.0` installs a specific release; `MYDY_INSTALL_DIR` changes where it goes. Run it again to update.
+
+Or download the binary from [Releases](https://github.com/Deeptanshuu/mydy-lms-helper/releases) yourself. The binaries aren't signed, so macOS calls a browser download "damaged" until you clear the quarantine flag:
+
+```sh
+xattr -d com.apple.quarantine mydy-darwin-arm64 && chmod +x mydy-darwin-arm64
 ./mydy-darwin-arm64
 ```
 
