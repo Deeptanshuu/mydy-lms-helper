@@ -19,6 +19,15 @@ const INSTALL = {
   windows: { command: "irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex", where: "PowerShell" },
 }
 
+/** Shows a command in `code`; on a narrow screen it wraps after a slash in the URL rather than mid-word. */
+function showCommand(code, text) {
+  code.textContent = ""
+  text.split(/(?<=\/)(?=[^/])/).forEach((part, i) => {
+    if (i) code.append(document.createElement("wbr"))
+    code.append(part)
+  })
+}
+
 /** Copies `text`, then shows `done` on `label` for a moment. */
 async function copyWithFeedback(text, label, done = "Copied") {
   const original = label.textContent
@@ -39,18 +48,20 @@ async function setUpDownloads() {
   const button = document.getElementById("install-copy")
   const label = document.getElementById("install-label")
   const note = document.getElementById("download-note")
-  document.getElementById("install-cmd").textContent = install.command
+  showCommand(document.getElementById("install-cmd"), install.command)
   note.innerHTML = `Paste it in ${install.where}, then run <code>mydy</code>. Unofficial and open source.`
   button.addEventListener("click", () => copyWithFeedback(install.command, label, `Copied, paste it in ${install.where}`))
 
   // Every command block gets a copy button.
-  for (const pre of document.querySelectorAll("pre.cmd")) {
+  for (const block of document.querySelectorAll(".cmd")) {
+    const code = block.querySelector("code")
+    if (code.id !== "install-cmd") showCommand(code, code.textContent)
     const copy = document.createElement("button")
     copy.type = "button"
     copy.className = "cmd-copy"
     copy.textContent = "Copy"
-    copy.addEventListener("click", () => copyWithFeedback(pre.querySelector("code").textContent.trim(), copy))
-    pre.append(copy)
+    copy.addEventListener("click", () => copyWithFeedback(block.querySelector("code").textContent.trim(), copy))
+    block.append(copy)
   }
 
   let release = null
