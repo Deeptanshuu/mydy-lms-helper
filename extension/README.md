@@ -6,10 +6,6 @@
 
 Every course's files from MyDy in one go, sorted into a folder per course.
 
-[![Extension release](https://img.shields.io/github/v/release/Deeptanshuu/mydy-lms-helper?filter=ext-v*&label=extension&style=flat-square&color=FF6500)](https://github.com/Deeptanshuu/mydy-lms-helper/releases)
-[![Chrome MV3](https://img.shields.io/badge/chrome-manifest%20v3-17191B?style=flat-square&logo=googlechrome&logoColor=white)](manifest.json)
-[![Part of MyDy LMS Helper](https://img.shields.io/badge/part%20of-MyDy%20LMS%20Helper-17191B?style=flat-square)](../README.md)
-
 </div>
 
 <br>
