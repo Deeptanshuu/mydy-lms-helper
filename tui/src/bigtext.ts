@@ -1,5 +1,5 @@
-// Big numerals for hero figures, 3 rows tall. The ASCII fonts' digits are too crude to read at a
-// glance, so figures get their own face: a 3x5 pixel grid drawn with half blocks.
+// Big type, 3 rows tall: a 5-row pixel grid drawn with half blocks. Numerals for hero figures (3 wide), plus
+// the letters, chevron and cursor of the wordmark (the brand logo is a prompt: "> MYDY_").
 
 const PIXELS: Record<string, string[]> = {
   "0": ["###", "#.#", "#.#", "#.#", "###"],
@@ -19,6 +19,11 @@ const PIXELS: Record<string, string[]> = {
   ".": [".", ".", ".", ".", "#"],
   ":": [".", "#", ".", "#", "."],
   " ": [".", ".", ".", ".", "."],
+  M: ["#...#", "##.##", "#.#.#", "#...#", "#...#"],
+  Y: ["#...#", ".#.#.", "..#..", "..#..", "..#.."],
+  D: ["###.", "#..#", "#..#", "#..#", "###."],
+  ">": ["#..", ".#.", "..#", ".#.", "#.."],
+  _: ["...", "...", "...", "...", "###"],
 }
 
 function halfBlocks(top: boolean, bottom: boolean): string {

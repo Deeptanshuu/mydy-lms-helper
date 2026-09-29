@@ -6,7 +6,7 @@ import { color, mix } from "../theme"
 import { useApp } from "./context"
 import { Dither, smoothstep } from "./Dither"
 import { center, Line, type Seg } from "./Line"
-import { Card, Display, Gap, keySegs, keyWidth, Title } from "./kit"
+import { Card, Gap, keySegs, keyWidth, Title, Wordmark } from "./kit"
 
 /** Card width, border and padding included. */
 const CARD_WIDTH = 54
@@ -97,7 +97,7 @@ export function SignIn() {
       <Dither position="absolute" top={0} left={0} width="100%" height="100%" background={color.bg} strength={0.16} mask={vignette} animate={animate} fps={8} />
       <box flexGrow={1} flexDirection="column" justifyContent="center" alignItems="center">
         <Show when={tier() >= 1}>
-          <Display text="MYDY" color={color.accent} />
+          <Wordmark blink={animate} />
           <Show when={tier() >= 2}>
             <Gap />
             <Line segs={[{ text: "Attendance, deadlines and files, in one place", fg: color.faint }]} />

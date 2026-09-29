@@ -9,18 +9,17 @@ import { useApp } from "./context"
 import { Dither, keepClear } from "./Dither"
 import { pressKey } from "./keys"
 import { Line, type Seg } from "./Line"
-import { Display, displaySize, Gap, keySegs, keyWidth } from "./kit"
+import { Gap, keySegs, keyWidth, Wordmark, wordmarkWidth } from "./kit"
 
 const len = (s: string) => [...s].length
 
 /** Rows the header takes at a given terminal height (App lays out the panes with it). */
 export function headerRows(termHeight: number): number {
-  return termHeight >= 28 ? 4 : 1
+  return termHeight >= 28 ? 5 : 1
 }
 /** Rows the footer key bar takes. */
 export const FOOTER_ROWS = 1
 
-const WORDMARK = "MYDY"
 /** Air between the wordmark and the identity block. */
 const WORDMARK_GAP = 3
 
@@ -57,7 +56,7 @@ export function TopBar() {
   const usable = () => dims().width - 4
   const context = () => [s.attendance?.batch, s.attendance?.semester].filter(Boolean).join(", ")
   const refresh = () => services.refresh()
-  const wordmarkW = displaySize(WORDMARK).width
+  const wordmarkW = wordmarkWidth()
 
   // Identity: the batch and semester as the heading, the account under it as a caption.
   const heading = (): Seg[] => {
@@ -77,7 +76,7 @@ export function TopBar() {
     const statusW = width(statusClipped())
     return keepClear(
       [
-        { x: 2, y: 1, width: wordmarkW, height: 2 },
+        { x: 2, y: 1, width: wordmarkW, height: 3 },
         { x: identityX, y: 1, width: identityW, height: 2 },
         { x: dims().width - 2 - statusW, y: 2, width: statusW, height: 1 },
       ],
@@ -104,12 +103,12 @@ export function TopBar() {
         </box>
       }
     >
-      <box flexDirection="column" backgroundColor={color.bar} paddingX={2} height={4} flexShrink={0}>
+      <box flexDirection="column" backgroundColor={color.bar} paddingX={2} height={5} flexShrink={0}>
         {/* The website's dithered waves drift through the empty middle of the band, kept clear of every word. */}
         <Dither position="absolute" top={0} left={0} width="100%" height="100%" mask={headerMask()} animate={animate} />
         <Gap />
-        <box flexDirection="row" height={2} flexShrink={0}>
-          <Display text={WORDMARK} color={color.accent} bg={color.bar} />
+        <box flexDirection="row" height={3} flexShrink={0}>
+          <Wordmark blink={animate} />
           <box width={WORDMARK_GAP} flexShrink={0} />
           <box flexDirection="column" flexGrow={1}>
             <Line segs={clip(heading(), usable() - wordmarkW - WORDMARK_GAP)} />

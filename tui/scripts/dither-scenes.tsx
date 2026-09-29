@@ -2,7 +2,7 @@
 // Rendered by scripts/preview.tsx as 14-dither-band, 15-dither-signin and 16-dither-levels.
 import { For } from "solid-js"
 import { color } from "../src/theme"
-import { Body, Caption, Card, Display, Eyebrow, Gap, keySegs, Title } from "../src/ui/kit"
+import { Body, Caption, Card, Eyebrow, Gap, keySegs, Title, Wordmark } from "../src/ui/kit"
 import { Dither, keepClear, smoothstep, type DitherMask } from "../src/ui/Dither"
 import { Line } from "../src/ui/Line"
 
@@ -24,7 +24,7 @@ export function DitherBand(props: { animate?: boolean; time?: number }) {
       <box height={6} flexShrink={0} backgroundColor={color.bar}>
         <Dither position="absolute" top={0} left={0} width="100%" height="100%" mask={mask} animate={props.animate} time={props.time ?? 20} />
         <box flexDirection="row" height={6} paddingX={3} paddingY={2} columnGap={4}>
-          <Display text="MyDy" color={color.accent} />
+          <Wordmark />
           <box flexDirection="column">
             <Line segs={[{ text: "LMS Helper", fg: color.strong }]} />
             <Line segs={[{ text: "Semester 5 · synced 2 min ago", fg: color.muted }]} />
@@ -51,7 +51,7 @@ export function DitherSignin(props: { animate?: boolean; time?: number }) {
     <box width="100%" height="100%" backgroundColor={color.bg} alignItems="center" justifyContent="center">
       <Dither position="absolute" top={0} left={0} width="100%" height="100%" background={color.bg} strength={0.18} mask={vignette} animate={props.animate} time={props.time ?? 12} />
       <box flexDirection="column" alignItems="center">
-        <Display text="MyDy" color={color.accent} />
+        <Wordmark />
         <Gap />
         <Card title="Sign in" width={52} paddingY={1} focused>
           <Body text="Sign in with your MyDy account." />

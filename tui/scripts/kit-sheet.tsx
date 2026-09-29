@@ -1,7 +1,7 @@
 // A style sheet of the design kit, rendered by scripts/preview.tsx as 00-kit.
 import { color } from "../src/theme"
 import { useApp } from "../src/ui/context"
-import { Body, Caption, Card, Display, Eyebrow, Gap, keySegs, Meter, statusPill, StatTile, Title, tileWidths } from "../src/ui/kit"
+import { Body, Caption, Card, Eyebrow, Gap, keySegs, Meter, statusPill, StatTile, Title, tileWidths, Wordmark } from "../src/ui/kit"
 import { Line } from "../src/ui/Line"
 
 export function KitSheet() {
@@ -9,7 +9,7 @@ export function KitSheet() {
   const w = tileWidths(112, 4)
   return (
     <box flexDirection="column" width="100%" height="100%" backgroundColor={color.bg} paddingX={4} paddingY={1}>
-      <Display text="MyDy" color={color.accent} />
+      <Wordmark />
       <Gap />
       <Title text="Data Structures and Algorithms" width={80} bar />
       <Caption text="Semester 5 · Prof. R. Sharma · 5 files, 4 assignments" />

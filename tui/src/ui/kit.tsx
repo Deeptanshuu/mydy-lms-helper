@@ -1,17 +1,16 @@
 // The design kit: a type ladder and a handful of components every screen is built from.
 //
-//   H1  Display   ASCII "tiny" font, 2 rows tall: the wordmark.
-//       Figure    big pixel numerals, 3 rows tall: hero numbers in stat tiles and dashboards.
+//   H1  Wordmark  "> MYDY_" in the big pixel face, 3 rows tall, like the logo.
+//       Figure    big pixel numerals in the same face: hero numbers in stat tiles and dashboards.
 //   H2  Title     bold, strong ink, optional accent bar. Page and course titles.
-//   H3  Eyebrow   UPPERCASE, bold, muted, trailed by a hairline rule and an optional count. Section labels.
+//   H3  Eyebrow   UPPERCASE, muted, with a faint count (a hairline rule on request). Section labels.
 //   P   Body      text ink.
 //       Caption   muted ink. The secondary fact under a title or a value.
 //       Hint      faint ink. Key hints, placeholders, units.
 //
 // Rhythm: one blank row between a heading and its content, two between sections. Panels pad 2 cells
 // left and right, 1 row top and bottom. Colour is for state (ok / warn / low) and the one accent.
-import { measureText } from "@opentui/core"
-import { Show, type JSX } from "solid-js"
+import { createEffect, createSignal, onCleanup, Show, type JSX } from "solid-js"
 import { BIG_ROWS, bigText, bigTextWidth } from "../bigtext"
 import { fit } from "../format"
 import { CAP_LEFT, CAP_RIGHT, slot, type IconName } from "../icons"
@@ -31,35 +30,6 @@ const len = (s: string) => [...s].length
 
 // ── Type ladder ────────────────────────────────────────────────────────────────────────────────
 
-export type DisplayFont = "tiny" | "block" | "slick"
-
-/** Characters the ASCII fonts can draw; anything else is dropped rather than rendered as a gap. */
-const DRAWABLE = /[0-9A-Z!?.+\-_=@#$%&()/:;,'" ]/
-
-export function displayText(text: string): string {
-  return [...text.toUpperCase()].filter((ch) => DRAWABLE.test(ch)).join("")
-}
-
-/** Cells wide and rows tall that `text` takes in an ASCII font. */
-export function displaySize(text: string, font: DisplayFont = "tiny"): { width: number; height: number } {
-  const t = displayText(text)
-  return t ? measureText({ text: t, font }) : { width: 0, height: font === "tiny" ? 2 : 6 }
-}
-
-/** H1: big ASCII lettering. `tiny` is 2 rows tall, `block` and `slick` are 6. */
-export function Display(props: { text: string; color?: string | string[]; bg?: string; font?: DisplayFont }) {
-  return (
-    <ascii_font
-      text={displayText(props.text)}
-      font={props.font ?? "tiny"}
-      color={props.color ?? color.strong}
-      backgroundColor={props.bg ?? "transparent"}
-      selectable={false}
-      flexShrink={0}
-    />
-  )
-}
-
 /** H1 for numbers: `text` in the big pixel numerals (digits and % / - + . : only), 3 rows tall. */
 export function Figure(props: { text: string; color?: string; bg?: string; unit?: string; unitColor?: string } & MouseProps) {
   const rows = () => bigText(props.text)
@@ -74,6 +44,39 @@ export function Figure(props: { text: string; color?: string; bg?: string; unit?
 
 export function figureWidth(text: string, unit?: string): number {
   return bigTextWidth(text) + (unit ? len(unit) + 1 : 0)
+}
+
+/** Cells the wordmark takes: "> MYDY _" in the big pixel face. */
+export function wordmarkWidth(): number {
+  return bigTextWidth(">") + 2 + bigTextWidth("MYDY") + 1 + bigTextWidth("_")
+}
+
+/**
+ * The brand mark, drawn like the logo: an orange prompt chevron, MYDY in strong ink, an orange cursor. 3 rows
+ * tall, in the same pixel face as the figures. The cursor blinks when `blink` is set.
+ */
+export function Wordmark(props: { blink?: boolean; bg?: string }) {
+  const chevron = bigText(">")
+  const name = bigText("MYDY")
+  const cursor = bigText("_")
+  const [on, setOn] = createSignal(true)
+  createEffect(() => {
+    if (!props.blink) return setOn(true)
+    const timer = setInterval(() => setOn((v) => !v), 530)
+    onCleanup(() => clearInterval(timer))
+  })
+  const row = (i: 0 | 1 | 2): Seg[] => [
+    { text: chevron[i], fg: color.accent },
+    { text: "  " + name[i] + " ", fg: color.strong },
+    { text: on() ? cursor[i] : " ".repeat(len(cursor[i])), fg: color.accent },
+  ]
+  return (
+    <box flexDirection="column" height={BIG_ROWS} width={wordmarkWidth()} flexShrink={0} backgroundColor={props.bg}>
+      <Line segs={row(0)} />
+      <Line segs={row(1)} />
+      <Line segs={row(2)} />
+    </box>
+  )
 }
 
 /** H2: a bold title in strong ink, with an optional accent bar and icon in front. */

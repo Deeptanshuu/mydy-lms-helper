@@ -16,7 +16,7 @@
 //   <box height={6} backgroundColor={color.bar}>
 //     <Dither position="absolute" top={0} left={0} width="100%" height="100%"
 //       mask={keepClear([{ x: 3, y: 2, width: 20, height: 2 }], 4)} />   // no waves within 4 cells of the wordmark
-//     <box paddingX={3} paddingY={2}><Display text="MYDY" color={color.accent} /></box>  // no backgroundColor
+//     <box paddingX={3} paddingY={2}><Wordmark /></box>  // no backgroundColor
 //   </box>
 //
 // Recommended: header band strength 0.2 (levels 3), backdrop behind the sign-in card 0.15-0.2 with a vignette
