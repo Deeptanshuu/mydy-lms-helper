@@ -20,19 +20,6 @@ function text(x: number, y: number, size: number, fill: string, value: string, o
   return `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}"${weight}${anchor} xml:space="preserve">${esc(value)}</text>`
 }
 
-/** Key hints like the TUI footer: keys in accent, labels muted, positioned by character count. */
-function keyHints(x: number, y: number, size: number, hints: Array<[string, string]>): string {
-  const out: string[] = []
-  let at = x
-  for (const [key, label] of hints) {
-    out.push(text(at, y, size, color.accent, key))
-    at += [...key].length * cw(size)
-    out.push(text(at, y, size, color.muted, ` ${label}`))
-    at += (label.length + 4) * cw(size)
-  }
-  return out.join("\n  ")
-}
-
 const svg = (width: number, height: number, title: string, desc: string, body: string[], radius = 16) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title desc">
   <title id="title">${esc(title)}</title>
   <desc id="desc">${esc(desc)}</desc>
@@ -93,53 +80,43 @@ function bannerContent(): string[] {
     chipX += w + 10
   }
 
-  // Terminal panel: the TUI's course list
-  const px = 660
-  const pw = 556
-  body.push(`<rect x="${px}" y="44" width="${pw}" height="292" rx="12" fill="${color.panel}"/>`)
-  body.push(`<path d="M${px + 12},44 H${px + pw - 12} A12,12 0 0 1 ${px + pw},56 V80 H${px} V56 A12,12 0 0 1 ${px + 12},44 Z" fill="${color.bar}"/>`)
-  body.push(icon(mdi.mdiSchool, px + 16, 54, 16, color.accent))
-  body.push(text(px + 42, 67, 14, color.strong, "MyDy", { bold: true }))
-  const synced = "synced 2 min ago"
-  body.push(icon(mdi.mdiRefresh, px + pw - 16 - synced.length * cw(12) - 20, 55, 14, color.muted))
-  body.push(text(px + pw - 16, 67, 12, color.muted, synced, { anchor: "end" }))
-
-  const rows: Array<[string, number, "ok" | "warn" | "low", string]> = [
-    ["Data Structures", 88, "ok", "miss 8"],
-    ["Operating Systems", 81, "ok", "miss 4"],
-    ["Computer Networks", 72, "warn", "need 6"],
-    ["Engineering Maths", 46, "low", "need 47"],
-    ["Software Engg.", 93, "ok", "miss 12"],
-  ]
-  const barX = px + 220
-  const barW = 168
-  rows.forEach(([name, pct, status, advice], i) => {
-    const yc = 112 + i * 40
-    const selected = i === 0
-    const ink = selected ? color.onAccent : color.text
-    if (selected) body.push(`<rect x="${px + 12}" y="${yc - 16}" width="${pw - 24}" height="32" rx="6" fill="${color.accent}"/>`)
-    body.push(icon(mdi.mdiCheckboxBlankOutline, px + 24, yc - 8, 16, selected ? color.onAccent : color.muted))
-    body.push(text(px + 50, yc + 5, 14, ink, name, { bold: selected }))
-    body.push(`<rect x="${barX}" y="${yc - 5}" width="${barW}" height="10" rx="3" fill="${selected ? color.onAccentMuted : color.line}"/>`)
-    body.push(`<rect x="${barX}" y="${yc - 5}" width="${Math.round((barW * pct) / 100)}" height="10" rx="3" fill="${selected ? color.onAccent : color[status]}"/>`)
-    const notch = barX + barW * 0.75
-    body.push(`<line x1="${notch}" y1="${yc - 9}" x2="${notch}" y2="${yc + 9}" stroke="${selected ? color.onAccent : color.text}" stroke-width="1.5"/>`)
-    body.push(text(px + 450, yc + 5, 14, selected ? color.onAccent : color[status], `${pct}%`, { anchor: "end" }))
-    body.push(text(px + pw - 24, yc + 5, 14, selected ? color.onAccentMuted : color.muted, advice, { anchor: "end" }))
-  })
-
-  body.push(`<path d="M${px},306 H${px + pw} V324 A12,12 0 0 1 ${px + pw - 12},336 H${px + 12} A12,12 0 0 1 ${px},324 Z" fill="${color.bar}"/>`)
-  body.push(keyHints(px + 24, 326, 12, [["↑↓", "move"], ["space", "mark"], ["d", "download"], ["?", "help"]]))
-
   return body
 }
 
 const BANNER_TITLE = "MyDy LMS Helper"
-const BANNER_DESC = "Attendance, grades, assignments and course files from the MyDy portal, shown as the terminal UI's course list with an attendance bar per course."
+const BANNER_DESC = "Attendance, grades, assignments and course files from the MyDy portal, beside the terminal UI's Overview: attendance, deadlines and grades for the semester."
 const bannerFade = (width: number) => (x: number) => 0.25 + 0.75 * smoothstep(0.34, 0.66, x / width)
 
-function banner(): string {
-  return svg(1280, 380, BANNER_TITLE, BANNER_DESC, [...heroWaves(1280, 380, bannerFade(1280)), ...bannerContent()])
+/**
+ * The real Overview screenshot (docs/assets/tui-overview.svg, from `bun run --cwd tui screenshot`) at `width`,
+ * framed and shadowed. `clip` is the card it sits on, so a screenshot that runs off an edge keeps its corners.
+ */
+async function screenshotMarkup(x: number, y: number, width: number, clip: { width: number; height: number; radius: number }): Promise<string[]> {
+  const shot = await Bun.file(join(dir, "tui-overview.svg")).text()
+  const [, sw = "1044", sh = "682"] = /width="([\d.]+)" height="([\d.]+)"/.exec(shot) ?? []
+  // Its stylesheet would apply to the whole card (SVG styles are document-wide), so scope it to the screenshot.
+  const inner = shot.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "").replace("<style>text{", "<style>.shot text{")
+  const height = Math.round((width * Number(sh)) / Number(sw))
+  return [
+    `<defs><clipPath id="shot-clip"><rect width="${clip.width}" height="${clip.height}" rx="${clip.radius}"/></clipPath>`,
+    `<filter id="shot-shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter></defs>`,
+    `<g clip-path="url(#shot-clip)">`,
+    `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="${color.bg}" filter="url(#shot-shadow)"/>`,
+    `<svg class="shot" x="${x}" y="${y}" width="${width}" height="${height}" viewBox="0 0 ${sw} ${sh}">${inner}</svg>`,
+    `<rect x="${x + 0.5}" y="${y + 0.5}" width="${width - 1}" height="${height - 1}" rx="14" fill="none" stroke="${color.lineStrong}"/>`,
+    `</g>`,
+  ]
+}
+
+/** The README banner: the name and what it does on the left, the real Overview on the right, off the bottom edge. */
+async function banner(): Promise<string> {
+  const W = 1280
+  const H = 380
+  return svg(W, H, BANNER_TITLE, BANNER_DESC, [
+    ...heroWaves(W, H, bannerFade(W)),
+    ...bannerContent(),
+    ...(await screenshotMarkup(660, 44, 580, { width: W, height: H, radius: 16 })),
+  ])
 }
 
 /**
@@ -168,18 +145,7 @@ async function socialCard(): Promise<string> {
     chipX -= 10
   }
 
-  const shot = await Bun.file(join(dir, "tui-overview.svg")).text()
-  const [, sw = "1044", sh = "682"] = /width="([\d.]+)" height="([\d.]+)"/.exec(shot) ?? []
-  // Its stylesheet would apply to the whole card (SVG styles are document-wide), so scope it to the screenshot.
-  const inner = shot.replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "").replace("<style>text{", "<style>.shot text{")
-  const width = 1000
-  const height = Math.round((width * Number(sh)) / Number(sw))
-  const x = (W - width) / 2
-  const y = 172
-  body.push(`<defs><filter id="shot-shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter></defs>`)
-  body.push(`<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="14" fill="${color.bg}" filter="url(#shot-shadow)"/>`)
-  body.push(`<svg class="shot" x="${x}" y="${y}" width="${width}" height="${height}" viewBox="0 0 ${sw} ${sh}">${inner}</svg>`)
-  body.push(`<rect x="${x + 0.5}" y="${y + 0.5}" width="${width - 1}" height="${height - 1}" rx="14" fill="none" stroke="${color.lineStrong}"/>`)
+  body.push(...(await screenshotMarkup((W - 1000) / 2, 172, 1000, { width: W, height: H, radius: 0 })))
 
   return svg(W, H, BANNER_TITLE, "MyDy LMS Helper: the terminal UI's Overview, with attendance, deadlines and grades for the semester.", body, 0)
 }
@@ -329,7 +295,7 @@ function mcpChat(): string {
 }
 
 const dir = join(import.meta.dir, "..", "..", "docs", "assets")
-await Bun.write(join(dir, "banner.svg"), banner())
+await Bun.write(join(dir, "banner.svg"), await banner())
 await Bun.write(join(dir, "how-it-works.svg"), howItWorks())
 await Bun.write(join(dir, "logo.svg"), logo())
 await Bun.write(join(dir, "mcp-chat.svg"), mcpChat())

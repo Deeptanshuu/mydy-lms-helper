@@ -15,7 +15,7 @@
 
 <br>
 
-<img alt="The terminal UI's Overview: attendance, deadlines and grades for every course on one screen" src="docs/assets/tui-overview.svg" width="100%">
+<img alt="The terminal UI: your courses with attendance on the left, the selected course's attendance, deadlines, grade and files on the right" src="docs/assets/tui-dashboard.svg" width="100%">
 
 A better way to use MyDy, the D.Y. Patil LMS: attendance, deadlines and grades on one screen, every course's notes in one download, and your AI assistant plugged into your courses.
 
