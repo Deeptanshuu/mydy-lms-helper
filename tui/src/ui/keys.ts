@@ -1,5 +1,5 @@
-import { detailItems } from "../derive"
-import { PREVIOUS_ROW } from "../state"
+import { detailItems, type DetailItem } from "../derive"
+import { OVERVIEW_ROW, PREVIOUS_ROW } from "../state"
 import type { AppContextValue } from "./context"
 
 export interface KeyLike {
@@ -84,7 +84,8 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
     }
     if (is(k, "return", "enter", "right", "l")) {
       if (s.selectedId === PREVIOUS_ROW) return a.togglePrevious()
-      if (course) a.setFocus("detail")
+      // The Overview always takes focus: on narrow terminals that is the only way to see it.
+      if (course || s.selectedId === OVERVIEW_ROW) a.setFocus("detail")
       return
     }
     if (is(k, "escape") && s.filter) return a.setFilter("")
@@ -93,7 +94,7 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
   }
 
   // Detail pane
-  const items = detailItems(s)
+  const items = detailItems(s, ctx.now())
   if (is(k, "escape", "left", "h")) {
     if (s.reading) return a.setReading(null)
     return a.setFocus("list")
@@ -104,6 +105,7 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
   if (is(k, "up", "k")) return a.moveDetail(-1, items.length)
   if (is(k, "space") && course) return a.toggleMark(course.course.id)
   const item = items[s.detailIndex]
+  if (is(k, "return", "enter") && item?.courseId) return openDeadline(ctx, item)
   if (is(k, "return", "enter") && item?.announcement) return services.openAnnouncement(item.announcement)
   if (is(k, "o") && item) return services.open(item.url)
 }
@@ -113,10 +115,20 @@ export function pressKey(name: string, ctx: AppContextValue): void {
   handleKey({ name, sequence: name.length === 1 ? name : "", ctrl: false, shift: false }, ctx)
 }
 
-/** What clicking the selected detail row does: read an announcement, otherwise open it in the browser. */
+/** Overview deadline row: jump to that assignment on its course's Assignments tab. */
+export function openDeadline(ctx: AppContextValue, item: DetailItem): void {
+  if (!item.courseId) return
+  const { actions: a } = ctx.store
+  a.select(item.courseId)
+  a.setTab("assignments")
+  a.setDetail(item.courseIndex ?? 0)
+}
+
+/** What clicking the selected detail row does: read an announcement, jump to a deadline's course, otherwise open it in the browser. */
 export function activateDetail(ctx: AppContextValue): void {
-  const item = detailItems(ctx.store.state)[ctx.store.state.detailIndex]
+  const item = detailItems(ctx.store.state, ctx.now())[ctx.store.state.detailIndex]
   if (!item) return
-  if (item.announcement) ctx.services.openAnnouncement(item.announcement)
+  if (item.courseId) openDeadline(ctx, item)
+  else if (item.announcement) ctx.services.openAnnouncement(item.announcement)
   else ctx.services.open(item.url)
 }

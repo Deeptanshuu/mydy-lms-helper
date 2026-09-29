@@ -151,6 +151,8 @@ try {
     try {
       await shoot([
         "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run",
+        // Chrome won't start as root (containers, CI) with its sandbox on.
+        ...(process.getuid?.() === 0 ? ["--no-sandbox"] : []),
         `--user-data-dir=${profile}`, "--force-device-scale-factor=2",
         `--window-size=380,${scene.height}`, "--virtual-time-budget=4000",
         `--screenshot=${out}`, pathToFileURL(harness).href,

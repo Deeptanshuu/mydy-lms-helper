@@ -12,6 +12,8 @@ import { loadConfig } from "./config"
 import { bunSecretStore, loadCredentials, saveCredentials, type Credentials } from "./credentials"
 import { downloadCourses } from "./download"
 import { readDotEnv } from "./env"
+import { runInstallFont } from "./fontinstall"
+import { claimFontHint, FONT_HINT, isRemote, nerdFontAvailable, resolveNerdFont } from "./fonts"
 import { openExternal } from "./open"
 import { appDirs } from "./paths"
 import { createAppStore } from "./state"
@@ -33,32 +35,45 @@ if (args.includes("--help")) {
 Usage: mydy [options]
 
 Options:
+  --nerd-font      Use Nerd Font icons, skipping detection
   --no-nerd-font   Use plain Unicode symbols instead of Nerd Font icons
+  --install-font   Download JetBrainsMono Nerd Font into your user fonts, then exit
+  --no-animations  Keep the dithered textures still
   --version        Print the version number and exit
   --help           Show this help and exit
+
+Icons: with no flag, MYDY_NERD_FONT=1 or 0 in the environment decides, then the
+config file, then auto-detection (Ghostty, WezTerm and kitty have icons built in;
+elsewhere an installed Nerd Font is looked for).
 
 Sign-in: MYDY_USERNAME and MYDY_PASSWORD from the environment or a .env file,
 then a saved keychain login, then the sign-in screen.
 
 Config file: ${join(dirs.config, "config.json")}
   downloadDir   where downloaded files are saved (default ~/Downloads/MyDy)
-  nerdFont      use Nerd Font icons (default true)
+  nerdFont      true, false or "auto": use Nerd Font icons (default "auto", detects one)
   threshold     attendance requirement, as a percentage (default 75)
+  animations    let the dithered textures drift (default true; MYDY_ANIMATIONS=0 turns it off)
 `)
   process.exit(0)
 }
+
+// Plain stdout, no UI: download, install, exit.
+if (args.includes("--install-font")) process.exit(await runInstallFont())
 
 // Deferred: pulls in the whole UI tree, and doesn't exist until the screens land.
 const { App } = await import("./ui/App")
 
 const dirs = appDirs()
 const config = await loadConfig(dirs)
-const nerd = config.nerdFont && !args.includes("--no-nerd-font")
 const threshold = config.threshold / 100
 const env = {
   ...readDotEnv([join(process.cwd(), ".env"), join(import.meta.dir, "..", "..", ".env")]),
   ...process.env,
 }
+const font = resolveNerdFont({ args, env, config: config.nerdFont }, () => nerdFontAvailable(env))
+const nerd = font.nerd
+const animate = config.animations && !args.includes("--no-animations") && env.MYDY_ANIMATIONS !== "0"
 const secrets = bunSecretStore()
 const store = createAppStore()
 const { actions } = store
@@ -191,9 +206,13 @@ else actions.setPhase("signin")
 
 await render(
   () => (
-    <AppProvider value={{ store, nerd, threshold, services, now }}>
+    <AppProvider value={{ store, nerd, threshold, services, now, animate }}>
       <App />
     </AppProvider>
   ),
   renderer,
 )
+
+// Icons fell back to plain symbols because nothing said otherwise and no Nerd Font was found: say so once.
+// Not over ssh (the font that matters is on the other end) and never over another toast.
+if (font.source === "auto" && !nerd && !isRemote(env) && !store.state.toast && (await claimFontHint(dirs.config))) actions.setToast(FONT_HINT)

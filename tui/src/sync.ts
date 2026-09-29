@@ -43,13 +43,20 @@ export function createSync(deps: SyncDeps) {
   const { actions } = store
   let signedIn = false
   let running: Promise<void> | null = null
+  let signingIn: Promise<void> | null = null
 
-  async function signIn(): Promise<void> {
-    const creds = deps.credentials()
-    if (!creds) throw new LoginFailedError("No saved login.")
-    actions.setSync({ status: "syncing", message: "signing in" })
-    await client.login(creds.username, creds.password)
-    signedIn = true
+  // Requests that find no session share one login instead of each starting their own.
+  function signIn(): Promise<void> {
+    signingIn ??= (async () => {
+      const creds = deps.credentials()
+      if (!creds) throw new LoginFailedError("No saved login.")
+      actions.setSync({ status: "syncing", message: "signing in" })
+      await client.login(creds.username, creds.password)
+      signedIn = true
+    })().finally(() => {
+      signingIn = null
+    })
+    return signingIn
   }
 
   async function withSession<T>(fn: () => Promise<T>): Promise<T> {

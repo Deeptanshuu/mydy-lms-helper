@@ -191,7 +191,7 @@ If the first request fails with `NetworkError`, the cached data stays on screen,
 - `banner.svg`: bg `#0E0F10`; mark = `nf-md-school` glyph drawn as an SVG path in `accent`; title in `strong`; the attendance panel uses `panel`, the new status colours and the 75% notch; component chips outlined in `line`.
 - `how-it-works.svg`: same palette; boxes in `panel`, target box edged in `accent`.
 - Badges: colour `17191B`, release badges `FF6500`.
-- Screenshots: `tui/scripts/screenshot.tsx` renders the app with demo data (Unicode icons) to `docs/assets/tui-dashboard.svg` and `tui-assignments.svg`.
+- Screenshots: `tui/scripts/screenshot.tsx` renders the app with demo data (Unicode icons) to `docs/assets/tui-dashboard.svg`, `tui-assignments.svg` and `tui-overview.svg` (block and box-drawing characters drawn as shapes).
 - README text: TUI install becomes "download a binary" or `bun install && bun run tui`; MCP section points to `mcp/`; project structure and releases updated.
 
 ## Build and release

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import type { Attendance, Course } from "@mydy/core/logic"
-import { createAppStore, listRows, PREVIOUS_ROW, selectableKeys } from "../src/state"
+import { createAppStore, listRows, OVERVIEW_ROW, PREVIOUS_ROW, selectableKeys } from "../src/state"
 
 const course = (id: string, name: string): Course => ({ id, name, url: `https://x/course/view.php?id=${id}` })
 const COURSES = [course("820", "Software Engineering"), course("815", "Computer Networks"), course("812", "Data Structures and Algorithms"), course("640", "Network Security"), course("530", "Data Structures Lab")]
@@ -28,7 +28,7 @@ describe("grouping", () => {
     expect(state.previousIds).toEqual(["640", "530"])
     expect(state.unmatched.map((u) => u.subject)).toEqual(["Yoga"])
     expect(state.courses["812"]?.attendance?.present).toBe(44)
-    expect(state.selectedId).toBe("820")
+    expect(state.selectedId).toBe(OVERVIEW_ROW)
   })
   test("before attendance arrives, the newest 8 are current", () => {
     const s = createAppStore()
@@ -38,14 +38,17 @@ describe("grouping", () => {
 })
 
 describe("rows and selection", () => {
-  test("previous semesters collapse into one selectable row", () => {
+  test("the overview comes first; previous semesters collapse into one selectable row", () => {
     const s = loaded()
-    expect(listRows(s.state).map((r) => r.kind)).toEqual(["course", "course", "course", "group", "heading", "subject"])
-    expect(selectableKeys(s.state)).toEqual(["820", "815", "812", PREVIOUS_ROW])
+    expect(listRows(s.state).map((r) => r.kind)).toEqual(["nav", "course", "course", "course", "group", "heading", "subject"])
+    expect(selectableKeys(s.state)).toEqual([OVERVIEW_ROW, "820", "815", "812", PREVIOUS_ROW])
     s.actions.togglePrevious()
-    expect(selectableKeys(s.state)).toEqual(["820", "815", "812", PREVIOUS_ROW, "640", "530"])
+    expect(selectableKeys(s.state)).toEqual([OVERVIEW_ROW, "820", "815", "812", PREVIOUS_ROW, "640", "530"])
   })
-  test("filter matches across semesters and hides the group toggle", () => {
+  test("no courses, no overview row", () => {
+    expect(listRows(createAppStore().state)).toEqual([])
+  })
+  test("filter matches across semesters and hides the overview and group rows", () => {
     const s = loaded()
     s.actions.setFilter("data")
     expect(selectableKeys(s.state)).toEqual(["812", "530"])
@@ -54,13 +57,13 @@ describe("rows and selection", () => {
   test("moveSelection clamps and resets the detail cursor", () => {
     const s = loaded()
     s.actions.moveDetail(3, 10)
-    s.actions.moveSelection(1)
+    s.actions.moveSelection(2)
     expect(s.state.selectedId).toBe("815")
     expect(s.state.detailIndex).toBe(0)
     s.actions.moveSelection(10)
     expect(s.state.selectedId).toBe(PREVIOUS_ROW)
     s.actions.moveSelection(-10)
-    expect(s.state.selectedId).toBe("820")
+    expect(s.state.selectedId).toBe(OVERVIEW_ROW)
   })
   test("marks, tabs", () => {
     const s = loaded()

@@ -1,17 +1,27 @@
-import { useKeyboard, usePaste } from "@opentui/solid"
-import { createSignal, Show } from "solid-js"
+import { useKeyboard, usePaste, useTerminalDimensions } from "@opentui/solid"
+import { createSignal, For, Show } from "solid-js"
+import { fit } from "../format"
 import { slot } from "../icons"
-import { color } from "../theme"
+import { color, mix } from "../theme"
 import { useApp } from "./context"
+import { Dither, smoothstep } from "./Dither"
 import { center, Line, type Seg } from "./Line"
+import { Card, Gap, keySegs, keyWidth, Title, Wordmark } from "./kit"
 
-const WIDTH = 40
+/** Card width, border and padding included. */
+const CARD_WIDTH = 54
+/** The primary button when it has the focus: the accent, a step brighter. */
+const ACCENT_HOT = mix(color.accent, color.strong, 0.3)
+/** Waves only toward the edges of the screen. */
+const vignette = (u: number, v: number) => smoothstep(0.8, 1.6, Math.hypot((u - 0.5) / 0.3, (v - 0.5) / 0.36))
+
 type Field = "email" | "password" | "remember" | "submit"
 const FIELDS: Field[] = ["email", "password", "remember", "submit"]
 
 export function SignIn() {
-  const { store, nerd, services } = useApp()
+  const { store, nerd, services, animate } = useApp()
   const s = store.state
+  const dims = useTerminalDimensions()
   const [email, setEmail] = createSignal(s.user ?? "")
   const [password, setPassword] = createSignal("")
   const [remember, setRemember] = createSignal(true)
@@ -50,69 +60,113 @@ export function SignIn() {
   })
 
   const error = () => s.signInError ?? hint()
-  const label = (text: string, f: Field): Seg[] => [{ text, fg: field() === f ? color.strong : color.muted }]
+
+  // What fits: 3 = wordmark, tagline, 3-row fields; 2 = 1-row fields; 1 = wordmark only; 0 = just the card.
+  const tier = () => (dims().height >= 34 ? 3 : dims().height >= 27 ? 2 : dims().height >= 22 ? 1 : 0)
+  const width = () => Math.min(CARD_WIDTH, dims().width - 4)
+  const inner = () => width() - 6
+  const fieldRows = () => (tier() === 3 ? 3 : 1)
+
+  const label = (text: string, f: Field): Seg[] => [{ text: text.toUpperCase(), fg: field() === f ? color.text : color.muted }]
+  // A field is a raised strip; the one with the focus gets an accent bar down its left edge, nothing more.
+  const bar = (f: Field) => <Line bg={color.raised} segs={[{ text: field() === f ? "▌ " : "  ", fg: color.accent }]} />
+  const padRows = (f: Field) => (
+    <Show when={fieldRows() === 3}>
+      <Line bg={color.raised} segs={[{ text: field() === f ? "▌" : "", fg: color.accent }]} onMouseDown={() => setField(f)} />
+    </Show>
+  )
+  // Footer hints; on a narrow terminal the space hint goes first, then tab. Enter and quit stay.
+  const hints = () => {
+    const all: Array<[string, string]> = [["tab", "next field"], ["space", "toggle"], ["enter", "sign in"], ["ctrl+c", "quit"]]
+    const width = (ks: typeof all) => ks.reduce((n, [k, l], i) => n + (i ? 3 : 0) + keyWidth(k, l), 0)
+    let out = all
+    for (const drop of ["space", "tab"]) if (width(out) > dims().width - 4) out = out.filter(([k]) => k !== drop)
+    return out
+  }
+  const submitLabel = () => (s.signingIn ? "Signing in…" : "Sign in")
+  const buttonBg = () => (field() === "submit" ? ACCENT_HOT : color.accent)
+  const buttonPad = () => (
+    <Show when={fieldRows() === 3}>
+      <Line bg={buttonBg()} segs={[]} onMouseDown={submit} />
+    </Show>
+  )
 
   return (
     <box flexDirection="column" width="100%" height="100%" backgroundColor={color.bg}>
-      <box flexGrow={1} justifyContent="center" alignItems="center">
-        <box flexDirection="column" width={WIDTH}>
-          <Line segs={[{ text: slot("app", nerd), fg: color.accent }, { text: "MyDy", fg: color.strong, bold: true }]} />
+      {/* The website's dithered waves around the edges, fading to nothing well before the card. */}
+      <Dither position="absolute" top={0} left={0} width="100%" height="100%" background={color.bg} strength={0.16} mask={vignette} animate={animate} fps={8} />
+      <box flexGrow={1} flexDirection="column" justifyContent="center" alignItems="center">
+        <Show when={tier() >= 1}>
+          <Wordmark blink={animate} />
+          <Show when={tier() >= 2}>
+            <Gap />
+            <Line segs={[{ text: "Attendance, deadlines and files, in one place", fg: color.faint }]} />
+          </Show>
+          <Gap />
+        </Show>
+        <Card width={width()} paddingY={tier() >= 1 ? 1 : 0}>
+          <Title text="Sign in" width={inner()} />
           <Line segs={[{ text: "Sign in with your MyDy account", fg: color.muted }]} />
-          <box height={1} />
+          <Gap />
           <Line segs={label("Email", "email")} onMouseDown={() => setField("email")} />
-          <input
-            onMouseDown={() => setField("email")}
-            focused={field() === "email"}
-            value={email()}
-            onInput={(v: string) => setEmail(v)}
-            placeholder="you@dypatil.edu"
-            width={WIDTH}
-            backgroundColor={color.panel}
-            focusedBackgroundColor={color.panel}
-            textColor={color.text}
-            focusedTextColor={color.strong}
-            placeholderColor={color.muted}
-          />
-          <box height={1} />
+          {padRows("email")}
+          <box flexDirection="row" height={1} flexShrink={0} backgroundColor={color.raised}>
+            {bar("email")}
+            <input
+              onMouseDown={() => setField("email")}
+              focused={field() === "email"}
+              value={email()}
+              onInput={(v: string) => setEmail(v)}
+              placeholder="you@dypatil.edu"
+              width={inner() - 2}
+              backgroundColor={color.raised}
+              focusedBackgroundColor={color.raised}
+              textColor={color.text}
+              focusedTextColor={color.strong}
+              placeholderColor={color.faint}
+            />
+          </box>
+          {padRows("email")}
+          <Gap />
           <Line segs={label("Password", "password")} onMouseDown={() => setField("password")} />
+          {padRows("password")}
           <Line
             onMouseDown={() => setField("password")}
-            bg={color.panel}
-            segs={[{ text: "•".repeat(password().length), fg: color.strong }, { text: field() === "password" ? "▏" : "", fg: color.accent }]}
+            bg={color.raised}
+            segs={[
+              { text: field() === "password" ? "▌ " : "  ", fg: color.accent },
+              password() ? { text: "•".repeat(password().length), fg: color.strong } : { text: field() === "password" ? "" : "your password", fg: color.faint },
+              { text: field() === "password" ? "_" : "", fg: color.accent },
+            ]}
           />
-          <box height={1} />
+          {padRows("password")}
+          {/* The error sits under the password and takes the row that would be blank, so nothing shifts when it appears. */}
+          <Line
+            segs={error() ? [{ text: fit(error()!, inner()).trimEnd(), fg: color.low }] : []}
+          />
           <Line
             onMouseDown={() => {
               setField("remember")
               setRemember((r) => !r)
             }}
             segs={[
-              { text: slot(remember() ? "marked" : "unmarked", nerd), fg: remember() ? color.accent : color.muted },
+              { text: slot(remember() ? "marked" : "unmarked", nerd), fg: remember() ? color.accent : color.faint },
               { text: "Remember me on this computer", fg: field() === "remember" ? color.strong : color.text },
             ]}
           />
-          <box height={1} />
+          <Gap />
+          {buttonPad()}
           <Line
             onMouseDown={submit}
-            bg={field() === "submit" ? color.strong : color.accent}
-            segs={[{ text: center(s.signingIn ? "Signing in…" : "Sign in", WIDTH), fg: color.onAccent, bold: true }]}
+            bg={buttonBg()}
+            segs={[{ text: center(submitLabel(), inner()), fg: color.onAccent, bold: true }]}
           />
-          <box height={1} />
-          <Show when={error()}>
-            {(message) => <Line segs={[{ text: slot("alert", nerd), fg: color.low }, { text: message(), fg: color.low }]} />}
-          </Show>
-        </box>
+          {buttonPad()}
+        </Card>
       </box>
-      <Line
-        bg={color.bar}
-        paddingX={2}
-        segs={[
-          { text: "tab", fg: color.accent }, { text: " next field   ", fg: color.muted },
-          { text: "space", fg: color.accent }, { text: " toggle   ", fg: color.muted },
-          { text: "enter", fg: color.accent }, { text: " sign in   ", fg: color.muted },
-          { text: "ctrl+c", fg: color.accent }, { text: " quit", fg: color.muted },
-        ]}
-      />
+      <box flexDirection="row" columnGap={3} height={1} flexShrink={0} backgroundColor={color.bar} paddingX={2}>
+        <For each={hints()}>{([key, text]) => <Line segs={keySegs(key, text, nerd)} />}</For>
+      </box>
     </box>
   )
 }

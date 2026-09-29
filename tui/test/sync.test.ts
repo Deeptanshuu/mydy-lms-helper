@@ -47,6 +47,13 @@ describe("run", () => {
     expect(store.state.sync).toEqual({ status: "idle", message: null, lastSynced: 1_000 })
     expect(saved).toHaveLength(1)
   })
+  test("tabs loading at once before a session exists share one sign-in", async () => {
+    const { store, sync, calls } = setup()
+    store.actions.applyCourses(COURSES)
+    await Promise.all([sync.loadTab("815", "grades"), sync.loadTab("812", "grades"), sync.loadTab("815", "announcements")])
+    expect(calls.filter((c) => c.startsWith("login"))).toHaveLength(1)
+    expect(calls).toContain("grades 812")
+  })
   test("overlapping calls share one run", async () => {
     const { sync, calls } = setup()
     await Promise.all([sync.run(), sync.run()])

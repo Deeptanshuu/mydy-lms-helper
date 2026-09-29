@@ -18,7 +18,7 @@
   const PIXEL_SIZE = 3 // size of one dither cell, in canvas pixels
   const MOUSE_RADIUS = 0.3
   const ENABLE_MOUSE_INTERACTION = true
-  const BACKGROUND_COLOR = [14 / 255, 15 / 255, 16 / 255] // #0E0F10
+  const BACKGROUND_COLOR = [13 / 255, 14 / 255, 16 / 255] // #0D0E10, the page background
   const WAVE_COLOR = [1.0, 0.396, 0.0] // brand orange #FF6500
   const STILL_TIME = 0 // frame drawn when prefers-reduced-motion is on (seconds)
 

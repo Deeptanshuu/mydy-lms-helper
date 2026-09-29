@@ -40,7 +40,7 @@ describe("appDirs", () => {
 
 describe("loadConfig", () => {
   test("defaults when there is no file", async () => {
-    expect(await loadConfig(dirs)).toEqual({ downloadDir: dirs.downloads, nerdFont: true, threshold: 75 })
+    expect(await loadConfig(dirs)).toEqual({ downloadDir: dirs.downloads, nerdFont: "auto", threshold: 75, animations: true })
   })
   test("reads valid values, ignores invalid ones, expands ~", async () => {
     await mkdir(dirs.config, { recursive: true })

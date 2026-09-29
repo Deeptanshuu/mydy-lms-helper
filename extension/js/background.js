@@ -1,4 +1,4 @@
-// MyDy Downloader service worker.
+// MyDy Extension service worker.
 // - Saves files for content.js into Downloads/MyDy/<course>/, one at a time.
 // - Keeps the latest state of a download run in chrome.storage.session, so the popup can show it again
 //   after being closed, and mirrors it on the toolbar icon's badge.
@@ -195,5 +195,5 @@ function showBadge(run) {
 const mydyBackground = new MydyBackground();
 
 chrome.runtime.onInstalled.addListener(() => {
-    console.log('MyDy Downloader installed');
+    console.log('MyDy Extension installed');
 });

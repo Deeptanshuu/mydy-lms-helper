@@ -1,77 +1,145 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="380" viewBox="0 0 1280 380" role="img" aria-labelledby="title desc">
   <title id="title">MyDy LMS Helper</title>
-  <desc id="desc">Attendance, grades, assignments and course files from the MyDy portal, shown as the terminal UI's course list with an attendance bar per course.</desc>
+  <desc id="desc">Attendance, grades, assignments and course files from the MyDy portal, beside the terminal UI's Overview: attendance, deadlines and grades for the semester.</desc>
   <style>text { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }</style>
-  <rect width="1280" height="380" rx="16" fill="#0E0F10"/>
+  <rect width="1280" height="380" rx="16" fill="#0D0E10"/>
   <defs><clipPath id="waves-1280x380"><rect width="1280" height="380" rx="16"/></clipPath></defs>
-  <image x="0" y="0" width="1280" height="380" href="data:image/png;base64,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" clip-path="url(#waves-1280x380)"/>
+  <image x="0" y="0" width="1280" height="380" href="data:image/png;base64,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" clip-path="url(#waves-1280x380)"/>
   <g transform="translate(64 60) scale(1.0000)">
-    <rect width="64" height="64" rx="14" fill="#17191B" stroke="#2C2F33" stroke-width="1.00"/>
+    <rect width="64" height="64" rx="14" fill="#131518" stroke="#31363D" stroke-width="1.00"/>
     <polyline points="11,23 20,32 11,41" fill="none" stroke="#FF6500" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F4F5F6" transform="translate(25 13) scale(1.3500)"/>
+    <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F5F6F7" transform="translate(25 13) scale(1.3500)"/>
     <rect x="27" y="47" width="27" height="4" rx="2" fill="#FF6500"/>
   </g>
-  <text x="62" y="196" font-size="60" fill="#F4F5F6" font-weight="700" xml:space="preserve">MyDy LMS Helper</text>
-  <text x="64" y="238" font-size="18" fill="#8A9096" xml:space="preserve">Attendance, grades, assignments and course files</text>
-  <text x="64" y="264" font-size="18" fill="#8A9096" xml:space="preserve">from the MyDy portal, without the clicking around.</text>
-  <rect x="64" y="298" width="145" height="34" rx="17" fill="none" stroke="#2C2F33"/>
-  <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z" fill="#8A9096" transform="translate(78 307) scale(0.6667)"/>
-  <text x="102" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">Terminal UI</text>
-  <rect x="219" y="298" width="136" height="34" rx="17" fill="none" stroke="#2C2F33"/>
-  <path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z" fill="#8A9096" transform="translate(233 307) scale(0.6667)"/>
-  <text x="257" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">MCP server</text>
-  <rect x="365" y="298" width="187" height="34" rx="17" fill="none" stroke="#2C2F33"/>
-  <path d="M12,20L15.46,14H15.45C15.79,13.4 16,12.73 16,12C16,10.8 15.46,9.73 14.62,9H19.41C19.79,9.93 20,10.94 20,12A8,8 0 0,1 12,20M4,12C4,10.54 4.39,9.18 5.07,8L8.54,14H8.55C9.24,15.19 10.5,16 12,16C12.45,16 12.88,15.91 13.29,15.77L10.89,19.91C7,19.37 4,16.04 4,12M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12M12,4C14.96,4 17.54,5.61 18.92,8H12C10.06,8 8.45,9.38 8.08,11.21L5.7,7.08C7.16,5.21 9.44,4 12,4M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#8A9096" transform="translate(379 307) scale(0.6667)"/>
-  <text x="403" y="320" font-size="14" fill="#D8DCDF" xml:space="preserve">Chrome extension</text>
-  <rect x="660" y="44" width="556" height="292" rx="12" fill="#17191B"/>
-  <path d="M672,44 H1204 A12,12 0 0 1 1216,56 V80 H660 V56 A12,12 0 0 1 672,44 Z" fill="#08090A"/>
-  <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#FF6500" transform="translate(676 54) scale(0.6667)"/>
-  <text x="702" y="67" font-size="14" fill="#F4F5F6" font-weight="700" xml:space="preserve">MyDy</text>
-  <path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" fill="#8A9096" transform="translate(1064.8 55) scale(0.5833)"/>
-  <text x="1200" y="67" font-size="12" fill="#8A9096" text-anchor="end" xml:space="preserve">synced 2 min ago</text>
-  <rect x="672" y="96" width="532" height="32" rx="6" fill="#FF6500"/>
-  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#08090A" transform="translate(684 104) scale(0.6667)"/>
-  <text x="710" y="117" font-size="14" fill="#08090A" font-weight="700" xml:space="preserve">Data Structures</text>
-  <rect x="880" y="107" width="168" height="10" rx="3" fill="#5A2A00"/>
-  <rect x="880" y="107" width="148" height="10" rx="3" fill="#08090A"/>
-  <line x1="1006" y1="103" x2="1006" y2="121" stroke="#08090A" stroke-width="1.5"/>
-  <text x="1110" y="117" font-size="14" fill="#08090A" text-anchor="end" xml:space="preserve">88%</text>
-  <text x="1192" y="117" font-size="14" fill="#5A2A00" text-anchor="end" xml:space="preserve">miss 8</text>
-  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 144) scale(0.6667)"/>
-  <text x="710" y="157" font-size="14" fill="#D8DCDF" xml:space="preserve">Operating Systems</text>
-  <rect x="880" y="147" width="168" height="10" rx="3" fill="#2C2F33"/>
-  <rect x="880" y="147" width="136" height="10" rx="3" fill="#6FCF97"/>
-  <line x1="1006" y1="143" x2="1006" y2="161" stroke="#D8DCDF" stroke-width="1.5"/>
-  <text x="1110" y="157" font-size="14" fill="#6FCF97" text-anchor="end" xml:space="preserve">81%</text>
-  <text x="1192" y="157" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">miss 4</text>
-  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 184) scale(0.6667)"/>
-  <text x="710" y="197" font-size="14" fill="#D8DCDF" xml:space="preserve">Computer Networks</text>
-  <rect x="880" y="187" width="168" height="10" rx="3" fill="#2C2F33"/>
-  <rect x="880" y="187" width="121" height="10" rx="3" fill="#F2C94C"/>
-  <line x1="1006" y1="183" x2="1006" y2="201" stroke="#D8DCDF" stroke-width="1.5"/>
-  <text x="1110" y="197" font-size="14" fill="#F2C94C" text-anchor="end" xml:space="preserve">72%</text>
-  <text x="1192" y="197" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">need 6</text>
-  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 224) scale(0.6667)"/>
-  <text x="710" y="237" font-size="14" fill="#D8DCDF" xml:space="preserve">Engineering Maths</text>
-  <rect x="880" y="227" width="168" height="10" rx="3" fill="#2C2F33"/>
-  <rect x="880" y="227" width="77" height="10" rx="3" fill="#F0506E"/>
-  <line x1="1006" y1="223" x2="1006" y2="241" stroke="#D8DCDF" stroke-width="1.5"/>
-  <text x="1110" y="237" font-size="14" fill="#F0506E" text-anchor="end" xml:space="preserve">46%</text>
-  <text x="1192" y="237" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">need 47</text>
-  <path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#8A9096" transform="translate(684 264) scale(0.6667)"/>
-  <text x="710" y="277" font-size="14" fill="#D8DCDF" xml:space="preserve">Software Engg.</text>
-  <rect x="880" y="267" width="168" height="10" rx="3" fill="#2C2F33"/>
-  <rect x="880" y="267" width="156" height="10" rx="3" fill="#6FCF97"/>
-  <line x1="1006" y1="263" x2="1006" y2="281" stroke="#D8DCDF" stroke-width="1.5"/>
-  <text x="1110" y="277" font-size="14" fill="#6FCF97" text-anchor="end" xml:space="preserve">93%</text>
-  <text x="1192" y="277" font-size="14" fill="#8A9096" text-anchor="end" xml:space="preserve">miss 12</text>
-  <path d="M660,306 H1216 V324 A12,12 0 0 1 1204,336 H672 A12,12 0 0 1 660,324 Z" fill="#08090A"/>
-  <text x="684" y="326" font-size="12" fill="#FF6500" xml:space="preserve">↑↓</text>
-  <text x="698.4" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> move</text>
-  <text x="756" y="326" font-size="12" fill="#FF6500" xml:space="preserve">space</text>
-  <text x="792" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> mark</text>
-  <text x="849.6" y="326" font-size="12" fill="#FF6500" xml:space="preserve">d</text>
-  <text x="856.8000000000001" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> download</text>
-  <text x="943.2" y="326" font-size="12" fill="#FF6500" xml:space="preserve">?</text>
-  <text x="950.4000000000001" y="326" font-size="12" fill="#8A9096" xml:space="preserve"> help</text>
+  <text x="62" y="196" font-size="60" fill="#F5F6F7" font-weight="700" xml:space="preserve">MyDy LMS Helper</text>
+  <text x="64" y="238" font-size="18" fill="#8B929A" xml:space="preserve">Attendance, grades, assignments and course files</text>
+  <text x="64" y="264" font-size="18" fill="#8B929A" xml:space="preserve">from the MyDy portal, without the clicking around.</text>
+  <rect x="64" y="298" width="145" height="34" rx="17" fill="none" stroke="#31363D"/>
+  <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z" fill="#8B929A" transform="translate(78 307) scale(0.6667)"/>
+  <text x="102" y="320" font-size="14" fill="#D2D6DB" xml:space="preserve">Terminal UI</text>
+  <rect x="219" y="298" width="136" height="34" rx="17" fill="none" stroke="#31363D"/>
+  <path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z" fill="#8B929A" transform="translate(233 307) scale(0.6667)"/>
+  <text x="257" y="320" font-size="14" fill="#D2D6DB" xml:space="preserve">MCP server</text>
+  <rect x="365" y="298" width="187" height="34" rx="17" fill="none" stroke="#31363D"/>
+  <path d="M12,20L15.46,14H15.45C15.79,13.4 16,12.73 16,12C16,10.8 15.46,9.73 14.62,9H19.41C19.79,9.93 20,10.94 20,12A8,8 0 0,1 12,20M4,12C4,10.54 4.39,9.18 5.07,8L8.54,14H8.55C9.24,15.19 10.5,16 12,16C12.45,16 12.88,15.91 13.29,15.77L10.89,19.91C7,19.37 4,16.04 4,12M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12M12,4C14.96,4 17.54,5.61 18.92,8H12C10.06,8 8.45,9.38 8.08,11.21L5.7,7.08C7.16,5.21 9.44,4 12,4M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#8B929A" transform="translate(379 307) scale(0.6667)"/>
+  <text x="403" y="320" font-size="14" fill="#D2D6DB" xml:space="preserve">Chrome extension</text>
+  <defs><clipPath id="shot-clip"><rect width="1280" height="380" rx="16"/></clipPath>
+  <filter id="shot-shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.55"/></filter></defs>
+  <g clip-path="url(#shot-clip)">
+  <rect x="660" y="44" width="580" height="379" rx="14" fill="#0D0E10" filter="url(#shot-shadow)"/>
+  <svg class="shot" x="660" y="44" width="580" height="379" viewBox="0 0 1044 682">
+<style>.shot text{font-family:ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;font-size:14px;white-space:pre}</style>
+<rect width="1044" height="682" rx="12" fill="#0D0E10"/>
+<g shape-rendering="crispEdges">
+<path fill="#08090A" d="M18 94h554.4v19h-554.4zM18 75h571.2v19h-571.2zM18 56h588v19h-588zM18 37h604.8v19h-604.8zM18 18h621.6v19h-621.6zM18 645h1008v19h-1008zM597.6 75h8.4v38h-8.4zM614.4 75h8.4v38h-8.4zM631.2 37h8.4v76h-8.4zM648 18h8.4v76h-8.4zM664.8 18h8.4v38h-8.4zM664.8 94h8.4v19h-8.4zM681.6 75h8.4v19h-8.4zM681.6 94h344.4v19h-344.4zM698.4 56h8.4v19h-8.4zM698.4 75h327.6v19h-327.6zM715.2 37h8.4v19h-8.4zM715.2 56h310.8v19h-310.8zM723.6 18h302.4v19h-302.4zM732 37h294v19h-294z"/>
+<path fill="#211209" d="M572.4 94h25.2v19h-25.2zM589.2 75h8.4v19h-8.4zM606 75h8.4v38h-8.4zM606 56h25.2v19h-25.2zM622.8 37h8.4v19h-8.4zM622.8 75h8.4v38h-8.4zM639.6 18h8.4v76h-8.4zM639.6 94h25.2v19h-25.2zM656.4 18h8.4v38h-8.4zM656.4 75h25.2v19h-25.2zM656.4 56h42v19h-42zM673.2 94h8.4v19h-8.4zM673.2 37h42v19h-42zM673.2 18h50.4v19h-50.4zM690 75h8.4v19h-8.4zM706.8 56h8.4v19h-8.4zM723.6 37h8.4v19h-8.4z"/>
+<path fill="#131518" d="M34.8 113h336v19h-336zM34.8 151h336v494h-336zM404.4 208h210v152h-210zM631.2 208h176.4v152h-176.4zM824.4 208h168v152h-168z"/>
+<path fill="#392214" d="M34.8 132h336v19h-336z"/>
+<path fill="#211209" d="M312 94h8.4v9.5h-8.4zM345.6 94h8.4v9.5h-8.4zM547.2 18h8.4v9.5h-8.4zM547.2 37h8.4v9.5h-8.4zM547.2 56h8.4v9.5h-8.4zM547.2 94h8.4v9.5h-8.4zM564 18h8.4v9.5h-8.4zM564 37h8.4v9.5h-8.4zM564 75h8.4v9.5h-8.4zM564 94h8.4v9.5h-8.4zM580.8 37h8.4v9.5h-8.4zM580.8 75h8.4v9.5h-8.4zM597.6 56h8.4v9.5h-8.4zM597.6 75h8.4v9.5h-8.4zM597.6 94h8.4v9.5h-8.4zM614.4 18h8.4v9.5h-8.4zM614.4 37h8.4v9.5h-8.4zM614.4 75h8.4v9.5h-8.4zM614.4 94h8.4v9.5h-8.4zM631.2 18h8.4v9.5h-8.4zM631.2 37h8.4v9.5h-8.4zM631.2 56h8.4v9.5h-8.4zM631.2 75h8.4v9.5h-8.4zM631.2 94h8.4v9.5h-8.4zM648 18h8.4v9.5h-8.4zM648 37h8.4v9.5h-8.4zM648 56h8.4v9.5h-8.4zM648 75h8.4v9.5h-8.4zM664.8 18h8.4v9.5h-8.4zM664.8 37h8.4v9.5h-8.4zM664.8 94h8.4v9.5h-8.4zM681.6 75h8.4v9.5h-8.4zM681.6 94h8.4v9.5h-8.4zM698.4 56h8.4v9.5h-8.4zM698.4 75h8.4v9.5h-8.4zM698.4 94h8.4v9.5h-8.4zM715.2 37h8.4v9.5h-8.4zM715.2 56h8.4v9.5h-8.4zM715.2 75h8.4v9.5h-8.4zM715.2 94h8.4v9.5h-8.4zM732 18h8.4v9.5h-8.4zM732 37h8.4v9.5h-8.4zM732 75h8.4v9.5h-8.4zM748.8 56h8.4v9.5h-8.4zM748.8 75h8.4v9.5h-8.4zM748.8 94h8.4v9.5h-8.4zM765.6 75h8.4v9.5h-8.4zM782.4 18h8.4v9.5h-8.4zM782.4 56h8.4v9.5h-8.4zM782.4 94h8.4v9.5h-8.4zM799.2 75h8.4v9.5h-8.4zM816 18h8.4v9.5h-8.4zM816 56h8.4v9.5h-8.4zM816 94h8.4v9.5h-8.4zM883.2 18h8.4v9.5h-8.4zM1017.6 18h8.4v9.5h-8.4zM1017.6 94h8.4v9.5h-8.4z"/>
+<path fill="#08090A" d="M572.4 94h8.4v9.5h-8.4zM589.2 75h8.4v9.5h-8.4zM589.2 94h8.4v9.5h-8.4zM606 56h8.4v9.5h-8.4zM606 75h8.4v9.5h-8.4zM606 94h8.4v9.5h-8.4zM622.8 37h8.4v9.5h-8.4zM622.8 56h8.4v9.5h-8.4zM622.8 75h8.4v9.5h-8.4zM622.8 94h8.4v9.5h-8.4zM639.6 18h8.4v9.5h-8.4zM639.6 37h8.4v9.5h-8.4zM639.6 56h8.4v9.5h-8.4zM639.6 75h8.4v9.5h-8.4zM639.6 94h8.4v9.5h-8.4zM656.4 18h8.4v9.5h-8.4zM656.4 37h8.4v9.5h-8.4zM656.4 56h8.4v9.5h-8.4zM656.4 75h8.4v9.5h-8.4zM656.4 94h8.4v9.5h-8.4zM673.2 18h8.4v9.5h-8.4zM673.2 37h8.4v9.5h-8.4zM673.2 75h8.4v9.5h-8.4zM673.2 94h8.4v9.5h-8.4zM690 18h8.4v9.5h-8.4zM690 37h8.4v9.5h-8.4zM690 56h8.4v9.5h-8.4zM690 75h8.4v9.5h-8.4zM706.8 18h8.4v9.5h-8.4zM706.8 37h8.4v9.5h-8.4zM706.8 56h8.4v9.5h-8.4zM723.6 37h8.4v9.5h-8.4z"/>
+<path fill="#391B08" d="M580.8 94h8.4v9.5h-8.4zM648 94h8.4v9.5h-8.4zM681.6 18h8.4v9.5h-8.4zM681.6 37h8.4v9.5h-8.4zM681.6 56h8.4v9.5h-8.4zM698.4 37h8.4v9.5h-8.4z"/>
+<path fill="#FF6500" d="M34.8 132h4.2v19h-4.2zM34.8 37h8.4v9.5h-8.4zM34.8 75h8.4v9.5h-8.4zM43.2 46.5h8.4v9.5h-8.4zM43.2 65.5h8.4v9.5h-8.4zM51.6 56h8.4v9.5h-8.4zM270 75h25.2v9.5h-25.2z"/>
+<path fill="#F5F6F7" d="M76.8 37h8.4v47.5h-8.4zM85.2 46.5h8.4v9.5h-8.4zM93.6 56h8.4v9.5h-8.4zM102 46.5h8.4v9.5h-8.4zM110.4 37h8.4v47.5h-8.4zM127.2 37h8.4v9.5h-8.4zM135.6 46.5h8.4v9.5h-8.4zM144 56h8.4v28.5h-8.4zM152.4 46.5h8.4v9.5h-8.4zM160.8 37h8.4v9.5h-8.4zM177.6 37h8.4v38h-8.4zM177.6 75h25.2v9.5h-25.2zM186 37h16.8v9.5h-16.8zM202.8 46.5h8.4v28.5h-8.4zM219.6 37h8.4v9.5h-8.4zM228 46.5h8.4v9.5h-8.4zM236.4 56h8.4v28.5h-8.4zM244.8 46.5h8.4v9.5h-8.4zM253.2 37h8.4v9.5h-8.4zM429.6 246h16.8v9.5h-16.8zM446.4 246h8.4v47.5h-8.4zM463.2 246h8.4v38h-8.4zM463.2 284h25.2v9.5h-25.2zM471.6 265h8.4v9.5h-8.4zM471.6 246h16.8v9.5h-16.8zM480 265h8.4v19h-8.4zM496.8 246h8.4v9.5h-8.4zM496.8 274.5h8.4v19h-8.4zM505.2 265h8.4v9.5h-8.4zM513.6 246h8.4v19h-8.4zM513.6 284h8.4v9.5h-8.4z"/>
+</g>
+<path fill="#31363D" d="M407.9 227h1.2v114h-1.2zM412.8 216.9h8.4v1.2h-8.4zM412.8 349.9h193.2v1.2h-193.2zM522 216.9h84v1.2h-84zM609.9 227h1.2v114h-1.2zM634.9 227h1.2v114h-1.2zM639.6 216.9h8.4v1.2h-8.4zM639.6 349.9h159.6v1.2h-159.6zM774 216.9h25.2v1.2h-25.2zM802.9 227h1.2v114h-1.2zM827.9 227h1.2v114h-1.2zM832.8 216.9h8.4v1.2h-8.4zM832.8 349.9h151.2v1.2h-151.2zM908.4 216.9h75.6v1.2h-75.6zM933.6 311.8h33.6v2.4h-33.6zM987.9 227h1.2v114h-1.2z"/>
+<path fill="#6FCF97" d="M76.8 349.8h126v2.4h-126zM76.8 235.8h134.4v2.4h-134.4zM429.6 311.8h117.6v2.4h-117.6zM614.4 501.8h42v2.4h-42zM614.4 539.8h42v2.4h-42z"/>
+<path fill="#24362F" d="M202.8 349.8h16.8v2.4h-16.8zM211.2 235.8h8.4v2.4h-8.4zM555.6 311.8h33.6v2.4h-33.6z"/>
+<path fill="#F2C94C" d="M76.8 292.8h100.8v2.4h-100.8zM614.4 463.8h38.1v2.4h-38.1z"/>
+<path fill="#3B3521" d="M177.6 292.8h8.4v2.4h-8.4zM194.4 292.8h25.2v2.4h-25.2z"/>
+<path fill="#8B929A" d="M188.8 284h2.4v19h-2.4zM188.8 398h2.4v19h-2.4zM549.8 303h2.4v19h-2.4zM659.8 417h2.4v19h-2.4zM659.8 455h2.4v19h-2.4zM659.8 493h2.4v19h-2.4zM659.8 531h2.4v19h-2.4zM849.6 311.8h84v2.4h-84z"/>
+<path fill="#FF4F9A" d="M76.8 406.8h67.2v2.4h-67.2zM614.4 425.8h25.2v2.4h-25.2z"/>
+<path fill="#422132" d="M144 406.8h42v2.4h-42zM194.4 406.8h25.2v2.4h-25.2zM639.6 425.8h16.8v2.4h-16.8z"/>
+<g fill="none" stroke-width="1.2">
+<path stroke="#31363D" d="M412.8 217.5A4.3 4.3 0 0 0 408.5 221.8V227M606 217.5A4.5 4.5 0 0 1 610.5 222V227M639.6 217.5A4.1 4.1 0 0 0 635.5 221.6V227M799.2 217.5A4.3 4.3 0 0 1 803.5 221.8V227M832.8 217.5A4.3 4.3 0 0 0 828.5 221.8V227M984 217.5A4.5 4.5 0 0 1 988.5 222V227M412.8 350.5A4.3 4.3 0 0 1 408.5 346.2V341M606 350.5A4.5 4.5 0 0 0 610.5 346V341M639.6 350.5A4.1 4.1 0 0 1 635.5 346.4V341M799.2 350.5A4.3 4.3 0 0 0 803.5 346.2V341M832.8 350.5A4.3 4.3 0 0 1 828.5 346.2V341M984 350.5A4.5 4.5 0 0 0 988.5 346V341"/>
+</g>
+<text x="320.4" y="51" fill="#F5F6F7" font-weight="700" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">CSE-2023-A</text>
+<text x="412.8" y="51" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="429.6" y="51" fill="#F5F6F7" font-weight="700" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">Semester 5</text>
+<text x="320.4" y="70" fill="#8B929A" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">student@dypatil.edu</text>
+<text x="858.0" y="70" fill="#6FCF97" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="874.8" y="70" fill="#5C636B" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">synced 2 min ago</text>
+<path d="M19,5V7H15V5H19M9,5V11H5V5H9M19,13V19H15V13H19M9,17V19H5V17H9M21,3H13V9H21V3M11,3H3V13H11V3M21,11H13V21H21V11M11,15H3V21H11V15Z" fill="#F5F6F7" transform="translate(50.6 134.0) scale(0.6250)"/>
+<text x="76.8" y="146" fill="#F5F6F7" font-weight="700" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">Overview</text>
+<text x="404.4" y="146" fill="#8B929A" textLength="176.4" lengthAdjust="spacing" xml:space="preserve">OVERVIEW · SEMESTER 5</text>
+<text x="404.4" y="165" fill="#F5F6F7" font-weight="700" textLength="100.8" lengthAdjust="spacing" xml:space="preserve">Good morning</text>
+<text x="51.6" y="184" fill="#8B929A" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">THIS SEMESTER</text>
+<text x="177.6" y="184" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">4</text>
+<text x="404.4" y="184" fill="#8B929A" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">Tuesday 29 September</text>
+<text x="589.2" y="184" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">·</text>
+<text x="614.4" y="184" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">4 courses</text>
+<text x="706.8" y="184" fill="#5C636B" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">·  synced 2 min ago</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 210.0) scale(0.6250)"/>
+<text x="76.8" y="222" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Software Engineering          93%</text>
+<text x="429.6" y="222" fill="#8B929A" textLength="84.0" lengthAdjust="spacing" xml:space="preserve">Attendance</text>
+<text x="656.4" y="222" fill="#8B929A" textLength="109.2" lengthAdjust="spacing" xml:space="preserve">Due this week</text>
+<text x="849.6" y="222" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">Grades</text>
+<text x="236.4" y="241" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">miss 10</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 267.0) scale(0.6250)"/>
+<text x="76.8" y="279" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Computer Networks             72%</text>
+<text x="656.4" y="279" fill="#F5F6F7" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">2</text>
+<text x="673.2" y="279" fill="#8B929A" textLength="92.4" lengthAdjust="spacing" xml:space="preserve">assignments</text>
+<text x="849.6" y="279" fill="#F5F6F7" font-weight="700" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">73%</text>
+<text x="883.2" y="279" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">average</text>
+<text x="236.4" y="298" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">need 6</text>
+<text x="312.0" y="298" fill="#5C636B" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">1 due</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 324.0) scale(0.6250)"/>
+<text x="76.8" y="336" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Data Structures and Algorit…  88%</text>
+<text x="429.6" y="336" fill="#8B929A" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">2 of 4 above 75%</text>
+<text x="656.4" y="336" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="673.2" y="336" fill="#8B929A" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">tomorrow</text>
+<text x="849.6" y="336" fill="#8B929A" textLength="117.6" lengthAdjust="spacing" xml:space="preserve">1 of 4 courses</text>
+<text x="236.4" y="355" fill="#8B929A" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">miss 8</text>
+<text x="312.0" y="355" fill="#5C636B" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">1 due</text>
+<path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z" fill="#5C636B" transform="translate(50.6 381.0) scale(0.6250)"/>
+<text x="76.8" y="393" fill="#D2D6DB" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Engineering Maths III         46%</text>
+<text x="404.4" y="393" fill="#8B929A" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">ATTENDANCE BY COURSE</text>
+<text x="589.2" y="393" fill="#5C636B" textLength="100.8" lengthAdjust="spacing" xml:space="preserve">75% required</text>
+<text x="740.4" y="393" fill="#8B929A" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">UPCOMING DEADLINES</text>
+<text x="908.4" y="393" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">4</text>
+<text x="236.4" y="412" fill="#8B929A" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">need 47</text>
+<text x="404.4" y="431" fill="#D2D6DB" textLength="176.4" lengthAdjust="spacing" xml:space="preserve">Engineering Maths III</text>
+<text x="681.6" y="431" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">46%</text>
+<text x="748.8" y="431" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="765.6" y="431" fill="#D2D6DB" textLength="159.6" lengthAdjust="spacing" xml:space="preserve">Assignment 3: Trees</text>
+<text x="765.6" y="450" fill="#8B929A" textLength="67.2" lengthAdjust="spacing" xml:space="preserve">Tomorrow</text>
+<text x="841.2" y="450" fill="#5C636B" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">· Data Structures…</text>
+<text x="51.6" y="469" fill="#8B929A" textLength="151.2" lengthAdjust="spacing" xml:space="preserve">PREVIOUS SEMESTERS</text>
+<text x="219.6" y="469" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">2</text>
+<path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" fill="#8B929A" transform="translate(235.4 457.0) scale(0.6250)"/>
+<text x="404.4" y="469" fill="#D2D6DB" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">Computer Networks</text>
+<text x="681.6" y="469" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">72%</text>
+<text x="748.8" y="488" fill="#F2C94C" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">●</text>
+<text x="765.6" y="488" fill="#D2D6DB" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">Lab 9: Subnetting</text>
+<text x="404.4" y="507" fill="#D2D6DB" textLength="201.6" lengthAdjust="spacing" xml:space="preserve">Data Structures and Alg…</text>
+<text x="681.6" y="507" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">88%</text>
+<text x="765.6" y="507" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Thu 1 Oct</text>
+<text x="849.6" y="507" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Computer Netwo…</text>
+<text x="51.6" y="526" fill="#8B929A" textLength="134.4" lengthAdjust="spacing" xml:space="preserve">OTHER ATTENDANCE</text>
+<text x="202.8" y="526" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">1</text>
+<text x="404.4" y="545" fill="#D2D6DB" textLength="168.0" lengthAdjust="spacing" xml:space="preserve">Software Engineering</text>
+<text x="681.6" y="545" fill="#D2D6DB" textLength="25.2" lengthAdjust="spacing" xml:space="preserve">93%</text>
+<text x="748.8" y="545" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">○</text>
+<text x="765.6" y="545" fill="#D2D6DB" textLength="117.6" lengthAdjust="spacing" xml:space="preserve">Lab 5: Hashing</text>
+<text x="76.8" y="564" fill="#8B929A" textLength="277.2" lengthAdjust="spacing" xml:space="preserve">Yoga                         100%</text>
+<text x="765.6" y="564" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Tue 6 Oct</text>
+<text x="849.6" y="564" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Data Structure…</text>
+<text x="748.8" y="602" fill="#5C636B" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">○</text>
+<text x="765.6" y="602" fill="#D2D6DB" textLength="218.4" lengthAdjust="spacing" xml:space="preserve">Case study: Library system</text>
+<text x="765.6" y="621" fill="#8B929A" textLength="75.6" lengthAdjust="spacing" xml:space="preserve">Fri 9 Oct</text>
+<text x="849.6" y="621" fill="#5C636B" textLength="142.8" lengthAdjust="spacing" xml:space="preserve">· Software Engin…</text>
+<text x="34.8" y="659" fill="#D2D6DB" font-weight="700" textLength="16.8" lengthAdjust="spacing" xml:space="preserve">↑↓</text>
+<text x="60.0" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">move</text>
+<text x="118.8" y="659" fill="#D2D6DB" font-weight="700" textLength="42.0" lengthAdjust="spacing" xml:space="preserve">enter</text>
+<text x="169.2" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">open</text>
+<text x="228.0" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">/</text>
+<text x="244.8" y="659" fill="#5C636B" textLength="50.4" lengthAdjust="spacing" xml:space="preserve">filter</text>
+<text x="320.4" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">r</text>
+<text x="337.2" y="659" fill="#5C636B" textLength="58.8" lengthAdjust="spacing" xml:space="preserve">refresh</text>
+<text x="883.2" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">?</text>
+<text x="900.0" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">help</text>
+<text x="958.8" y="659" fill="#D2D6DB" font-weight="700" textLength="8.4" lengthAdjust="spacing" xml:space="preserve">q</text>
+<text x="975.6" y="659" fill="#5C636B" textLength="33.6" lengthAdjust="spacing" xml:space="preserve">quit</text>
+</svg>
+  <rect x="660.5" y="44.5" width="579" height="378" rx="14" fill="none" stroke="#4A515A"/>
+  </g>
 </svg>
