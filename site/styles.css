@@ -108,13 +108,14 @@ h1 {
 .fineprint { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
 .fineprint code { color: var(--text); }
 
-/* One-line install commands: scroll sideways inside the block rather than widen the page. */
+/* One-line install commands: the command wraps inside the block rather than widen the page, and Copy sits beside it. */
 .cards > .card { min-width: 0; }
-pre.cmd { position: relative; max-width: 100%; margin: 8px 0 0; padding: 10px 64px 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-pre.cmd code { color: var(--strong); white-space: pre; background: none; padding: 0; }
-pre.cmd.hero-cmd { max-width: 640px; margin-top: 18px; }
+.cmd { display: flex; align-items: center; gap: 12px; max-width: 100%; margin: 8px 0 0; padding: 8px 8px 8px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.cmd pre { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cmd pre code { color: var(--strong); white-space: inherit; background: none; padding: 0; }
+.cmd.hero-cmd { max-width: 700px; margin-top: 18px; }
 .card code { white-space: nowrap; }
-.cmd-copy { position: absolute; top: 6px; right: 6px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 4px; background: var(--raised); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.cmd-copy { flex: none; padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--raised); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
 .cmd-copy:hover { color: var(--strong); border-color: var(--muted); }
 .cmd-label { margin: 14px 0 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 
@@ -177,7 +178,8 @@ h3 { color: var(--strong); font-size: 16px; margin: 28px 0 8px; }
 section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 96px); }
 
 /* ---- install cards ---- */
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.card.wide { grid-column: 1 / -1; }
 @media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
 .card { display: flex; flex-direction: column; gap: 12px; background: var(--panel); border-radius: 10px; padding: 20px; }
 .card h3 { display: flex; align-items: center; gap: 10px; margin: 0; }
