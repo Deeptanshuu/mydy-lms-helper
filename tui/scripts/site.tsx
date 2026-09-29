@@ -1,6 +1,6 @@
 // Builds the website's live demo: drives the real TUI (demo data, test renderer) through every state
 // reachable with j/k/tab/shift+tab/enter/esc/?, records which key leads where, plus a scripted autoplay tour.
-// Writes site/demo.json and copies the logo and favicon into site/assets/.
+// Writes site/demo.json and copies the logo, favicon and the README screenshots (the <noscript> fallback) into site/assets/.
 // Run: bun run --cwd tui site
 import * as mdi from "@mdi/js"
 import { MDI_FILE, MDI_NAME } from "./mdi"
@@ -9,12 +9,13 @@ import { copyFile, mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { DEMO_NOW, DEMO_POSTS, demoStore } from "../src/demo"
 import { fileSlot, glyph, type FileKind, type IconName } from "../src/icons"
+import { OVERVIEW_ROW } from "../src/state"
 import { color } from "../src/theme"
 import { App } from "../src/ui/App"
 import { AppProvider, type Services } from "../src/ui/context"
 
-const COLS = 110
-const ROWS = 30
+const COLS = 120
+const ROWS = 34
 const MAX_STATES = 400
 const ROOT = join(import.meta.dir, "..", "..")
 const SITE = join(ROOT, "site")
@@ -71,6 +72,8 @@ function capture(t: Setup): number {
 const noop = () => undefined
 
 const store = demoStore()
+// The app opens on the Overview (demoStore() selects a course, for the screenshots and tests).
+store.actions.select(OVERVIEW_ROW)
 const services: Services = {
   refresh: noop,
   loadTab: noop,
@@ -159,12 +162,11 @@ if (truncated) console.warn(`state graph capped at ${MAX_STATES} states; some ke
 
 // ---- autoplay tour -------------------------------------------------------------------------------------
 const TOUR: Array<[KeyName | null, number, string]> = [
-  [null, 3200, "Your courses, with attendance measured against the 75% line."],
-  ["k", 2600, "Computer Networks is at 72%: attend the next 6 classes to get back to 75%."],
-  ["j", 900, ""],
-  ["j", 2600, "Engineering Maths is at 46%, so it shows up in the needs-you strip too."],
+  [null, 3800, "It opens on the Overview: attendance, what's due this week and your grades on one screen."],
+  ["j", 2800, "Pick a course and the needs-you row under the header keeps what's urgent in view."],
+  ["j", 2800, "Computer Networks is at 72%: attend the next 6 classes to get back to 75%."],
   ["space", 1600, "Press space to mark courses for download."],
-  ["k", 700, ""],
+  ["j", 700, ""],
   ["space", 1600, ""],
   ["d", 3200, "d downloads everything marked, skipping files you already have."],
   ["esc", 900, ""],
@@ -174,7 +176,13 @@ const TOUR: Array<[KeyName | null, number, string]> = [
   ["tab", 1600, "Announcements."],
   ["enter", 3200, "enter reads the whole post without leaving the terminal."],
   ["esc", 700, ""],
-  ["esc", 1400, ""],
+  ["esc", 1000, ""],
+  ["k", 500, ""],
+  ["k", 500, ""],
+  ["k", 2200, "Back on the Overview. enter steps in, and j and k pick a deadline."],
+  ["enter", 1600, ""],
+  ["j", 1000, ""],
+  ["enter", 3200, "enter on a deadline jumps straight to that assignment."],
   ["?", 3400, "Press ? any time for every key."],
   ["esc", 1400, ""],
 ]
@@ -193,6 +201,7 @@ await mkdir(join(SITE, "assets"), { recursive: true })
 const demo = { cols: COLS, rows: ROWS, bg: color.bg, palette, icons: ICONS, rowTable, frames, start, edges, autoplay }
 await Bun.write(join(SITE, "demo.json"), JSON.stringify(demo))
 await copyFile(join(ROOT, "docs", "assets", "logo.svg"), join(SITE, "assets", "logo.svg"))
+await copyFile(join(ROOT, "docs", "assets", "tui-overview.svg"), join(SITE, "assets", "tui-overview.svg"))
 await copyFile(join(ROOT, "docs", "assets", "tui-dashboard.svg"), join(SITE, "assets", "tui-dashboard.svg"))
 await copyFile(join(ROOT, "extension", "icons", "icon-32.png"), join(SITE, "assets", "favicon-32.png"))
 await copyFile(join(ROOT, "extension", "icons", "icon-128.png"), join(SITE, "assets", "icon-128.png"))
