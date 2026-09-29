@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MyDy LMS Helper: a better way to use MyDy</title>
-  <meta name="description" content="Attendance, deadlines and grades from the MyDy LMS on one screen, every course's notes in one download, and your AI assistant plugged into your courses. Unofficial and open source.">
-  <meta name="theme-color" content="#0E0F10">
+  <meta name="description" content="A terminal app that opens on an Overview of your MyDy LMS attendance, deadlines and grades, every course's notes in one download, and your AI assistant plugged into your courses. Unofficial and open source.">
+  <meta name="theme-color" content="#0D0E10">
   <link rel="canonical" href="https://deeptanshuu.github.io/mydy-lms-helper/">
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -57,7 +57,7 @@
       <canvas id="hero-dither" aria-hidden="true"></canvas>
       <div class="hero wrap">
         <h1>A better way<br>to use MyDy.</h1>
-        <p class="lede">Attendance, deadlines and grades on one screen. Every course's notes in one download. And your AI assistant, plugged into your courses.</p>
+        <p class="lede">A terminal app that opens on an Overview of your attendance, deadlines and grades. Every course's notes in one download. And your AI assistant, plugged into your courses.</p>
         <div class="cta">
           <a class="button primary" id="download" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">
             <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>
@@ -86,8 +86,8 @@
       <h2 id="demo-title" class="visually-hidden">Live demo</h2>
       <div class="terminal" id="terminal" tabindex="0" role="application"
            aria-label="Interactive demo of the MyDy terminal app. Use j and k to move, tab to switch tabs, enter to open, escape to go back, question mark for help.">
-        <div class="terminal-screen" id="screen" aria-hidden="true"></div>
-        <noscript><img src="assets/tui-dashboard.svg" alt="The MyDy terminal app"></noscript>
+        <canvas class="terminal-screen" id="screen" aria-hidden="true"></canvas>
+        <noscript><img src="assets/tui-overview.svg" alt="The MyDy terminal app on its Overview: attendance, what's due this week and grades on top, attendance by course and upcoming deadlines below"></noscript>
       </div>
       <div class="demo-bar">
         <div class="tour-progress" id="progress" role="group" aria-label="Tour steps"></div>
@@ -115,15 +115,13 @@
 
     <section id="better" class="better wrap" aria-labelledby="better-title">
       <h2 id="better-title">Less clicking than MyDy</h2>
+      <p class="section-lede">The app opens on an Overview of attendance, what's due this week and your grades. Pick a course for the rest.</p>
       <svg width="0" height="0" style="position:absolute" aria-hidden="true">
         <symbol id="i-dl" viewBox="0 0 24 24"><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></symbol>
-        <symbol id="i-dling" viewBox="0 0 24 24"><path d="M13,2.03C17.73,2.5 21.5,6.25 21.95,11C22.5,16.5 18.5,21.38 13,21.93V19.93C16.64,19.5 19.5,16.61 19.96,12.97C20.5,8.58 17.39,4.59 13,4.05V2.05L13,2.03M11,2.06V4.06C9.57,4.26 8.22,4.84 7.1,5.74L5.67,4.26C7.19,3 9.05,2.25 11,2.06M4.26,5.67L5.69,7.1C4.8,8.23 4.24,9.58 4.05,11H2.05C2.25,9.04 3,7.19 4.26,5.67M2.06,13H4.06C4.24,14.42 4.81,15.77 5.69,16.9L4.27,18.33C3.03,16.81 2.26,14.96 2.06,13M7.1,18.37C8.23,19.25 9.58,19.82 11,20V22C9.04,21.79 7.18,21 5.67,19.74L7.1,18.37M12,16.5L7.5,12H11V8H13V12H16.5L12,16.5Z"/></symbol>
-        <symbol id="i-done" viewBox="0 0 24 24"><path d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/></symbol>
         <symbol id="i-on" viewBox="0 0 24 24"><path d="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"/></symbol>
         <symbol id="i-off" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/></symbol>
         <symbol id="i-att" viewBox="0 0 24 24"><path d="M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z"/></symbol>
         <symbol id="i-due" viewBox="0 0 24 24"><path d="M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z"/></symbol>
-        <symbol id="i-alert" viewBox="0 0 24 24"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"/></symbol>
         <symbol id="i-sync" viewBox="0 0 24 24"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></symbol>
         <symbol id="i-post" viewBox="0 0 24 24"><path d="M12,8H4A2,2 0 0,0 2,10V14A2,2 0 0,0 4,16H5V20A1,1 0 0,0 6,21H8A1,1 0 0,0 9,20V16H12L17,20V4L12,8M21.5,12C21.5,13.71 20.54,15.26 19,16V8C20.53,8.75 21.5,10.3 21.5,12Z"/></symbol>
       </svg>
@@ -137,13 +135,13 @@
             <p class="now">Mark courses with <kbd>space</kbd>, press <kbd>d</kbd>. One folder per course; files you already have are skipped.</p>
           </div>
           <div class="tui" aria-hidden="true">
-            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Data Structures and Algorithms</span></div>
-            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Computer Networks</span></div>
-            <div class="tl"><svg class="ic c-muted"><use href="#i-off"/></svg><span class="c-muted">Software Engineering</span></div>
-            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span class="c-strong">Engineering Maths III</span></div>
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span>Data Structures and Algorithms</span></div>
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span>Computer Networks</span></div>
+            <div class="tl"><svg class="ic c-muted"><use href="#i-off"/></svg><span>Software Engineering</span></div>
+            <div class="tl"><svg class="ic c-accent"><use href="#i-on"/></svg><span>Engineering Maths III</span></div>
             <div class="drawer" id="dl-demo">
-              <div class="tl split"><span class="tl"><svg class="ic c-accent"><use id="dl-icon" href="#i-dling"/></svg><b class="c-strong" id="dl-title">Downloading 3 courses</b></span><span class="c-muted" id="dl-count">41 of 58 files</span></div>
-              <div class="tl"><span class="bar"><i id="dl-bar" style="width:71%"></i></span><b class="c-strong" id="dl-pct">71%</b></div>
+              <div class="tl split"><b class="c-strong" id="dl-title">Downloading 3 courses</b><span class="c-muted" id="dl-count">41 of 58 files</span></div>
+              <div class="tl"><span class="blocks"><i id="dl-bar" style="width:71%"></i></span><span id="dl-pct">71%</span></div>
               <div class="tl c-muted"><span id="dl-file">Computer Networks/OSI layers.pdf</span></div>
             </div>
           </div>
@@ -154,9 +152,9 @@
           <h3>Know if you can skip</h3>
           <p class="was"><span class="tag">MyDy</span><s>Do the 75% maths yourself</s></p>
           <div class="tui" aria-hidden="true">
-            <div class="tl split"><span>Software Engineering</span><span><span class="c-ok">93%</span> <span class="c-muted">miss 10</span></span></div>
-            <div class="tl split"><span>Computer Networks</span><span><span class="c-warn">72%</span> <span class="c-muted">need 6</span></span></div>
-            <div class="tl split"><span>Engineering Maths III</span><span><span class="c-low">46%</span> <span class="c-muted">need 47</span></span></div>
+            <div class="att"><span class="name">Software Engineering</span><span>93%</span><span class="meter ok" style="--v:93%"><i></i></span><span class="c-muted">miss 10</span></div>
+            <div class="att"><span class="name">Computer Networks</span><span>72%</span><span class="meter warn" style="--v:72%"><i></i></span><span class="c-muted">need 6</span></div>
+            <div class="att"><span class="name">Engineering Maths III</span><span>46%</span><span class="meter low" style="--v:46%"><i></i></span><span class="c-muted">need 47</span></div>
           </div>
         </article>
 
@@ -165,9 +163,9 @@
           <h3>See what's due</h3>
           <p class="was"><span class="tag">MyDy</span><s>Open every course, then every assignment</s></p>
           <div class="tui" aria-hidden="true">
-            <div class="tl"><span class="pill"><svg class="ic"><use href="#i-alert"/></svg>needs you</span></div>
-            <div class="tl split"><span class="c-warn">Assignment 3: Trees</span><span class="c-muted">tomorrow</span></div>
-            <div class="tl split"><span class="c-warn">Lab 9: Subnetting</span><span class="c-muted">in 2 days</span></div>
+            <div class="tl label">NEEDS YOU</div>
+            <div class="tl split"><span class="tl"><i class="dot warn"></i><span>Assignment 3: Trees</span></span><span class="c-muted">tomorrow</span></div>
+            <div class="tl split"><span class="tl"><i class="dot warn"></i><span>Lab 9: Subnetting</span></span><span class="c-muted">in 2 days</span></div>
           </div>
         </article>
 
@@ -176,7 +174,7 @@
           <h3>Opens instantly</h3>
           <p class="was"><span class="tag">MyDy</span><s>Pages time out on bad Wi-Fi</s></p>
           <div class="tui" aria-hidden="true">
-            <div class="tl split"><b class="c-strong">MyDy</b><span class="tl c-muted"><svg class="ic"><use href="#i-sync"/></svg>synced 2 min ago</span></div>
+            <div class="tl split"><span class="wordmark"><b class="c-accent">&gt;</b> <b class="c-strong">MYDY</b><b class="c-accent">_</b></span><span class="tl c-faint"><i class="dot ok"></i>synced 2 min ago</span></div>
             <div class="tl"><span class="c-low">Can't reach mydy.dypatil.edu.</span></div>
             <div class="tl"><span class="c-muted">Your last sync still works.</span></div>
           </div>
@@ -187,9 +185,9 @@
           <h3>Read in place</h3>
           <p class="was"><span class="tag">MyDy</span><s>One forum per course, one post per page</s></p>
           <div class="tui" aria-hidden="true">
-            <div class="tl split"><span>Mid-semester exam</span><span><b class="c-strong">18</b><span class="c-muted"> / 25</span></span></div>
-            <div class="tl split"><span>Unit test 1</span><span><b class="c-strong">14</b><span class="c-muted"> / 25</span></span></div>
-            <div class="tl split"><span class="c-strong">Mid-sem syllabus uploaded</span><span class="c-muted">Mon</span></div>
+            <div class="gr"><span class="name">Mid-semester exam</span><span class="meter warn plain" style="--v:72%"><i></i></span><span><b class="c-strong">18</b><span class="c-muted"> / 25</span></span></div>
+            <div class="gr"><span class="name">Unit test 1</span><span class="meter warn plain" style="--v:56%"><i></i></span><span><b class="c-strong">14</b><span class="c-muted"> / 25</span></span></div>
+            <div class="tl split"><span>Mid-sem syllabus uploaded</span><span class="c-muted">Mon</span></div>
           </div>
         </article>
       </div>
@@ -248,7 +246,7 @@
       <div class="cards">
         <div class="card">
           <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13,19V16H21V19H13M8.5,13L2.47,7H6.71L11.67,11.95C12.25,12.54 12.25,13.5 11.67,14.07L6.74,19H2.5L8.5,13Z"/></svg>Terminal UI</h3>
-          <p>One binary, no install.</p>
+          <p>One binary, no install. Icons turn on by themselves when your terminal can draw them; <code>mydy --install-font</code> installs JetBrainsMono Nerd Font.</p>
           <ul class="platforms" id="platforms">
             <li><a data-asset="mydy-darwin-arm64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS arm64</a></li>
             <li><a data-asset="mydy-darwin-x64" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">macOS x64</a></li>
@@ -266,6 +264,9 @@
         <div class="card">
           <h3><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M22,13.5C22,15.26 20.7,16.72 19,16.96V20A2,2 0 0,1 17,22H13.2V21.7A2.7,2.7 0 0,0 10.5,19C9,19 7.8,20.21 7.8,21.7V22H4A2,2 0 0,1 2,20V16.2H2.3C3.79,16.2 5,15 5,13.5C5,12 3.79,10.8 2.3,10.8H2V7A2,2 0 0,1 4,5H7.04C7.28,3.3 8.74,2 10.5,2C12.26,2 13.72,3.3 13.96,5H17A2,2 0 0,1 19,7V10.04C20.7,10.28 22,11.74 22,13.5M17,15H18.5A1.5,1.5 0 0,0 20,13.5A1.5,1.5 0 0,0 18.5,12H17V7H12V5.5A1.5,1.5 0 0,0 10.5,4A1.5,1.5 0 0,0 9,5.5V7H4V9.12C5.76,9.8 7,11.5 7,13.5C7,15.5 5.75,17.2 4,17.88V20H6.12C6.8,18.25 8.5,17 10.5,17C12.5,17 14.2,18.25 14.88,20H17V15Z"/></svg>Chrome extension</h3>
           <p>Download course files from your browser.</p>
+          <ul class="platforms">
+            <li><a data-asset="mydy-extension.zip" href="https://github.com/Deeptanshuu/mydy-lms-helper/releases">Download .zip</a></li>
+          </ul>
           <a class="more" href="https://github.com/Deeptanshuu/mydy-lms-helper/blob/main/extension/README.md">Install guide</a>
         </div>
       </div>

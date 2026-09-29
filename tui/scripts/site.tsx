@@ -176,7 +176,7 @@ const TOUR: Array<[KeyName | null, number, string]> = [
   ["tab", 1600, "Announcements."],
   ["enter", 3200, "enter reads the whole post without leaving the terminal."],
   ["esc", 700, ""],
-  ["esc", 1000, ""],
+  ["esc", 1400, "esc goes back."],
   ["k", 500, ""],
   ["k", 500, ""],
   ["k", 2200, "Back on the Overview. enter steps in, and j and k pick a deadline."],

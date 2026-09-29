@@ -63,7 +63,33 @@ async function setUpDownloads() {
 // ---------------------------------------------------------------------------
 // Live demo: frames rendered from the real TUI by tui/scripts/site.tsx
 // ---------------------------------------------------------------------------
-const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+// A frame is a grid of terminal cells (character, colours, bold). They are painted on a canvas cell by cell, the way a
+// terminal does: text from the page's monospace font, but block elements, box-drawing lines, rounded corners, dots and
+// icons drawn as shapes that fill their cell exactly. Fonts draw those glyphs with gaps between rows and columns, and
+// differently on every platform, which breaks the pixel wordmark, the meters and the card borders.
+
+// Block elements (U+2580..259F) as rectangles in eighths of the cell: [x0, y0, x1, y1].
+const QUADRANTS = [[0, 0, 4, 4], [4, 0, 8, 4], [0, 4, 4, 8], [4, 4, 8, 8]] // upper left, upper right, lower left, lower right
+const QUADRANT_MASK = [4, 8, 1, 13, 9, 7, 11, 2, 6, 14] // U+2596..259F as UL=1 UR=2 LL=4 LR=8
+function blockShape(cp) {
+  if (cp === 0x2580) return { rects: [[0, 0, 8, 4]] }
+  if (cp >= 0x2581 && cp <= 0x2588) return { rects: [[0, 0x2588 - cp, 8, 8]] } // lower n/8, full block last
+  if (cp >= 0x2589 && cp <= 0x258f) return { rects: [[0, 0, 0x2590 - cp, 8]] } // left n/8
+  if (cp === 0x2590) return { rects: [[4, 0, 8, 8]] }
+  if (cp >= 0x2591 && cp <= 0x2593) return { rects: [[0, 0, 8, 8]], alpha: (cp - 0x2590) / 4 } // light, medium, dark shade
+  if (cp === 0x2594) return { rects: [[0, 0, 8, 1]] }
+  if (cp === 0x2595) return { rects: [[7, 0, 8, 8]] }
+  if (cp >= 0x2596 && cp <= 0x259f) return { rects: QUADRANTS.filter((_, i) => QUADRANT_MASK[cp - 0x2596] & (1 << i)) }
+}
+
+// Box-drawing lines as arm weights [left, right, up, down]: 0 none, 1 light, 2 heavy.
+const ARMS = {}
+const defineArms = (chars, weights) => [...chars].forEach((ch, i) => (ARMS[ch] = weights[i]))
+defineArms("─━│┃┌┏┐┓└┗┘┛", [[1, 1, 0, 0], [2, 2, 0, 0], [0, 0, 1, 1], [0, 0, 2, 2], [0, 1, 0, 1], [0, 2, 0, 2], [1, 0, 0, 1], [2, 0, 0, 2], [0, 1, 1, 0], [0, 2, 2, 0], [1, 0, 1, 0], [2, 0, 2, 0]])
+defineArms("├┣┤┫┬┳┴┻┼╋", [[0, 1, 1, 1], [0, 2, 2, 2], [1, 0, 1, 1], [2, 0, 2, 2], [1, 1, 0, 1], [2, 2, 0, 2], [1, 1, 1, 0], [2, 2, 2, 0], [1, 1, 1, 1], [2, 2, 2, 2]])
+defineArms("╴╵╶╷╸╹╺╻╼╽╾╿", [[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1], [2, 0, 0, 0], [0, 0, 2, 0], [0, 2, 0, 0], [0, 0, 0, 2], [1, 2, 0, 0], [0, 0, 1, 2], [2, 1, 0, 0], [0, 0, 2, 1]])
+// Rounded corners: [the horizontal arm points right, the vertical arm points down]
+const CORNERS = { "╭": [true, true], "╮": [false, true], "╰": [true, false], "╯": [false, false] }
 
 async function setUpDemo() {
   const terminal = document.getElementById("terminal")
@@ -81,39 +107,163 @@ async function setUpDemo() {
     return
   }
 
+  // Each unique row becomes one entry per column: [character, foreground, background, bold].
   const bg = demo.bg.toUpperCase()
-  const icons = new Map(Object.entries(demo.icons))
-  const rowHtml = demo.rowTable.map((runs) =>
-    runs
-      .map(([text, fg, bgi, bold]) => {
-        const style = `color:${demo.palette[fg]}${demo.palette[bgi] !== bg ? `;background:${demo.palette[bgi]}` : ""}${bold ? ";font-weight:700" : ""}`
-        let html = ""
-        for (const ch of text) {
-          const path = icons.get(ch)
-          html += path ? `<span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg></span>` : escapeHtml(ch)
-        }
-        return `<span style="${style}">${html}</span>`
-      })
-      .join(""),
-  )
+  const rows = demo.rowTable.map((runs) => {
+    const cells = []
+    for (const [text, fg, bgi, bold] of runs) for (const char of text) cells.push([char, demo.palette[fg], demo.palette[bgi], bold])
+    return cells
+  })
+  const icons = new Map(Object.entries(demo.icons).map(([char, path]) => [char, new Path2D(path)]))
 
-  // Fit the frame's columns to the container width.
-  const fit = () => {
-    const probe = document.createElement("span")
-    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font-size:100px"
-    probe.textContent = "0".repeat(10)
-    screen.appendChild(probe)
-    const charPerPx = probe.getBoundingClientRect().width / 1000
-    probe.remove()
-    const width = terminal.clientWidth - 32
-    const size = Math.min(16, Math.max(4, width / (demo.cols * charPerPx)))
-    screen.style.fontSize = `${size}px`
-    // Whole-pixel rows, so backgrounds meet without hairline gaps.
-    screen.style.setProperty("--rh", `${Math.round(size * 1.3)}px`)
+  const ctx = screen.getContext("2d")
+  const family = getComputedStyle(screen).fontFamily
+  let frame = demo.start
+  // Cell size and font size in device pixels, and where a text baseline sits in a cell.
+  let cw = 0
+  let ch = 0
+  let fontPx = 0
+  let baseline = 0
+
+  // Stroke widths for light and heavy lines, and a stroke's first pixel so that it is centred on `mid`.
+  const light = () => Math.max(1, Math.round(cw * 0.12))
+  const heavy = () => Math.max(light() + 1, Math.round(cw * 0.24))
+  const stroke = (arm) => (arm === 2 ? heavy() : arm === 1 ? light() : 0)
+  const centred = (mid, size) => Math.round(mid) - Math.floor(size / 2)
+
+  // Box-drawing lines: each arm runs from the cell edge to the middle, and past it to the far side of the arms it
+  // crosses, so corners and tees fill in.
+  function drawLines(arms, x, y) {
+    const [l, r, u, d] = arms.map(stroke)
+    const mx = x + cw / 2
+    const my = y + ch / 2
+    const rect = (x0, y0, x1, y1) => ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+    const vertical = [u, d].filter(Boolean)
+    const horizontal = [l, r].filter(Boolean)
+    const xNear = vertical.length ? Math.min(...vertical.map((t) => centred(mx, t))) : Math.round(mx)
+    const xFar = vertical.length ? Math.max(...vertical.map((t) => centred(mx, t) + t)) : Math.round(mx)
+    const yNear = horizontal.length ? Math.min(...horizontal.map((t) => centred(my, t))) : Math.round(my)
+    const yFar = horizontal.length ? Math.max(...horizontal.map((t) => centred(my, t) + t)) : Math.round(my)
+    if (l) rect(x, centred(my, l), xFar, centred(my, l) + l)
+    if (r) rect(xNear, centred(my, r), x + cw, centred(my, r) + r)
+    if (u) rect(centred(mx, u), y, centred(mx, u) + u, yFar)
+    if (d) rect(centred(mx, d), yNear, centred(mx, d) + d, y + ch)
   }
 
-  const show = (frame) => {
-    screen.innerHTML = demo.frames[frame].map((r) => `<span class="row">${rowHtml[r]}</span>`).join("")
+  // Rounded corners: a straight run from one cell edge, a quarter circle, and a straight run to the other edge.
+  function drawCorner([right, down], x, y) {
+    const t = light()
+    const lx = centred(x + cw / 2, t) + t / 2
+    const ly = centred(y + ch / 2, t) + t / 2
+    const r = cw / 2
+    const sx = right ? 1 : -1
+    const sy = down ? 1 : -1
+    ctx.lineWidth = t
+    ctx.beginPath()
+    ctx.moveTo(right ? x + cw : x, ly)
+    ctx.arc(lx + sx * r, ly + sy * r, r, -sy * (Math.PI / 2), right ? Math.PI : 0, right === down)
+    ctx.lineTo(lx, down ? y + ch : y)
+    ctx.stroke()
+  }
+
+  // Draws one cell's glyph as a shape if it has one, and says whether it did.
+  function drawShape(char, x, y) {
+    const cp = char.codePointAt(0)
+    const block = cp >= 0x2580 && cp <= 0x259f ? blockShape(cp) : undefined
+    if (block) {
+      if (block.alpha) ctx.globalAlpha = block.alpha
+      for (const [a, b, c, d] of block.rects) {
+        const x0 = x + Math.round((a * cw) / 8)
+        const y0 = y + Math.round((b * ch) / 8)
+        ctx.fillRect(x0, y0, x + Math.round((c * cw) / 8) - x0, y + Math.round((d * ch) / 8) - y0)
+      }
+      ctx.globalAlpha = 1
+    } else if (ARMS[char]) drawLines(ARMS[char], x, y)
+    else if (CORNERS[char]) drawCorner(CORNERS[char], x, y)
+    else if (char === "●" || char === "○") {
+      // A small dot on the height of lowercase letters, the same size in every font.
+      const radius = cw * 0.36
+      const t = light()
+      ctx.beginPath()
+      ctx.arc(x + cw / 2, y + baseline - fontPx * 0.3, char === "●" ? radius : radius - t / 2, 0, Math.PI * 2)
+      if (char === "●") ctx.fill()
+      else {
+        ctx.lineWidth = t
+        ctx.stroke()
+      }
+    } else if (icons.has(char)) {
+      // Nerd Font icons as Material Design Icons: 1.2em, starting at the cell and running over the space after it.
+      const size = fontPx * 1.2
+      ctx.save()
+      ctx.translate(x - fontPx * 0.05, y + (ch - size) / 2)
+      ctx.scale(size / 24, size / 24)
+      ctx.fill(icons.get(char))
+      ctx.restore()
+    } else return false
+    return true
+  }
+
+  function draw(index) {
+    ctx.fillStyle = bg
+    ctx.fillRect(0, 0, screen.width, screen.height)
+    const cells = demo.frames[index].map((r) => rows[r])
+    // Backgrounds first, so an icon that runs over into the next cell is not painted over.
+    cells.forEach((row, line) => {
+      for (let col = 0; col < row.length; ) {
+        let end = col + 1
+        while (end < row.length && row[end][2] === row[col][2]) end++
+        if (row[col][2] !== bg) {
+          ctx.fillStyle = row[col][2]
+          ctx.fillRect(col * cw, line * ch, (end - col) * cw, ch)
+        }
+        col = end
+      }
+    })
+    ctx.textAlign = "center"
+    ctx.textBaseline = "alphabetic"
+    if ("fontKerning" in ctx) ctx.fontKerning = "none"
+    let bold = -1
+    cells.forEach((row, line) => {
+      row.forEach(([char, fg, , weight], col) => {
+        if (char === " ") return
+        ctx.fillStyle = ctx.strokeStyle = fg
+        const x = col * cw
+        const y = line * ch
+        if (drawShape(char, x, y)) return
+        if (weight !== bold) {
+          bold = weight
+          ctx.font = `${weight ? "700 " : ""}${fontPx}px ${family}`
+        }
+        ctx.fillText(char, x + cw / 2, y + baseline)
+      })
+    })
+  }
+
+  const show = (index) => {
+    frame = index
+    draw(index)
+  }
+
+  // Fit the frame's columns to the container width, in whole device pixels so that neighbouring cells meet exactly.
+  const fit = () => {
+    const dpr = window.devicePixelRatio || 1
+    ctx.font = `100px ${family}`
+    const advance = ctx.measureText("0").width / 100 || 0.6
+    const width = terminal.clientWidth - 32
+    cw = Math.max(3, Math.min(Math.floor((width * dpr) / demo.cols), Math.floor(16 * advance * dpr)))
+    fontPx = cw / advance
+    ch = Math.round(fontPx * 1.3)
+    screen.width = cw * demo.cols
+    screen.height = ch * demo.rows
+    screen.style.width = `${(cw * demo.cols) / dpr}px`
+    screen.style.height = `${(ch * demo.rows) / dpr}px`
+    // Centre text in a row the way a line box does.
+    ctx.font = `${fontPx}px ${family}`
+    const metrics = ctx.measureText("Mg")
+    const ascent = metrics.fontBoundingBoxAscent ?? fontPx * 0.8
+    const descent = metrics.fontBoundingBoxDescent ?? fontPx * 0.2
+    baseline = Math.round((ch - (ascent + descent)) / 2 + ascent)
+    draw(frame)
   }
 
   // ---- autoplay tour, then hand over to the visitor ----
@@ -266,7 +416,7 @@ async function setUpDemo() {
 // Each menu says which setup it's for: data-ai-menu="general" (the whole project) or "mcp".
 const AI_SETUP = {
   general: {
-    prompt: `Help me set up MyDy LMS Helper (https://github.com/${REPO}), an unofficial, open-source helper for the MyDy LMS at D.Y. Patil (mydy.dypatil.edu). It has a terminal app (attendance, deadlines, grades, announcements and bulk downloads on one screen), an MCP server that lets an AI assistant like you read my courses, and a Chrome extension for downloading course files.
+    prompt: `Help me set up MyDy LMS Helper (https://github.com/${REPO}), an unofficial, open-source helper for the MyDy LMS at D.Y. Patil (mydy.dypatil.edu). It has a terminal app (an Overview of attendance, deadlines and grades, plus announcements and bulk downloads), an MCP server that lets an AI assistant like you read my courses, and a Chrome extension for downloading course files.
 
 README: https://github.com/${REPO}#readme
 
@@ -395,7 +545,6 @@ function setUpDownloadCard() {
   const render = () => {
     const finished = done >= total
     const pct = Math.round((done / total) * 100)
-    $("dl-icon").setAttribute("href", finished ? "#i-done" : "#i-dling")
     $("dl-title").textContent = finished ? "Download finished" : "Downloading 3 courses"
     $("dl-count").textContent = `${done} of ${total} files`
     $("dl-bar").style.width = `${pct}%`

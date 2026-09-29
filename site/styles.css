@@ -1,18 +1,24 @@
-/* MyDy LMS Helper website. Same tokens, type and highlight treatment as the terminal app (tui/src/theme.ts). */
+/* MyDy LMS Helper website. Same tokens as the terminal app (tui/src/theme.ts): colour marks state, orange is the accent. */
 :root {
-  --bg: #0e0f10;
-  --panel: #17191b;
+  --bg: #0d0e10;
+  --panel: #131518;
+  --raised: #1a1d21;
   --bar: #08090a;
-  --strip: #1c1e21;
-  --line: #2c2f33;
-  --text: #d8dcdf;
-  --strong: #f4f5f6;
-  --muted: #8a9096;
+  --strip: var(--raised);
+  --line: #31363d;
+  --text: #d2d6db;
+  --strong: #f5f6f7;
+  --muted: #8b929a;
+  --faint: #5c636b;
   --accent: #ff6500;
+  --accent-track: #392214;
   --on-accent: #08090a;
   --ok: #6fcf97;
   --warn: #f2c94c;
-  --low: #f0506e;
+  --low: #ff4f9a; /* rose, not red: a red sits too close to the orange accent */
+  --ok-track: #24362f;
+  --warn-track: #3b3521;
+  --low-track: #422132;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --gutter: clamp(16px, 4vw, 32px);
   color-scheme: dark;
@@ -75,10 +81,10 @@ kbd { color: var(--accent); }
 .hero-band::after {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, var(--bg) 0%, rgba(14, 15, 16, 0.88) 38%, rgba(14, 15, 16, 0.2) 78%, rgba(14, 15, 16, 0) 100%),
-    linear-gradient(180deg, rgba(14, 15, 16, 0) 55%, var(--bg) 100%);
+    linear-gradient(90deg, var(--bg) 0%, rgba(13, 14, 16, 0.88) 38%, rgba(13, 14, 16, 0.2) 78%, rgba(13, 14, 16, 0) 100%),
+    linear-gradient(180deg, rgba(13, 14, 16, 0) 55%, var(--bg) 100%);
 }
-@media (max-width: 720px) { .hero-band::after { background: linear-gradient(180deg, rgba(14, 15, 16, 0.55), var(--bg)); } }
+@media (max-width: 720px) { .hero-band::after { background: linear-gradient(180deg, rgba(13, 14, 16, 0.55), var(--bg)); } }
 .hero { padding: clamp(48px, 9vw, 104px) 0 clamp(28px, 4vw, 40px); }
 h1 {
   margin: 0 0 20px;
@@ -109,16 +115,12 @@ h1 {
   border-radius: 12px;
   padding: 14px 16px;
   overflow: hidden;
-  cursor: text;
+  cursor: default;
   box-shadow: 0 24px 60px -30px rgba(255, 101, 0, 0.25);
 }
 .terminal:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.terminal-screen { width: fit-content; margin-inline: auto; font-size: 13px; line-height: var(--rh, 17px); white-space: pre; color: var(--text); }
-.terminal-screen .row { display: block; height: var(--rh, 17px); }
-/* Inline backgrounds only cover the glyph box; inline-block runs fill the whole cell height, like a terminal. */
-.terminal-screen .row > span { display: inline-block; height: 100%; vertical-align: top; }
-.terminal-screen .ti { display: inline-block; width: 1ch; height: 1em; vertical-align: -0.15em; overflow: visible; }
-.terminal-screen .ti svg { width: 1.2em; height: 1.2em; margin-left: -0.05em; margin-top: -0.1em; fill: currentColor; }
+/* The frame is painted on a canvas (main.js), sized in whole device pixels so its cells meet exactly. */
+.terminal-screen { display: block; margin-inline: auto; }
 .terminal noscript img { width: 100%; height: auto; display: block; }
 
 .demo-bar { margin-top: 12px; padding: 10px 14px 8px; background: var(--strip); border-radius: 6px; }
@@ -160,6 +162,7 @@ h1 {
 h2 { color: var(--strong); font-size: clamp(22px, 3vw, 28px); letter-spacing: -0.02em; margin: 0 0 8px; }
 h3 { color: var(--strong); font-size: 16px; margin: 28px 0 8px; }
 .section-lede { color: var(--muted); margin: 0 0 24px; }
+.section-lede ~ .bento { margin-top: 0; }
 section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 96px); }
 
 /* ---- install cards ---- */
@@ -176,13 +179,10 @@ section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 9
 .platforms a:hover { background: var(--accent); color: var(--on-accent); }
 .platforms a.unavailable { color: var(--muted); }
 .platforms a.unavailable:hover { color: var(--on-accent); }
-/* ---- privacy: the TUI's "needs you" strip ---- */
+/* ---- privacy: a strip with a muted uppercase label, like the TUI's "needs you" row ---- */
 .privacy { padding-bottom: clamp(56px, 8vw, 96px); }
 .strip { display: flex; align-items: flex-start; gap: 16px; background: var(--strip); border-radius: 8px; padding: 16px 18px; }
-.badge {
-  flex: none; margin: 0; font-size: 14px; letter-spacing: 0;
-  background: var(--accent); color: var(--on-accent); padding: 2px 10px; border-radius: 3px;
-}
+.badge { flex: none; margin: 0; font-size: 15px; font-weight: 400; letter-spacing: 0; line-height: inherit; text-transform: uppercase; color: var(--muted); }
 .strip p { margin: 0; max-width: 80ch; }
 @media (max-width: 640px) { .strip { flex-direction: column; } }
 
@@ -193,7 +193,7 @@ section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 9
 .footer nav { display: flex; flex-wrap: wrap; gap: 6px 20px; }
 .footer nav a { color: var(--muted); text-decoration: none; }
 .footer nav a:hover { color: var(--strong); }
-.footer kbd { background: none; padding: 0; }
+.footer kbd { background: none; padding: 0; color: var(--strong); font-weight: 700; }
 
 /* ---- MyDy vs MyDy LMS Helper: cards with a slice of the app in each ---- */
 .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
@@ -206,26 +206,52 @@ section.install, section.better, section.ai { padding-bottom: clamp(56px, 8vw, 9
 .bento-card h3 { margin: 0; font-size: 18px; letter-spacing: -0.01em; }
 .lead h3 { font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; }
 .was { margin: 0; color: var(--muted); font-size: 13px; }
-.was s { text-decoration-color: rgba(240, 80, 110, 0.6); }
+.was s { text-decoration-color: rgba(255, 79, 154, 0.55); }
 .tag { display: inline-block; margin-right: 8px; padding: 0 6px; border: 1px solid var(--line); border-radius: 3px; font-size: 11px; }
 .now { margin: 0; color: var(--text); }
 
+/* Slices of the app, in its quiet style: colour marks state only (thin bars, small dots), numbers stay in text ink,
+   and orange is left for marked checkboxes and the download bar. */
 .tui {
   margin-top: auto; min-width: 0; overflow: hidden;
   background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-  padding: 12px 14px; font-size: 13px; line-height: 1.75; white-space: nowrap;
+  padding: 12px 14px; font-size: 13px; line-height: 1.75; white-space: nowrap; color: var(--text);
 }
 .lead .tui { margin-top: 0; }
 .tl { display: flex; align-items: center; gap: 1ch; min-width: 0; }
 .tl.split { justify-content: space-between; }
 .tl > span { overflow: hidden; text-overflow: ellipsis; }
 .tl .ic { width: 1.25em; height: 1.25em; }
-.pill { display: inline-flex; align-items: center; gap: 1ch; padding: 0 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
-.drawer { margin: 10px -14px -12px; padding: 10px 14px 12px; background: var(--panel); border-top: 1px solid var(--line); }
-.bar { flex: 1; height: 0.7em; background: var(--line); }
-.bar i { display: block; height: 100%; background: var(--accent); }
+.tl.label { color: var(--muted); }
+.dot { display: inline-block; flex: none; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--dot, var(--muted)); }
+.dot.ok { --dot: var(--ok); } .dot.warn { --dot: var(--warn); } .dot.low { --dot: var(--low); }
+.wordmark { letter-spacing: 0; }
+
+/* A thin meter: the fill carries the state colour; a tick marks the 75% line. */
+.meter { position: relative; display: block; height: 3px; background: var(--track, var(--line)); }
+.meter > i { display: block; height: 100%; width: var(--v); background: var(--fill, var(--muted)); }
+.meter::after { content: ""; position: absolute; left: 75%; top: -4px; width: 2px; height: 11px; margin-left: -1px; background: var(--muted); }
+.meter.plain::after { display: none; }
+.meter.ok { --fill: var(--ok); --track: var(--ok-track); }
+.meter.warn { --fill: var(--warn); --track: var(--warn-track); }
+.meter.low { --fill: var(--low); --track: var(--low-track); }
+/* Attendance: a name and its percentage, then the meter and what to do about it (the sidebar's two-line rows). */
+.att { display: grid; grid-template-columns: 1fr 8ch; column-gap: 1.5ch; row-gap: 2px; align-items: center; margin-bottom: 8px; }
+.att:last-child { margin-bottom: 0; }
+.att > :nth-child(2), .att > :nth-child(4) { justify-self: end; }
+.att .name, .gr .name { overflow: hidden; text-overflow: ellipsis; }
+/* Grades: name, meter, score. */
+.gr { display: grid; grid-template-columns: 1fr 7ch auto; column-gap: 1.5ch; align-items: center; }
+.gr > :nth-child(3) { justify-self: end; }
+
+/* The download panel: a plain bordered card with a block progress bar in the accent. */
+.drawer { margin-top: 12px; padding: 8px 12px 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.drawer .split > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.drawer .split > span { flex: none; }
+.blocks { flex: 1; height: 10px; background: var(--accent-track); }
+.blocks i { display: block; height: 100%; background: var(--accent); }
 .c-accent { color: var(--accent); } .c-strong { color: var(--strong); } .c-muted { color: var(--muted); }
-.c-ok { color: var(--ok); } .c-warn { color: var(--warn); } .c-low { color: var(--low); }
+.c-faint { color: var(--faint); } .c-low { color: var(--low); }
 
 /* ---- AI section ---- */
 .ai-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: start; }
