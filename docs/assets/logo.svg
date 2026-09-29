@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" role="img" aria-label="MyDy LMS Helper logo">
   <g transform="translate(0 0) scale(1.0000)">
-    <rect width="64" height="64" rx="14" fill="#17191B"/>
+    <rect width="64" height="64" rx="14" fill="#131518"/>
     <polyline points="11,23 20,32 11,41" fill="none" stroke="#FF6500" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F4F5F6" transform="translate(25 13) scale(1.3500)"/>
+    <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#F5F6F7" transform="translate(25 13) scale(1.3500)"/>
     <rect x="27" y="47" width="27" height="4" rx="2" fill="#FF6500"/>
   </g>
 </svg>

@@ -2,39 +2,39 @@
   <title id="title">How each part talks to MyDy</title>
   <desc id="desc">The terminal UI and the MCP server log in with your credentials and parse MyDy's HTML over HTTP. The Chrome extension reuses your logged-in browser tab.</desc>
   <style>text { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }</style>
-  <rect width="1280" height="480" rx="16" fill="#0E0F10"/>
-  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8A9096"/></marker></defs>
-  <text x="48" y="64" font-size="22" fill="#F4F5F6" font-weight="700" xml:space="preserve">How each part talks to MyDy</text>
-  <rect x="48" y="104" width="380" height="100" rx="10" fill="#17191B" stroke="#2C2F33"/>
+  <rect width="1280" height="480" rx="16" fill="#0D0E10"/>
+  <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8B929A"/></marker></defs>
+  <text x="48" y="64" font-size="22" fill="#F5F6F7" font-weight="700" xml:space="preserve">How each part talks to MyDy</text>
+  <rect x="48" y="104" width="380" height="100" rx="10" fill="#131518" stroke="#31363D"/>
   <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z" fill="#FF6500" transform="translate(72 125) scale(0.8333)"/>
-  <text x="102" y="142" font-size="18" fill="#F4F5F6" font-weight="700" xml:space="preserve">Terminal UI</text>
-  <text x="72" y="168" font-size="14" fill="#D8DCDF" xml:space="preserve">tui/ (OpenTUI) + core/</text>
-  <text x="72" y="191" font-size="13" fill="#8A9096" xml:space="preserve">Keyboard-first dashboard and downloader</text>
-  <rect x="48" y="224" width="380" height="100" rx="10" fill="#17191B" stroke="#2C2F33"/>
+  <text x="102" y="142" font-size="18" fill="#F5F6F7" font-weight="700" xml:space="preserve">Terminal UI</text>
+  <text x="72" y="168" font-size="14" fill="#D2D6DB" xml:space="preserve">tui/ (OpenTUI) + core/</text>
+  <text x="72" y="191" font-size="13" fill="#8B929A" xml:space="preserve">Keyboard-first dashboard and downloader</text>
+  <rect x="48" y="224" width="380" height="100" rx="10" fill="#131518" stroke="#31363D"/>
   <path d="M17.5 15.5C17.5 16.61 16.61 17.5 15.5 17.5S13.5 16.61 13.5 15.5 14.4 13.5 15.5 13.5 17.5 14.4 17.5 15.5M8.5 13.5C7.4 13.5 6.5 14.4 6.5 15.5S7.4 17.5 8.5 17.5 10.5 16.61 10.5 15.5 9.61 13.5 8.5 13.5M23 15V18C23 18.55 22.55 19 22 19H21V20C21 21.11 20.11 22 19 22H5C3.9 22 3 21.11 3 20V19H2C1.45 19 1 18.55 1 18V15C1 14.45 1.45 14 2 14H3C3 10.13 6.13 7 10 7H11V5.73C10.4 5.39 10 4.74 10 4C10 2.9 10.9 2 12 2S14 2.9 14 4C14 4.74 13.6 5.39 13 5.73V7H14C17.87 7 21 10.13 21 14H22C22.55 14 23 14.45 23 15M21 16H19V14C19 11.24 16.76 9 14 9H10C7.24 9 5 11.24 5 14V16H3V17H5V20H19V17H21V16Z" fill="#FF6500" transform="translate(72 245) scale(0.8333)"/>
-  <text x="102" y="262" font-size="18" fill="#F4F5F6" font-weight="700" xml:space="preserve">MCP server</text>
-  <text x="72" y="288" font-size="14" fill="#D8DCDF" xml:space="preserve">mcp/mcp_server.py</text>
-  <text x="72" y="311" font-size="13" fill="#8A9096" xml:space="preserve">Lets AI assistants read your courses</text>
-  <rect x="48" y="344" width="380" height="100" rx="10" fill="#17191B" stroke="#2C2F33"/>
+  <text x="102" y="262" font-size="18" fill="#F5F6F7" font-weight="700" xml:space="preserve">MCP server</text>
+  <text x="72" y="288" font-size="14" fill="#D2D6DB" xml:space="preserve">mcp/mcp_server.py</text>
+  <text x="72" y="311" font-size="13" fill="#8B929A" xml:space="preserve">Lets AI assistants read your courses</text>
+  <rect x="48" y="344" width="380" height="100" rx="10" fill="#131518" stroke="#31363D"/>
   <path d="M12,20L15.46,14H15.45C15.79,13.4 16,12.73 16,12C16,10.8 15.46,9.73 14.62,9H19.41C19.79,9.93 20,10.94 20,12A8,8 0 0,1 12,20M4,12C4,10.54 4.39,9.18 5.07,8L8.54,14H8.55C9.24,15.19 10.5,16 12,16C12.45,16 12.88,15.91 13.29,15.77L10.89,19.91C7,19.37 4,16.04 4,12M15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9A3,3 0 0,1 15,12M12,4C14.96,4 17.54,5.61 18.92,8H12C10.06,8 8.45,9.38 8.08,11.21L5.7,7.08C7.16,5.21 9.44,4 12,4M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" fill="#FF6500" transform="translate(72 365) scale(0.8333)"/>
-  <text x="102" y="382" font-size="18" fill="#F4F5F6" font-weight="700" xml:space="preserve">Chrome extension</text>
-  <text x="72" y="408" font-size="14" fill="#D8DCDF" xml:space="preserve">extension/js/content.js</text>
-  <text x="72" y="431" font-size="13" fill="#8A9096" xml:space="preserve">Saves files with chrome.downloads</text>
-  <g fill="none" stroke="#8A9096" stroke-width="2" marker-end="url(#arrow)">
+  <text x="102" y="382" font-size="18" fill="#F5F6F7" font-weight="700" xml:space="preserve">Chrome extension</text>
+  <text x="72" y="408" font-size="14" fill="#D2D6DB" xml:space="preserve">extension/js/content.js</text>
+  <text x="72" y="431" font-size="13" fill="#8B929A" xml:space="preserve">Saves files with chrome.downloads</text>
+  <g fill="none" stroke="#8B929A" stroke-width="2" marker-end="url(#arrow)">
     <path d="M428 154 C 640 154, 660 226, 866 226"/>
     <path d="M428 274 C 640 274, 660 260, 866 260"/>
     <path d="M428 394 C 640 394, 660 294, 866 294" stroke-dasharray="6 5"/>
   </g>
-  <g stroke="#0E0F10" stroke-width="6" paint-order="stroke">
-  <text x="446" y="142" font-size="13" fill="#D8DCDF" xml:space="preserve">core/: own login, HTTP + HTML parsing</text>
-  <text x="446" y="300" font-size="13" fill="#D8DCDF" xml:space="preserve">own login, HTTP + HTML parsing (Python)</text>
-  <text x="446" y="420" font-size="13" fill="#D8DCDF" xml:space="preserve">reuses your logged-in browser tab</text>
+  <g stroke="#0D0E10" stroke-width="6" paint-order="stroke">
+  <text x="446" y="142" font-size="13" fill="#D2D6DB" xml:space="preserve">core/: own login, HTTP + HTML parsing</text>
+  <text x="446" y="300" font-size="13" fill="#D2D6DB" xml:space="preserve">own login, HTTP + HTML parsing (Python)</text>
+  <text x="446" y="420" font-size="13" fill="#D2D6DB" xml:space="preserve">reuses your logged-in browser tab</text>
   </g>
-  <rect x="872" y="176" width="360" height="168" rx="10" fill="#17191B" stroke="#FF6500" stroke-width="2"/>
+  <rect x="872" y="176" width="360" height="168" rx="10" fill="#131518" stroke="#FF6500" stroke-width="2"/>
   <path d="M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" fill="#FF6500" transform="translate(896 194) scale(0.8333)"/>
-  <text x="926" y="211" font-size="18" fill="#F4F5F6" font-weight="700" xml:space="preserve">MyDy (Moodle)</text>
+  <text x="926" y="211" font-size="18" fill="#F5F6F7" font-weight="700" xml:space="preserve">MyDy (Moodle)</text>
   <text x="896" y="240" font-size="14" fill="#FF6500" xml:space="preserve">mydy.dypatil.edu/rait</text>
-  <text x="896" y="272" font-size="13" fill="#D8DCDF" xml:space="preserve">Courses, attendance, assignments,</text>
-  <text x="896" y="294" font-size="13" fill="#D8DCDF" xml:space="preserve">grades, announcements and</text>
-  <text x="896" y="316" font-size="13" fill="#D8DCDF" xml:space="preserve">course files</text>
+  <text x="896" y="272" font-size="13" fill="#D2D6DB" xml:space="preserve">Courses, attendance, assignments,</text>
+  <text x="896" y="294" font-size="13" fill="#D2D6DB" xml:space="preserve">grades, announcements and</text>
+  <text x="896" y="316" font-size="13" fill="#D2D6DB" xml:space="preserve">course files</text>
 </svg>
