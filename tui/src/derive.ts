@@ -11,10 +11,17 @@ import {
   type AttendanceMath,
   type AttendanceStatus,
   type NeedsYouItem,
+  type ResultCourse,
+  type Results,
+  type ResultSemester,
+  courseKey,
+  gradeLetters,
+  simulateResults,
+  UNICLAIRE_BASE_URL,
 } from "@mydy/core/logic"
 import { formatAge, parseScore } from "./format"
 import type { FileKind } from "./icons"
-import { OVERVIEW_ROW, type AppState, type CourseEntry } from "./state"
+import { OVERVIEW_ROW, RESULTS_ROW, type AppState, type CourseEntry } from "./state"
 
 export const DOWNLOADABLE = new Set(["resource", "flexpaper", "presentation", "casestudy", "dyquestion"])
 const DAY = 86_400_000
@@ -97,6 +104,13 @@ export interface DetailItem {
 /** The selectable rows of the current tab, in display order. `now` only matters on the Overview (its deadlines). */
 export function detailItems(s: AppState, now: Date = new Date()): DetailItem[] {
   if (s.selectedId === OVERVIEW_ROW) return upcomingDeadlines(s, now).map((d) => ({ url: d.url, courseId: d.courseId, courseIndex: d.courseIndex }))
+  if (s.selectedId === RESULTS_ROW) {
+    if (s.results.status === "signin") return []
+    if (s.results.view === "revaluation") return (s.results.applications ?? []).map(() => ({ url: UNICLAIRE_BASE_URL }))
+    // The charts have nothing to pick.
+    if (s.results.view === "statistics") return []
+    return (s.results.simulating ? simSubjects(s) : resultSemesters(s)).map(() => ({ url: UNICLAIRE_BASE_URL }))
+  }
   const e = s.selectedId ? s.courses[s.selectedId] : undefined
   if (!e) return []
   switch (s.tab) {
@@ -329,4 +343,87 @@ export function announcementWhen(a: LatestAnnouncement, now: Date): string {
   if (!a.date) return a.dateText ?? ""
   const d = calendarDayDiff(a.date, now)
   return d === 0 ? "Today" : d === -1 ? "Yesterday" : shortDate(a.date)
+}
+
+// ── Results (UniClaIRE) ────────────────────────────────────────────────────────────────────────
+
+/** The semesters the Results pane lists, oldest first; none while it shows the sign-in form. */
+export function resultSemesters(s: AppState): ResultSemester[] {
+  return s.results.status === "signin" ? [] : (s.results.data?.semesters ?? [])
+}
+
+/** "8.42", or "—" when there is nothing graded. */
+export function gpaLabel(gpa: number | null): string {
+  return gpa === null ? "—" : gpa.toFixed(2)
+}
+
+/** How a grade reads: failed or absent is low, the top grade ok, ungraded faint, the rest plain. */
+export function gradeTone(points: number | null): "ok" | "low" | "muted" | "text" {
+  if (points === null) return "muted"
+  if (points === 0) return "low"
+  return points === 10 ? "ok" : "text"
+}
+
+/** "+0.32 on semester 4", "-0.10 on semester 4", "same as semester 4", or null with one graded semester. */
+export function sgpaChange(semesters: ResultSemester[]): string | null {
+  const graded = semesters.filter((x) => x.sgpa !== null)
+  if (graded.length < 2) return null
+  const last = graded[graded.length - 1]!
+  const prev = graded[graded.length - 2]!
+  const d = Math.round((last.sgpa! - prev.sgpa!) * 100) / 100
+  return d === 0 ? `same as semester ${prev.term}` : `${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(2)} on semester ${prev.term}`
+}
+
+/** What the Results pane says under its title. */
+export function resultsCaption(s: AppState, now: Date): string[] {
+  const r = s.results
+  const age = r.fetchedAt ? formatAge(Math.max(0, now.getTime() - r.fetchedAt)) : null
+  const status =
+    r.status === "loading" ? "fetching from UniClaIRE…"
+    : r.status === "offline" ? (age ? `offline, from ${age}` : "offline")
+    : r.status === "error" ? "last fetch failed"
+    : age ? `fetched ${age}` : ""
+  const d = r.data
+  if (!d) return [status].filter(Boolean)
+  const n = d.semesters.length
+  return [d.usn, `${n} semester${n === 1 ? "" : "s"}`, `${fmtCredits(d.credits)} credits`, status].filter(Boolean)
+}
+
+export function fmtCredits(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
+// ── What-if simulator ──────────────────────────────────────────────────────────────────────────
+
+/** The results with the what-if grades applied (the real ones when there are none). */
+export function simulated(s: AppState): Results | null {
+  return s.results.data ? simulateResults(s.results.data, s.results.sim) : null
+}
+
+export interface SimSubject {
+  key: string
+  /** Index into the semesters list. */
+  semester: number
+  /** Index into that semester's courses. */
+  index: number
+  course: ResultCourse
+}
+
+/** Every subject of every semester, in order: what j/k walk while simulating. */
+export function simSubjects(s: AppState): SimSubject[] {
+  return resultSemesters(s).flatMap((sem, semester) => sem.courses.map((course, index) => ({ key: courseKey(sem.term, index), semester, index, course })))
+}
+
+/** The semester the Grades view shows: the selected one, or while simulating, the selected subject's. */
+export function shownSemester(s: AppState): number {
+  if (!s.results.simulating) return s.detailIndex
+  return simSubjects(s)[s.detailIndex]?.semester ?? 0
+}
+
+/** The grade one step better (+1) or worse (-1). A grade the scheme doesn't know starts from P. */
+export function stepGrade(grade: string, scheme: "legacy" | "new", step: 1 | -1): string {
+  const letters = gradeLetters(scheme)
+  const at = letters.indexOf(grade.trim().toUpperCase())
+  const from = at < 0 ? letters.indexOf("P") + (step > 0 ? 1 : -1) : at
+  return letters[Math.max(0, Math.min(letters.length - 1, from - step))]!
 }

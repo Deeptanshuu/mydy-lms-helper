@@ -3,7 +3,7 @@ import { createMemo, For, Show } from "solid-js"
 import { needsYouFor } from "../derive"
 import { fit, formatAge } from "../format"
 import { slot } from "../icons"
-import { OVERVIEW_ROW, type AppState } from "../state"
+import { OVERVIEW_ROW, RESULTS_ROW, type AppState } from "../state"
 import { color } from "../theme"
 import { useApp } from "./context"
 import { Dither, keepClear } from "./Dither"
@@ -247,6 +247,16 @@ export function footerKeys(s: AppState): Key[] {
   if (s.download?.visible) {
     return s.download.active ? [["x", "cancel"], ["o", "open folder"], ["esc", "hide panel"]] : [["o", "open folder"], ["esc", "close panel"]]
   }
+  if (s.results.editing) return [["tab", "next field"], ["enter", "sign in"], ["esc", "back"]]
+  if (s.selectedId === RESULTS_ROW) {
+    if (s.focus === "list") return [["↑↓", "move"], ["enter", "open"], ["r", "refresh"], ["?", "help"], ["q", "quit"]]
+    if (s.results.status === "signin") return [["enter", "sign in"], ["esc", "back"], ["?", "help"], ["q", "quit"]]
+    if (s.results.simulating) return [["↑↓", "subject"], ["←→", "grade"], ["u", "undo"], ["c", "clear all"], ["esc", "done"], ["?", "help"], ["q", "quit"]]
+    if (s.results.view === "revaluation") return [["↑↓", "application"], ["tab", "grades"], ["r", "refresh"], ["esc", "back"], ["?", "help"], ["q", "quit"]]
+    if (s.results.view === "statistics") return [["tab", "revaluation"], ["r", "refresh"], ["o", "open portal"], ["esc", "back"], ["?", "help"], ["q", "quit"]]
+    const what: Key[] = Object.keys(s.results.sim).length ? [["s", "what-if"], ["c", "clear what-if"]] : [["s", "what-if"]]
+    return [["↑↓", "semester"], ["tab", "statistics"], ...what, ["r", "refresh"], ["o", "open portal"], ["x", "sign out"], ["esc", "back"], ["?", "help"], ["q", "quit"]]
+  }
   if (s.focus === "detail" && s.selectedId === OVERVIEW_ROW) {
     return [["↑↓", "move"], ["enter", "open course"], ["o", "open in browser"], ["esc", "back"], ["?", "help"], ["q", "quit"]]
   }
@@ -263,7 +273,7 @@ export function footerKeys(s: AppState): Key[] {
 }
 
 // Dropped first when the footer is too narrow; "? help", "q quit" and "esc" always stay.
-const DROP_ORDER = ["tab", "r", "enter", "/", "↑↓", "space", "o", "d", "x"]
+const DROP_ORDER = ["tab", "r", "enter", "/", "o", "x", "c", "u", "↑↓", "space", "d", "s"]
 /** Cells between two hints. */
 const KEY_GAP = 3
 

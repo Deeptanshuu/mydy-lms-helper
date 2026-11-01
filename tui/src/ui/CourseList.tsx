@@ -2,9 +2,10 @@ import { createMemo, For, Show } from "solid-js"
 import { courseMath, dueSoonCount } from "../derive"
 import { fit } from "../format"
 import { glyph, slot } from "../icons"
-import { listRows, OVERVIEW_ROW, PREVIOUS_ROW, type Row } from "../state"
+import { listRows, OVERVIEW_ROW, PREVIOUS_ROW, RESULTS_ROW, type NavKey, type Row } from "../state"
 import { color } from "../theme"
 import { useApp, type AppContextValue } from "./context"
+import { enterResults } from "./keys"
 import { eyebrowSegs, keySegs, meterSegs, toneColor } from "./kit"
 import { Line, wheel, type Seg } from "./Line"
 
@@ -101,13 +102,13 @@ function selOf(ctx: AppContextValue, key: string): Sel {
   return s.selectedId === key ? (s.focus === "list" ? "hot" : "cool") : undefined
 }
 
-function navEntry(ctx: AppContextValue, inner: number): Entry {
-  const sel = selOf(ctx, OVERVIEW_ROW)
+function navEntry(ctx: AppContextValue, key: NavKey, label: string, inner: number): Entry {
+  const sel = selOf(ctx, key)
   return {
-    key: OVERVIEW_ROW,
+    key,
     sel,
     gutter: gutterOf(sel),
-    body: clip([seg(slot("overview", ctx.nerd), sel ? color.strong : color.muted), seg("Overview", sel ? color.strong : color.text, !!sel)], inner),
+    body: clip([seg(slot(key === RESULTS_ROW ? "results" : "overview", ctx.nerd), sel ? color.strong : color.muted), seg(label, sel ? color.strong : color.text, !!sel)], inner),
   }
 }
 
@@ -202,8 +203,9 @@ function entriesFor(rows: Row[], level: Level, ctx: AppContextValue, inner: numb
 
   for (const [i, row] of rows.entries()) {
     if (row.kind === "nav") {
-      push(navEntry(ctx, inner))
-      want(level.gap)
+      push(navEntry(ctx, row.key, row.label, inner))
+      // The nav rows sit together; the gap comes after the last one.
+      want(rows[i + 1]?.kind === "nav" ? 0 : level.gap)
     } else if (row.kind === "course") {
       if (first && showCurrent) {
         push({ key: null, sel: undefined, gutter: gutterOf(undefined), body: eyebrow("This semester", inner, { count: current }) })
@@ -343,7 +345,10 @@ export function CourseList(props: { width: number; height: number }) {
     if (key === PREVIOUS_ROW) {
       a.select(key)
       a.togglePrevious()
-    } else if (s.selectedId === key && s.focus === "list") a.setFocus("detail")
+    } else if (s.selectedId === key && s.focus === "list") {
+      if (key === RESULTS_ROW) enterResults(ctx)
+      else a.setFocus("detail")
+    }
     else {
       a.select(key)
       a.setFocus("list")

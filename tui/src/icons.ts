@@ -3,7 +3,7 @@ export type IconName =
   | "files" | "assignments" | "grades" | "announcements" | "section" | "done"
   | "download" | "downloading" | "refresh" | "filter" | "collapsed" | "expanded" | "keys"
   | "overview" | "calendar" | "clock" | "account" | "trend" | "target" | "sync" | "offline" | "dot"
-  | "trophy" | "bell" | "ok" | "danger" | "timer" | "semester"
+  | "trophy" | "bell" | "ok" | "danger" | "timer" | "semester" | "results"
 
 // Nerd Fonts Material Design (nf-md-*) code points.
 const NERD: Record<IconName, string> = {
@@ -42,6 +42,7 @@ const NERD: Record<IconName, string> = {
   danger: "\u{F0028}", // alert_circle
   timer: "\u{F051F}", // timer_sand
   semester: "\u{F1180}", // school_outline
+  results: "\u{F053A}", // trophy_outline
 }
 
 // Symbols every terminal font has. "" means: no icon in this mode.
@@ -54,7 +55,7 @@ const UNICODE: Record<IconName, string> = {
   files: "", assignments: "", grades: "", announcements: "", section: "▼", done: "√",
   download: "↓", downloading: "↓", refresh: "↕", filter: "/", collapsed: "►", expanded: "▼", keys: "",
   overview: "◊", calendar: "", clock: "○", account: "", trend: "↑", target: "○", sync: "↕", offline: "×", dot: "●",
-  trophy: "", bell: "", ok: "√", danger: "!", timer: "○", semester: "",
+  trophy: "", bell: "", ok: "√", danger: "!", timer: "○", semester: "", results: "▪",
 }
 
 /** Every icon name, so tests cover icons added later without listing them again. */

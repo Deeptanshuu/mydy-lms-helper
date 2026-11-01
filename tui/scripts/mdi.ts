@@ -13,6 +13,7 @@ export const MDI_NAME: Record<IconName, keyof typeof mdi> = {
   trend: "mdiTrendingUp", target: "mdiTarget", sync: "mdiSync", offline: "mdiWifiOff", dot: "mdiCircleMedium",
   trophy: "mdiTrophyOutline", bell: "mdiBellOutline", ok: "mdiCheckCircle", danger: "mdiAlertCircle", timer: "mdiTimerSand",
   semester: "mdiSchoolOutline",
+  results: "mdiTrophyOutline",
 }
 
 export const MDI_FILE: Record<FileKind, keyof typeof mdi> = {

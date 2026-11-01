@@ -85,6 +85,9 @@ const services: Services = {
     }),
   cancelDownload: noop,
   signIn: noop,
+  loadResults: noop,
+  portalSignIn: noop,
+  portalSignOut: noop,
   open: noop,
   quit: noop,
 }

@@ -44,18 +44,37 @@ The first of these wins:
 2. A login saved with **Remember me** (in the system keychain)
 3. The sign-in screen
 
+## Results
+
+The **Results** row, under Overview, shows your SGPA for each semester, your CGPA, the grade in every subject, and whether a revaluation window is open. These come from UniClaIRE, the university's results portal, which has its own login: your registration number (usually your mobile number) and portal password, not your MyDy email. The first of these wins:
+
+1. `UNICLAIRE_REGNO` and `UNICLAIRE_PASSWORD` from the environment or a `.env` file
+2. A login saved with **Remember on this computer** (in the system keychain, separately from the MyDy one)
+3. The sign-in form on the Results screen
+
+A subject you cleared on a re-attempt counts only in that attempt. Subjects without a grade yet are left out of the averages. Results are kept with the rest of the offline cache and fetched again after six hours, or when you press `r` on the Results screen. `x` there signs out of UniClaIRE and forgets the saved login.
+
+**What-if grades.** Press `s` on the Results screen to try other grades, say what a revaluation could do: `↑` `↓` pick a subject (across every semester), `←` `→` lower or raise its grade, `u` undoes one, `c` clears them all, `esc` closes the simulator and keeps your changes. The SGPAs and the CGPA show the simulated values, with the real ones beside them. Simulated grades stay on this computer only and are never sent anywhere.
+
+The Results screen has three views; `tab` moves to the next one and `shift+tab` back.
+
+- **Grades:** each semester's SGPA and its subjects, with the what-if simulator.
+- **Statistics:** the charts from the GPA calculator. Grade progression plots each semester's SGPA as a dot and your CGPA so far as a line. Credits by grade shows how many of your credits came at each grade. The semester breakdown lists credits, SGPA, the change from the semester before, the CGPA so far and the grades you got. What-if grades show up here too.
+- **Revaluation:** your revaluation, re-totalling and photocopy applications, with each subject's progress (pending or processed). The Revaluation tile shows whether an application window is open.
+
 ## Keys
 
 | Key | Does |
 |---|---|
-| `↑` `↓` / `j` `k` | Move (the first row is the Overview dashboard) |
+| `↑` `↓` / `j` `k` | Move (the first rows are the Overview dashboard and Results) |
 | `enter` | Open the course or the Overview, read an announcement; on an Overview deadline, jump to its course |
 | `tab` / `shift+tab` | Next / previous course tab |
 | `space` | Mark the course for download |
 | `d` | Download the marked courses (or the selected one) |
 | `o` | Open the selected item in your browser |
 | `/` | Filter courses, including previous semesters |
-| `r` | Refresh |
+| `r` | Refresh (on Results: fetch again from UniClaIRE) |
+| `x` | On Results: sign out of UniClaIRE |
 | `esc` | Back, close, clear |
 | `?` | Help |
 | `q` | Quit |

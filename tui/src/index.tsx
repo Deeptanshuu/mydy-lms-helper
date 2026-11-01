@@ -2,20 +2,30 @@
 import { join } from "node:path"
 import { MydyClient } from "@mydy/core"
 import { createBunTransport, parseHtmlLinkedom } from "@mydy/core/bun"
-import { LoginFailedError, NetworkError, type Course } from "@mydy/core/logic"
+import { LoginFailedError, NetworkError, UNICLAIRE_HEADERS, UNICLAIRE_HOST, UniclaireClient, type Course } from "@mydy/core/logic"
 import { createCliRenderer } from "@opentui/core"
 import { render } from "@opentui/solid"
 import { createSignal } from "solid-js"
 import pkg from "../package.json"
 import { loadSnapshot, saveSnapshot } from "./cache"
 import { loadConfig } from "./config"
-import { bunSecretStore, loadCredentials, saveCredentials, type Credentials } from "./credentials"
+import {
+  bunSecretStore,
+  forgetPortalCredentials,
+  loadCredentials,
+  loadPortalCredentials,
+  saveCredentials,
+  savePortalCredentials,
+  type Credentials,
+  type PortalCredentials,
+} from "./credentials"
 import { downloadCourses } from "./download"
 import { readDotEnv } from "./env"
 import { runInstallFont } from "./fontinstall"
 import { claimFontHint, FONT_HINT, isRemote, nerdFontAvailable, resolveNerdFont } from "./fonts"
 import { openExternal } from "./open"
 import { appDirs } from "./paths"
+import { createResults } from "./results"
 import { createAppStore } from "./state"
 import { createSync } from "./sync"
 import { color } from "./theme"
@@ -49,6 +59,10 @@ elsewhere an installed Nerd Font is looked for).
 Sign-in: MYDY_USERNAME and MYDY_PASSWORD from the environment or a .env file,
 then a saved keychain login, then the sign-in screen.
 
+Results: semester results come from UniClaIRE, a separate account. UNICLAIRE_REGNO
+and UNICLAIRE_PASSWORD from the environment or a .env file, then a saved keychain
+login, then the sign-in form on the Results screen.
+
 Config file: ${join(dirs.config, "config.json")}
   downloadDir   where downloaded files are saved (default ~/Downloads/MyDy)
   nerdFont      true, false or "auto": use Nerd Font icons (default "auto", detects one)
@@ -80,11 +94,30 @@ const { actions } = store
 const client = new MydyClient({ transport: createBunTransport(), parseHtml: parseHtmlLinkedom })
 
 let creds: Credentials | null = null
+let portalCreds: PortalCredentials | null = await loadPortalCredentials(env, secrets)
+const portal = new UniclaireClient({
+  transport: createBunTransport({ httpsHosts: [UNICLAIRE_HOST], headers: UNICLAIRE_HEADERS, delayMs: 200 }),
+})
 
 const sync = createSync({
   client,
   store,
   credentials: () => creds,
+  save: (snapshot) => saveSnapshot(dirs, snapshot),
+})
+
+const results = createResults({
+  client: portal,
+  store,
+  credentials: () => portalCreds,
+  setCredentials: (c) => {
+    portalCreds = c
+  },
+  remember: async (c) => {
+    const saved = await savePortalCredentials(secrets, c)
+    return saved.ok ? null : saved.reason
+  },
+  forget: () => forgetPortalCredentials(secrets),
   save: (snapshot) => saveSnapshot(dirs, snapshot),
 })
 
@@ -193,6 +226,9 @@ const services: Services = {
   startDownload: (ids) => void startDownload(ids),
   cancelDownload: () => downloadController?.abort(),
   signIn: (username, password, remember) => void signIn(username, password, remember),
+  loadResults: (force) => void results.load(force),
+  portalSignIn: (regno, password, remember) => void results.signIn(regno, password, remember),
+  portalSignOut: () => void results.signOut(),
   open: openExternal,
   quit: () => {
     renderer.destroy()

@@ -14,5 +14,7 @@ export class NetworkError extends MydyError {}
 export class SessionExpiredError extends MydyError {}
 /** Sign-in was rejected or the sign-in form couldn't be found. */
 export class LoginFailedError extends MydyError {}
+/** UniClaIRE rejected the registration number or password. */
+export class PortalLoginError extends MydyError {}
 /** MyDy answered, but not with a page the parser recognises (4xx/5xx, error box). */
 export class UnexpectedPageError extends MydyError {}

@@ -17,7 +17,7 @@ const SCRIM = `${color.bar}B3`
 type HelpEntry = { keys: string; label: string }
 const HELP: Array<[title: string, entries: HelpEntry[]]> = [
   ["Move around", [
-    { keys: "↑ ↓  j k", label: "move; the first row is the Overview" },
+    { keys: "↑ ↓  j k", label: "move; Overview and Results are at the top" },
     { keys: "enter", label: "open course, read post" },
     { keys: "tab", label: "next tab (shift+tab: previous)" },
     { keys: "/", label: "filter courses" },
@@ -27,7 +27,8 @@ const HELP: Array<[title: string, entries: HelpEntry[]]> = [
     { keys: "space", label: "mark course for download" },
     { keys: "d", label: "download marked courses (or this one)" },
     { keys: "o", label: "open in browser" },
-    { keys: "r", label: "refresh from MyDy" },
+    { keys: "r", label: "refresh from MyDy (UniClaIRE on Results)" },
+    { keys: "s", label: "Results: what-if grades (← → change one)" },
     { keys: "q", label: "quit" },
   ]],
   ["Mouse", [

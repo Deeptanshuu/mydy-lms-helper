@@ -17,8 +17,8 @@ A better way to use MyDy, the D.Y. Patil LMS: attendance, deadlines and grades o
 
 | Part | What it does | Folder |
 |---|---|---|
-| **Terminal UI** | An overview of your semester, every course on one screen, bulk downloads, works offline | `tui/` |
-| **MCP server** | Ask Claude or any MCP client about your courses | `mcp/` |
+| **Terminal UI** | An overview of your semester, every course on one screen, your SGPA and CGPA, bulk downloads, works offline | `tui/` |
+| **MCP server** | Ask Claude or any MCP client about your courses and results, and max your Course Progress | `mcp/` |
 | **Chrome extension** | Download course files from the browser | `extension/` |
 
 Each folder has its own README with setup and details.

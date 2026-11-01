@@ -10,6 +10,10 @@ export interface Services {
   startDownload(courseIds: string[]): void
   cancelDownload(): void
   signIn(username: string, password: string, remember: boolean): void
+  /** The Results pane: fetch from UniClaIRE (unless fresh, or `force`). */
+  loadResults(force?: boolean): void
+  portalSignIn(regno: string, password: string, remember: boolean): void
+  portalSignOut(): void
   open(target: string): void
   quit(): void
 }

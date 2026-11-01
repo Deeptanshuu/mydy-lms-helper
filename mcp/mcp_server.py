@@ -23,6 +23,15 @@ Tools:
   - get_grades: Fetch grade report for a course
   - get_announcements: Read course announcements/forum posts
   - get_attendance: View attendance summary across all subjects
+  - get_course_attendance: Every class of one subject, present or absent
+  - get_semesters: Courses grouped by semester
+  - download_file: Save one activity's file
+  - get_hit_rates: Course Progress percentage for each current course
+  - max_hit_rate: Bring one course's Course Progress to 100% (acts on the account)
+  - solve_quizzes: Bring a course's quizzes to a full-marks attempt (acts on the account)
+  - submit_assignment: Upload a file to an assignment (acts on the account)
+  - uniclaire_login, get_results, check_revaluation_windows, list_revaluation_applications,
+    get_revaluation_status, download_revaluation_form, simulate_results: the UniClaIRE results portal
 
 Usage with Claude Code:
   claude mcp add mydy-lms -- python /path/to/mcp_server.py
@@ -35,7 +44,9 @@ Usage with claude_desktop_config.json:
         "args": ["/path/to/mcp_server.py"],
         "env": {
           "MYDY_USERNAME": "your_username",
-          "MYDY_PASSWORD": "your_password"
+          "MYDY_PASSWORD": "your_password",
+          "UNICLAIRE_REGNO": "your_portal_registration_number",
+          "UNICLAIRE_PASSWORD": "your_portal_password"
         }
       }
     }
@@ -46,21 +57,45 @@ import os
 import re
 import time
 import random
+from pathlib import Path
 from urllib.parse import unquote
 
 import requests
 from bs4 import BeautifulSoup
 from mcp.server.fastmcp import FastMCP
 
+# Sibling modules: the script's own folder is on sys.path however it is started.
+import lms_actions
+import uniclaire
+
 # Create MCP server
 mcp = FastMCP(
     "mydy-lms",
-    instructions="Tools for interacting with the MyDy (Moodle) LMS - login, list courses, download materials, view course content, assignments, grades, announcements, and attendance.",
+    instructions=(
+        "Tools for the MyDy (Moodle) LMS and the UniClaIRE results portal used at D.Y. Patil. "
+        "MyDy: call login first, then list_courses, get_course_content, get_assignments, get_grades, "
+        "get_announcements, get_attendance (with get_course_attendance for one subject's classes), "
+        "get_semesters, download_file and download_course_materials. "
+        "Course Progress: get_hit_rates reads each current course's percentage. max_hit_rate, "
+        "solve_quizzes and submit_assignment ACT ON THE STUDENT'S ACCOUNT: max_hit_rate opens every "
+        "pending activity, posts an invisible placeholder discussion to forums the student hasn't "
+        "posted in, and takes real quiz attempts; solve_quizzes takes real quiz attempts; "
+        "submit_assignment uploads a file. Tell the user what will happen and get their go-ahead "
+        "before calling any of them. submit_assignment only accepts URLs that get_assignments (or "
+        "max_hit_rate) returned in this session, and force=True overwrites an existing submission: "
+        "only pass it when the user explicitly asks to replace their submission. "
+        "UniClaIRE (a separate account: registration number and portal password, not the MyDy email): "
+        "call uniclaire_login unless UNICLAIRE_REGNO and UNICLAIRE_PASSWORD are set, then get_results "
+        "(SGPA per semester, CGPA, grades), simulate_results (what-if grades), check_revaluation_windows, list_revaluation_applications, "
+        "get_revaluation_status and download_revaluation_form."
+    ),
 )
 
 # Global session state
 _session: requests.Session | None = None
 _logged_in: bool = False
+# Assignment URLs get_assignments has shown this session: submit_assignment only accepts these.
+_assignments_seen: set[str] = set()
 
 # Rate limiting settings
 MIN_DELAY = 0.5
@@ -77,11 +112,30 @@ def _rate_limit(operation_type: str = "general") -> None:
     time.sleep(delay)
 
 
+class _MydySession(requests.Session):
+    """
+    Never follows MyDy back to plain http (some pages redirect there, and port 80 often doesn't
+    answer, so the request would hang), and puts a timeout on every request.
+    """
+
+    TIMEOUT = 30
+
+    def get_redirect_target(self, resp):
+        target = super().get_redirect_target(resp)
+        if target and target.startswith("http://mydy.dypatil.edu"):
+            target = "https://" + target[len("http://"):]
+        return target
+
+    def request(self, method, url, **kwargs):
+        kwargs.setdefault("timeout", self.TIMEOUT)
+        return super().request(method, url, **kwargs)
+
+
 def _get_session() -> requests.Session:
     """Get or create the requests session."""
     global _session
     if _session is None:
-        _session = requests.Session()
+        _session = _MydySession()
     return _session
 
 
@@ -253,8 +307,12 @@ def login(username: str = "", password: str = "") -> str:
     Returns:
         Login status message.
     """
-    global _logged_in
+    global _logged_in, _session
 
+    # A fresh session per sign-in: no cookies, user id or seen assignments carried over from another account.
+    _session = None
+    _logged_in = False
+    _assignments_seen.clear()
     session = _get_session()
     username = username or os.getenv('MYDY_USERNAME', '')
     password = password or os.getenv('MYDY_PASSWORD', '')
@@ -720,6 +778,7 @@ def get_assignments(course_id: str) -> list[dict] | str:
                 info.setdefault(field, None)
 
             assignments.append(info)
+            _assignments_seen.add(asgn["url"])
         except requests.RequestException as e:
             assignments.append({
                 "name": asgn["name"], "url": asgn["url"],
@@ -969,7 +1028,8 @@ def get_attendance() -> dict | str:
     Academic Status block on the dashboard.
 
     Returns:
-        Dict with semester info, batch, and per-subject attendance (total_classes, present, absent, percentage).
+        Dict with semester info, batch, and per-subject attendance (total_classes, present, absent,
+        percentage, and altid: pass it to get_course_attendance for that subject's classes).
     """
     if not _logged_in:
         return "Error: Not logged in. Call the login tool first."
@@ -1003,6 +1063,7 @@ def get_attendance() -> dict | str:
     if not table:
         return {"batch": batch, "semester": semester, "subjects": [], "message": "No attendance data found."}
 
+    altids = lms_actions.attendance_ids(soup)
     subjects = []
     for row in table.find_all('tr'):
         cells = row.find_all('td')
@@ -1021,6 +1082,7 @@ def get_attendance() -> dict | str:
             "present": int(present) if present.isdigit() else present,
             "absent": int(absent) if absent.isdigit() else absent,
             "percentage": float(percentage) if percentage.replace('.', '', 1).isdigit() else percentage,
+            "altid": altids.get(subject),
         })
 
     return {
@@ -1028,6 +1090,410 @@ def get_attendance() -> dict | str:
         "semester": semester,
         "subjects": subjects,
     }
+
+
+NOT_LOGGED_IN = "Error: Not logged in. Call the login tool first."
+
+
+# ── Attendance drill-down, semesters, single files ─────────────────────────────────────────────
+
+
+@mcp.tool()
+def get_course_attendance(altid: int) -> list[dict] | str:
+    """
+    Every class of one subject this semester, with its date, time and whether you were present.
+
+    Args:
+        altid: The subject's altid, from get_attendance.
+
+    Returns:
+        List of classes with class_no, subject, date, time and status.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    result = lms_actions.course_attendance(_get_session(), altid)
+    return f"Error: {result}" if isinstance(result, str) else result
+
+
+@mcp.tool()
+def get_semesters() -> list[dict] | str:
+    """
+    Every course grouped by semester ("Semester V", "Semester VI", ...), as MyDy's navigation lists them.
+
+    Returns:
+        List of {semester, courses: [{id, name}]}.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    result = lms_actions.semesters(_get_session())
+    if isinstance(result, str):
+        return f"Error: {result}"
+    return result or "No semester groups found in MyDy's navigation."
+
+
+@mcp.tool()
+def download_file(activity_url: str, save_to: str = "") -> dict | str:
+    """
+    Download one file from a course: a resource, slides or a PDF viewer activity.
+
+    Args:
+        activity_url: The activity's URL on mydy.dypatil.edu (from get_course_content).
+        save_to: Folder to save into. Defaults to ~/Downloads.
+
+    Returns:
+        The saved file's path and size, or an error.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    folder = str(Path(save_to.strip() or "~/Downloads").expanduser())
+    result = lms_actions.download_file(_get_session(), activity_url, folder)
+    return f"Error: {result['error']}" if result["status"] == "error" else result
+
+
+# ── Course Progress ("hit rate") ───────────────────────────────────────────────────────────────
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (text or "").lower())
+
+
+def _acronym(text: str) -> str:
+    return "".join(p[0].lower() for p in re.split(r"[^a-zA-Z0-9]+", text or "") if p)
+
+
+def _current_courses() -> list[dict] | str:
+    """This semester's courses: the ones the attendance block lists, newest first otherwise."""
+    courses = list_courses()
+    if isinstance(courses, str):
+        return courses
+    attendance = get_attendance()
+    subjects = attendance.get("subjects", []) if isinstance(attendance, dict) else []
+    current: list[dict] = []
+    for s in subjects:
+        name, acr = _norm(s["subject"]), _acronym(s["subject"])
+        if not name:
+            continue
+        for c in courses:
+            cn = _norm(c["name"])
+            if c not in current and cn and (name == cn or name in cn or cn in name or _acronym(c["name"]) == acr):
+                current.append(c)
+                break
+    return current or courses[:8]
+
+
+@mcp.tool()
+def get_hit_rates(course_ids: list[str] | None = None) -> list[dict] | str:
+    """
+    Read the Course Progress ("hit rate") percentage: how many of a course's tracked activities
+    you have opened. Read-only.
+
+    Args:
+        course_ids: Courses to check. Defaults to this semester's courses.
+
+    Returns:
+        List of {course_id, course_name, percent, viewed, total, pending: [activity names]}.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    session = _get_session()
+    if course_ids:
+        known = list_courses()
+        names = {c["id"]: c["name"] for c in known} if isinstance(known, list) else {}
+        courses = [{"id": cid, "name": names.get(cid, cid)} for cid in course_ids]
+    else:
+        current = _current_courses()
+        if isinstance(current, str):
+            return current
+        courses = current
+
+    out = []
+    for c in courses:
+        p = lms_actions.course_progress(session, c["id"])
+        if "error" in p:
+            out.append({"course_id": c["id"], "course_name": c["name"], "error": p["error"]})
+            continue
+        out.append({
+            "course_id": c["id"],
+            "course_name": c["name"],
+            "percent": p["percent"] if p["total"] else None,
+            "viewed": p["viewed"],
+            "total": p["total"],
+            "pending": [item["name"] for item in p["pending"]],
+        })
+    return out
+
+
+_BLANK_PDF = (
+    b"%PDF-1.4\n"
+    b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+    b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+    b"3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\n"
+    b"xref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n"
+    b"0000000115 00000 n \ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n217\n%%EOF\n"
+)
+
+
+def _blank_pdf() -> str:
+    """A one-page blank PDF, written once, for when the user chooses to submit a placeholder."""
+    path = Path.home() / ".mydy-lms-helper" / "blank_submission.pdf"
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_BLANK_PDF)
+    return str(path)
+
+
+@mcp.tool()
+def max_hit_rate(course_id: str) -> dict | str:
+    """
+    Bring one course's Course Progress to 100%. THIS ACTS ON THE STUDENT'S ACCOUNT; tell the user
+    what it does and get their go-ahead first. In order, it:
+      1. opens every activity Course Progress lists as pending (what a click in the browser does);
+      2. posts a discussion whose subject and body are a single invisible character (U+200B) to every
+         forum in the course where the student has no post yet, checked against their real post
+         history. Classmates and teachers can see that a post exists;
+      3. for every quiz without a full-marks attempt, takes a throwaway attempt to read the answers
+         Moodle shows on review, then a second attempt with them (see solve_quizzes).
+    Assignments still unsubmitted afterwards are listed; never submit anything for them without the
+    user's say-so. If they want a placeholder, `blank_pdf` is a blank one-page PDF to pass to
+    submit_assignment.
+
+    Args:
+        course_id: The course ID (from list_courses).
+
+    Returns:
+        Before/after percentage, what was opened, forum and quiz results, and unsubmitted assignments.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    session = _get_session()
+    result = lms_actions.max_course(session, course_id)
+    if "error" in result:
+        return f"Error: {result['error']}"
+
+    unsubmitted = []
+    for item in result.pop("pending_before"):
+        if "/mod/assign/" not in item["url"]:
+            continue
+        status = lms_actions.assignment_status(session, item["url"])
+        if not status.get("error") and not lms_actions.is_submitted(status["submission_status"]):
+            unsubmitted.append({"name": status["name"], "url": item["url"], "submission_status": status["submission_status"] or "No submission"})
+            _assignments_seen.add(item["url"])
+    result["unsubmitted_assignments"] = unsubmitted
+    if unsubmitted:
+        result["blank_pdf"] = _blank_pdf()
+        result["note"] = (
+            "These assignments have no submission. Ask the user whether they want to submit their own "
+            "file, a blank placeholder (blank_pdf), or nothing. Don't submit without their answer."
+        )
+    return result
+
+
+@mcp.tool()
+def solve_quizzes(course_id: str) -> dict | str:
+    """
+    Give every quiz in a course a full-marks attempt. THIS TAKES REAL QUIZ ATTEMPTS on the
+    student's record; tell the user and get their go-ahead first (max_hit_rate already does this).
+
+    Quizzes that already have a full-marks attempt are left alone. For the others it takes a
+    throwaway attempt (first option everywhere) to read the correct answers Moodle shows on its
+    review page, then a second attempt using them. A quiz is skipped, with the reason, when fewer
+    than two attempts are left or when it doesn't show answers on review.
+
+    Args:
+        course_id: The course ID (from list_courses).
+
+    Returns:
+        {quizzes_total, results: [{name, status, probe_grade, solve_grade, error}]}.
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    return lms_actions.solve_pending_quizzes(_get_session(), course_id)
+
+
+@mcp.tool()
+def submit_assignment(assign_url: str, file_path: str, force: bool = False) -> dict | str:
+    """
+    Upload a file to an assignment and save the submission. THIS ACTS ON THE STUDENT'S ACCOUNT:
+    only call it when the user asked to submit this file.
+
+    Only URLs returned by get_assignments (or max_hit_rate) in this session are accepted.
+    An assignment that already has a submission is left alone unless force=True. force=True
+    replaces what the student submitted, which can't be undone: NEVER set it on your own, only when
+    the user explicitly asks to replace or re-submit.
+
+    Args:
+        assign_url: The assignment URL, from get_assignments.
+        file_path: Path to the file to upload.
+        force: Replace an existing submission.
+
+    Returns:
+        status "submitted", "already_submitted" or "no_submission_available" (with the reason).
+    """
+    if not _logged_in:
+        return NOT_LOGGED_IN
+    if assign_url not in _assignments_seen:
+        return f"Error: Call get_assignments for this assignment's course first, then submit to a URL it returned. Not seen yet: {assign_url}"
+    path = Path(file_path).expanduser().resolve()
+    if not path.is_file():
+        return f"Error: No such file: {path}"
+    result = lms_actions.submit_assignment(_get_session(), assign_url, str(path), force=force)
+    if result["status"] == "error":
+        return f"Error: {result['error']}"
+    if result["status"] == "already_submitted":
+        result["note"] = "Nothing was uploaded. To replace it, the user must explicitly ask; then call again with force=True."
+    return result
+
+
+# ── UniClaIRE results portal ───────────────────────────────────────────────────────────────────
+
+_portal_login: tuple[str, str] | None = None
+
+PORTAL_NOT_SET = (
+    "Error: No UniClaIRE login. Ask the user for their UniClaIRE registration number and portal "
+    "password (not their MyDy email), then call uniclaire_login."
+)
+
+
+def _portal_creds() -> tuple[str, str] | None:
+    if _portal_login:
+        return _portal_login
+    regno = os.getenv("UNICLAIRE_REGNO", "").strip()
+    password = os.getenv("UNICLAIRE_PASSWORD", "")
+    return (regno, password) if regno and password else None
+
+
+@mcp.tool()
+def uniclaire_login(regno: str = "", password: str = "") -> str:
+    """
+    Sign in to the UniClaIRE student portal, where semester results are published. This is a
+    separate account from MyDy: the registration number (often the student's mobile number) and the
+    portal password. Kept in memory for this session only.
+
+    Falls back to the UNICLAIRE_REGNO and UNICLAIRE_PASSWORD environment variables when empty.
+
+    Returns:
+        The USN the portal reports, or an error.
+    """
+    global _portal_login
+    regno = regno.strip() or os.getenv("UNICLAIRE_REGNO", "").strip()
+    password = password or os.getenv("UNICLAIRE_PASSWORD", "")
+    if not regno or not password:
+        return "Error: No credentials provided. Pass regno/password or set UNICLAIRE_REGNO and UNICLAIRE_PASSWORD."
+    try:
+        usn = uniclaire.sign_in(regno, password)
+    except ValueError as e:
+        _portal_login = None
+        return f"Error: {e}"
+    _portal_login = (regno, password)
+    return f"Signed in to UniClaIRE. USN: {usn}"
+
+
+def _portal_call(fn, *args):
+    creds = _portal_creds()
+    if not creds:
+        return PORTAL_NOT_SET
+    try:
+        return fn(creds[0], creds[1], *args)
+    except ValueError as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def get_results() -> dict | str:
+    """
+    Semester results from UniClaIRE: SGPA for each semester, CGPA, and every subject's grade,
+    credits and marks. A subject cleared in a later attempt only counts in that attempt. Subjects
+    with no grade yet are left out of the averages.
+
+    Returns:
+        {usn, scheme, cgpa, credits, semesters: [{term, exam, code, sgpa, credits, courses: [...]}]}.
+    """
+    return _portal_call(uniclaire.fetch_results)
+
+
+@mcp.tool()
+def simulate_results(changes: dict[str, str]) -> dict | str:
+    """
+    What-if simulator: how SGPA and CGPA would change if some grades were different, e.g. after a
+    revaluation. Nothing is changed anywhere; this only recomputes.
+
+    Args:
+        changes: Subject name (as get_results spells it; case and spacing ignored) -> hypothetical
+            grade, e.g. {"Database Management Systems": "B", "Signals and Systems": "C"}. Grades are
+            letters of the student's scheme (returned as `grades`): O A B C D E P F for older batches,
+            O A+ A B+ B C P F from DY24 on.
+
+    Returns:
+        {cgpa, simulated_cgpa, changes applied, not_found subject names, the semesters whose SGPA
+        moved with sgpa and simulated_sgpa}.
+    """
+    results = _portal_call(uniclaire.fetch_results)
+    if isinstance(results, str):
+        return results
+    try:
+        return uniclaire.simulate(results, changes)
+    except ValueError as e:
+        return f"Error: {e}"
+
+
+@mcp.tool()
+def check_revaluation_windows() -> dict | str:
+    """
+    Whether the revaluation / re-totalling / photocopy application window is open for any exam
+    right now, with each exam's window dates.
+
+    Returns:
+        {usn, exams: [{code, exam, exam_date, result_date, open, window}]}.
+    """
+    return _portal_call(uniclaire.revaluation_windows)
+
+
+@mcp.tool()
+def list_revaluation_applications() -> dict | str:
+    """
+    The student's revaluation / re-totalling / photocopy applications: number, date, amount,
+    payment and status.
+
+    Returns:
+        {usn, applications: [{app_no, applied, amount, paid, payment_type, status}]}.
+    """
+    return _portal_call(uniclaire.revaluation_applications)
+
+
+@mcp.tool()
+def get_revaluation_status(app_no: str) -> dict | str:
+    """
+    Per-subject progress of one revaluation application.
+
+    Args:
+        app_no: The application number, from list_revaluation_applications.
+
+    Returns:
+        {usn, app_no, items: [{code, subject, exam, exam_date, kind, processed}]}.
+    """
+    return _portal_call(uniclaire.revaluation_status, app_no)
+
+
+@mcp.tool()
+def download_revaluation_form(app_no: str, save_to: str = "") -> str:
+    """
+    Save the official printable PDF of one revaluation application.
+
+    Args:
+        app_no: The application number, from list_revaluation_applications.
+        save_to: Folder to save into. Defaults to ~/Downloads.
+
+    Returns:
+        The saved file's path, or an error.
+    """
+    pdf = _portal_call(uniclaire.revaluation_pdf, app_no)
+    if isinstance(pdf, str):
+        return pdf
+    folder = Path(save_to.strip() or "~/Downloads").expanduser()
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"revaluation-{re.sub(r'[^A-Za-z0-9_-]', '_', app_no)}.pdf"
+    path.write_bytes(pdf)
+    return f"Saved to {path}"
 
 
 if __name__ == "__main__":

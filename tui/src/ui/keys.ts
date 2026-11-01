@@ -1,5 +1,5 @@
-import { detailItems, type DetailItem } from "../derive"
-import { OVERVIEW_ROW, PREVIOUS_ROW } from "../state"
+import { detailItems, simSubjects, stepGrade, type DetailItem } from "../derive"
+import { OVERVIEW_ROW, PREVIOUS_ROW, RESULTS_ROW } from "../state"
 import type { AppContextValue } from "./context"
 
 export interface KeyLike {
@@ -23,6 +23,15 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
 
   if (s.overlay === "help") {
     if (is(k, "escape", "?", "q")) a.setOverlay(null)
+    return
+  }
+
+  // The UniClaIRE sign-in form has the keyboard (the Results pane handles the typing); esc leaves it.
+  if (s.results.editing) {
+    if (is(k, "escape")) {
+      a.setResults({ editing: false })
+      a.setFocus("list")
+    }
     return
   }
 
@@ -64,8 +73,11 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
     a.setFiltering(true)
     return
   }
-  if (is(k, "r")) return services.refresh()
-  if (is(k, "tab")) return a.cycleTab(k.shift ? -1 : 1)
+  if (is(k, "r")) return s.selectedId === RESULTS_ROW ? services.loadResults(true) : services.refresh()
+  if (is(k, "tab")) {
+    if (s.selectedId === RESULTS_ROW) return s.results.data ? a.cycleResultsView(k.shift ? -1 : 1) : undefined
+    return a.cycleTab(k.shift ? -1 : 1)
+  }
   if (is(k, "d")) {
     const ids = s.marked.length ? [...s.marked] : s.selectedId && s.courses[s.selectedId] ? [s.selectedId] : []
     if (ids.length) services.startDownload(ids)
@@ -86,6 +98,7 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
       if (s.selectedId === PREVIOUS_ROW) return a.togglePrevious()
       // The Overview always takes focus: on narrow terminals that is the only way to see it.
       if (course || s.selectedId === OVERVIEW_ROW) a.setFocus("detail")
+      if (s.selectedId === RESULTS_ROW) enterResults(ctx)
       return
     }
     if (is(k, "escape") && s.filter) return a.setFilter("")
@@ -95,6 +108,12 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
 
   // Detail pane
   const items = detailItems(s, ctx.now())
+  // Before "back": while simulating, ← and → change a grade and esc leaves the simulator.
+  if (s.selectedId === RESULTS_ROW) {
+    if (s.results.status === "signin" && is(k, "return", "enter")) return a.setResults({ editing: true })
+    if (is(k, "x") && s.results.data) return services.portalSignOut()
+    if (handleSimKey(k, ctx)) return
+  }
   if (is(k, "escape", "left", "h")) {
     if (s.reading) return a.setReading(null)
     return a.setFocus("list")
@@ -108,6 +127,55 @@ export function handleKey(k: KeyLike, ctx: AppContextValue): void {
   if (is(k, "return", "enter") && item?.courseId) return openDeadline(ctx, item)
   if (is(k, "return", "enter") && item?.announcement) return services.openAnnouncement(item.announcement)
   if (is(k, "o") && item) return services.open(item.url)
+}
+
+/** The what-if simulator's keys. True when the key was used. */
+function handleSimKey(k: KeyLike, ctx: AppContextValue): boolean {
+  const { state: s, actions: a } = ctx.store
+  const r = s.results
+  if (!r.data || r.view !== "grades") return false
+  if (is(k, "s")) {
+    // The cursor stays on the same semester: its first subject going in, the subject's semester coming out.
+    const subjects = simSubjects(s)
+    if (r.simulating) {
+      const semester = subjects[s.detailIndex]?.semester ?? 0
+      a.setResults({ simulating: false })
+      a.setDetail(semester)
+    } else {
+      a.setResults({ simulating: true })
+      a.setDetail(Math.max(0, subjects.findIndex((x) => x.semester === s.detailIndex)))
+    }
+    return true
+  }
+  if (is(k, "c") && Object.keys(r.sim).length) {
+    a.clearSim()
+    return true
+  }
+  if (!r.simulating) return false
+  if (is(k, "escape")) {
+    handleSimKey({ ...k, name: "s", sequence: "s" }, ctx)
+    return true
+  }
+  const subject = simSubjects(s)[s.detailIndex]
+  if (!subject) return false
+  if (is(k, "left", "right", "h", "l", "-", "+", "=")) {
+    const better = is(k, "right", "l", "+", "=")
+    const next = stepGrade(r.sim[subject.key] ?? subject.course.grade, r.data.scheme, better ? 1 : -1)
+    a.setSimGrade(subject.key, next === subject.course.grade.trim().toUpperCase() ? null : next)
+    return true
+  }
+  if (is(k, "u")) {
+    a.setSimGrade(subject.key, null)
+    return true
+  }
+  return false
+}
+
+/** Focus the Results pane; when it is showing the sign-in form, the form takes the keyboard. */
+export function enterResults(ctx: AppContextValue): void {
+  const { state: s, actions: a } = ctx.store
+  a.setFocus("detail")
+  if (s.results.status === "signin") a.setResults({ editing: true })
 }
 
 /** Runs a key's action as if it was pressed (used by clickable footer hints). */
