@@ -9,6 +9,9 @@ import {
   type AttendanceSubject,
   type Course,
   type GradeReport,
+  type Results,
+  type RevaluationApplication,
+  type RevaluationExam,
   type Section,
 } from "@mydy/core/logic"
 import type { Snapshot } from "./cache"
@@ -19,6 +22,35 @@ export type CourseDataKey = "content" | "assignments" | "grades" | "announcement
 export const PREVIOUS_ROW = "group:previous"
 /** The dashboard: the first row of the sidebar, selected on launch. */
 export const OVERVIEW_ROW = "nav:overview"
+/** Semester results from UniClaIRE: the second row of the sidebar. */
+export const RESULTS_ROW = "nav:results"
+export type NavKey = typeof OVERVIEW_ROW | typeof RESULTS_ROW
+
+export type ResultsView = "grades" | "statistics" | "revaluation"
+export const RESULTS_VIEWS: ResultsView[] = ["grades", "statistics", "revaluation"]
+
+/** The Results pane: UniClaIRE has its own login, so it loads (and signs in) on its own. */
+export interface ResultsState {
+  data: Results | null
+  revaluation: RevaluationExam[] | null
+  /** signin: no UniClaIRE login yet, or it was rejected; the pane shows the sign-in form. */
+  status: "idle" | "loading" | "signin" | "offline" | "error"
+  message: string | null
+  fetchedAt: number | null
+  signingIn: boolean
+  /** The sign-in form has the keyboard. */
+  editing: boolean
+  /** Your revaluation applications; null until fetched (or when they couldn't be). */
+  applications: RevaluationApplication[] | null
+  /** Which view the pane shows; tab cycles them in RESULTS_VIEWS order. */
+  view: ResultsView
+  /**
+   * What-if grades, by courseKey(term, index). While `simulating`, j/k walk the subjects of every semester
+   * (detailIndex is a subject, not a semester) and ←/→ change the selected one's grade.
+   */
+  sim: Record<string, string>
+  simulating: boolean
+}
 
 export interface CourseEntry {
   course: Course
@@ -86,10 +118,11 @@ export interface AppState {
   /** First visible line of the open announcement, and how far it can scroll (set by the view). */
   readingScroll: number
   readingMax: number
+  results: ResultsState
 }
 
 export type Row =
-  | { kind: "nav"; key: typeof OVERVIEW_ROW; label: string }
+  | { kind: "nav"; key: NavKey; label: string }
   | { kind: "course"; id: string }
   | { kind: "group"; key: typeof PREVIOUS_ROW; label: string; open: boolean; count: number }
   | { kind: "heading"; label: string }
@@ -108,7 +141,9 @@ export function listRows(s: AppState): Row[] {
     }
     return rows
   }
-  const rows: Row[] = s.order.length ? [{ kind: "nav", key: OVERVIEW_ROW, label: "Overview" }] : []
+  const rows: Row[] = s.order.length
+    ? [{ kind: "nav", key: OVERVIEW_ROW, label: "Overview" }, { kind: "nav", key: RESULTS_ROW, label: "Results" }]
+    : []
   rows.push(...s.currentIds.map((id): Row => ({ kind: "course", id })))
   if (s.previousIds.length) {
     rows.push({ kind: "group", key: PREVIOUS_ROW, label: "Previous semesters", open: s.showPrevious, count: s.previousIds.length })
@@ -125,6 +160,11 @@ export function selectableKeys(s: AppState): string[] {
   return listRows(s).flatMap((r) => (r.kind === "course" ? [r.id] : r.kind === "group" || r.kind === "nav" ? [r.key] : []))
 }
 
+export const emptyResults = (): ResultsState => ({
+  data: null, revaluation: null, status: "idle", message: null, fetchedAt: null, signingIn: false, editing: false,
+  applications: null, view: "grades", sim: {}, simulating: false,
+})
+
 const emptyDownload = (): DownloadView => ({
   active: false, visible: false, courses: 0, total: 0, done: 0, bytes: 0, skipped: 0, failed: 0, current: null, folder: "", message: null,
 })
@@ -136,6 +176,7 @@ function initialState(): AppState {
     sync: { status: "idle", message: null, lastSynced: null },
     selectedId: null, tab: "files", focus: "list", detailIndex: 0, marked: [],
     filter: "", filtering: false, showPrevious: false, overlay: null, toast: null, download: null, reading: null, readingScroll: 0, readingMax: 0,
+    results: emptyResults(),
   }
 }
 
@@ -237,6 +278,32 @@ export function createAppStore() {
       else if (!state.download) setState("download", { ...emptyDownload(), ...patch })
       else setState("download", patch)
     },
+    setResults: (patch: Partial<ResultsState>) => setState("results", patch),
+    applyResults(data: Results, revaluation: RevaluationExam[] | null, at: number, applications?: RevaluationApplication[] | null) {
+      setState("results", {
+        data, fetchedAt: at, status: "idle", message: null,
+        revaluation: revaluation ?? state.results.revaluation,
+        applications: applications ?? state.results.applications,
+      })
+      // Keep the selection in range when the list changed.
+      if (state.selectedId === RESULTS_ROW && state.results.view === "grades" && !state.results.simulating) {
+        setState("detailIndex", (i) => Math.min(i, Math.max(0, data.semesters.length - 1)))
+      }
+    },
+    /** Grades → Statistics → Revaluation (shift+tab: back). */
+    cycleResultsView(dir: 1 | -1 = 1) {
+      const at = RESULTS_VIEWS.indexOf(state.results.view)
+      setState("results", { view: RESULTS_VIEWS[(at + dir + RESULTS_VIEWS.length) % RESULTS_VIEWS.length]!, simulating: false })
+      setState("detailIndex", 0)
+    },
+    // Store setters merge objects, so keys are removed one by one (undefined deletes) and wholesale with reconcile.
+    setSimGrade(key: string, grade: string | null) {
+      setState("results", "sim", key, grade ?? (undefined as unknown as string))
+    },
+    clearSim: () => setState("results", "sim", reconcile({})),
+    /** Signing out of MyDy or UniClaIRE: nothing from that account stays on screen. */
+    clearResults: () => setState("results", reconcile(emptyResults())),
+
     setReading: (a: Announcement | null) => setState({ reading: a, readingScroll: 0 }),
     setReadingMax: (max: number) => setState({ readingMax: max, readingScroll: Math.min(state.readingScroll, Math.max(0, max)) }),
     scrollReading: (delta: number) => setState("readingScroll", (v) => Math.max(0, Math.min(state.readingMax, v + delta))),
@@ -256,6 +323,14 @@ export function createAppStore() {
           const { loading: _l, errors: _e, attendance: _a, ...rest } = raw.courses[id]!
           return structuredClone(rest)
         }),
+        ...(raw.results.data
+          ? {
+              results: structuredClone({
+                data: raw.results.data, revaluation: raw.results.revaluation, applications: raw.results.applications,
+                sim: raw.results.sim, fetchedAt: raw.results.fetchedAt ?? Date.now(),
+              }),
+            }
+          : {}),
       }
     },
     hydrate(snap: Snapshot) {
@@ -266,6 +341,10 @@ export function createAppStore() {
         s.order = snap.courses.map((c) => c.course.id)
         s.attendance = snap.attendance
         s.sync.lastSynced = snap.savedAt
+        if (snap.results) {
+          const r = snap.results
+          s.results = { ...emptyResults(), data: r.data, revaluation: r.revaluation, applications: r.applications ?? null, sim: r.sim ?? {}, fetchedAt: r.fetchedAt }
+        }
         regroup(s)
       }))
       actions.ensureSelection()

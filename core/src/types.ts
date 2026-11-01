@@ -80,3 +80,72 @@ export interface FileRef {
 export interface LoginResult {
   maskedUser: string
 }
+
+// ── UniClaIRE (the university results portal) ──────────────────────────────────────────────────
+
+/** "legacy": O A B C D E P F. "new" (DY24 batches on): O A+ A B+ B C P F. */
+export type GradeScheme = "legacy" | "new"
+
+export interface ResultCourse {
+  name: string
+  /** Theory / practical, as the portal labels it. */
+  type: string
+  credits: number
+  /** The grade as printed: "A+", "O", "F", "AB"... */
+  grade: string
+  /** Grade points, or null when the grade isn't one the scheme knows (not out yet, audit courses). */
+  points: number | null
+  internal: string
+  external: string
+  total: string
+}
+
+export interface ResultSemester {
+  /** 1, 2, 3... in exam order. */
+  term: number
+  exam: string
+  code: string
+  sgpa: number | null
+  credits: number
+  courses: ResultCourse[]
+}
+
+export interface Results {
+  usn: string
+  scheme: GradeScheme
+  cgpa: number | null
+  credits: number
+  semesters: ResultSemester[]
+}
+
+export interface RevaluationExam {
+  code: string
+  exam: string
+  examDate: string
+  resultDate: string
+  /** The revaluation / re-totalling / photocopy window is open now. */
+  open: boolean
+  window: string
+}
+
+/** One subject on a revaluation / re-totalling / photocopy application. */
+export interface RevaluationItem {
+  code: string
+  subject: string
+  exam: string
+  examDate: string
+  /** What was asked for: "Revaluation", "Re-totalling", "Photocopy"... */
+  kind: string
+  processed: boolean
+}
+
+export interface RevaluationApplication {
+  appNo: string
+  applied: string
+  amount: string
+  paid: string
+  paymentType: string
+  status: string
+  /** Per-subject progress; null when it couldn't be fetched. */
+  items: RevaluationItem[] | null
+}

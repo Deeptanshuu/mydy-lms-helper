@@ -1,6 +1,6 @@
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { Show } from "solid-js"
-import { OVERVIEW_ROW } from "../state"
+import { OVERVIEW_ROW, RESULTS_ROW } from "../state"
 import { color } from "../theme"
 import { Footer, FOOTER_ROWS, headerRows, NeedsYouStrip, stripRows, TopBar } from "./Chrome"
 import { useApp } from "./context"
@@ -9,6 +9,7 @@ import { CourseList } from "./CourseList"
 import { handleKey } from "./keys"
 import { DownloadDrawer, DRAWER_ROWS, Help, ToastView } from "./Overlays"
 import { Overview } from "./Overview"
+import { Results } from "./Results"
 import { SignIn } from "./SignIn"
 
 /** Below this width the course list and the detail pane are shown one at a time. */
@@ -42,7 +43,14 @@ export function App() {
             <CourseList width={listWidth()} height={bodyHeight()} />
           </Show>
           <Show when={!narrow() || s.focus === "detail"}>
-            <Show when={s.selectedId === OVERVIEW_ROW} fallback={<CourseDetail width={detailWidth()} height={bodyHeight()} />}>
+            <Show
+              when={s.selectedId === OVERVIEW_ROW}
+              fallback={
+                <Show when={s.selectedId === RESULTS_ROW} fallback={<CourseDetail width={detailWidth()} height={bodyHeight()} />}>
+                  <Results width={detailWidth()} height={bodyHeight()} />
+                </Show>
+              }
+            >
               <Overview width={detailWidth()} height={bodyHeight()} />
             </Show>
           </Show>

@@ -1,6 +1,6 @@
 import { chmod, mkdir, rename, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import type { AnnouncementSummary, Assignment, Attendance, Course, GradeReport, Section } from "@mydy/core/types"
+import type { AnnouncementSummary, Assignment, Attendance, Course, GradeReport, Results, RevaluationApplication, RevaluationExam, Section } from "@mydy/core/types"
 import type { Dirs } from "./paths"
 
 export interface SnapshotCourse {
@@ -17,6 +17,15 @@ export interface Snapshot {
   savedAt: number
   attendance: Attendance | null
   courses: SnapshotCourse[]
+  /** The last UniClaIRE results, so the Results pane has something to show offline. */
+  results?: {
+    data: Results
+    revaluation: RevaluationExam[] | null
+    applications?: RevaluationApplication[] | null
+    /** What-if grades, kept until cleared. */
+    sim?: Record<string, string>
+    fetchedAt: number
+  }
 }
 
 export function snapshotPath(dirs: Dirs, user: string): string {

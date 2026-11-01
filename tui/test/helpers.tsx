@@ -15,6 +15,9 @@ export function fakeServices(): Services & { calls: string[] } {
     startDownload: record("startDownload"),
     cancelDownload: record("cancelDownload"),
     signIn: record("signIn"),
+    loadResults: record("loadResults"),
+    portalSignIn: record("portalSignIn"),
+    portalSignOut: record("portalSignOut"),
     open: record("open"),
     quit: record("quit"),
   }

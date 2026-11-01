@@ -27,6 +27,7 @@ const noop = () => undefined
 const services: Services = {
   refresh: noop, loadTab: noop, openAnnouncement: noop, startDownload: noop,
   cancelDownload: noop, signIn: noop, open: noop, quit: noop,
+  loadResults: noop, portalSignIn: noop, portalSignOut: noop,
 }
 
 type Rgba = { buffer: ArrayLike<number> }

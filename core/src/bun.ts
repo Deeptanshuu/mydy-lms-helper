@@ -50,6 +50,8 @@ export interface BunTransportOptions {
   downloadDelayMs?: number
   maxRedirects?: number
   userAgent?: string
+  /** Sent with every request, e.g. the X-Requested-With header UniClaIRE expects. */
+  headers?: Record<string, string>
   fetch?: typeof fetch
   sleep?: (ms: number) => Promise<void>
 }
@@ -97,7 +99,7 @@ export function createBunTransport(options: BunTransportOptions = {}): Transport
     let currentMethod = method
     let currentBody = body
     for (let hop = 0; hop <= maxRedirects; hop++) {
-      const headers: Record<string, string> = { "user-agent": userAgent }
+      const headers: Record<string, string> = { ...options.headers, "user-agent": userAgent }
       const cookie = jar.header(current)
       if (cookie) headers.cookie = cookie
       if (currentBody) headers["content-type"] = "application/x-www-form-urlencoded"
