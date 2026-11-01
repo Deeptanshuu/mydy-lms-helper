@@ -1,6 +1,6 @@
 # MCP server
 
-Lets Claude Code, Claude Desktop or any [MCP](https://modelcontextprotocol.io/) client read your MyDy courses, attendance, deadlines, grades and announcements, download your notes, work your Course Progress, and read your semester results from UniClaIRE. Part of [MyDy LMS Helper](../README.md).
+Lets Claude Code, Claude Desktop, Codex, the ChatGPT desktop app or any [MCP](https://modelcontextprotocol.io/) client read your MyDy courses, attendance, deadlines, grades and announcements, download your notes, work your Course Progress, and read your semester results from UniClaIRE. Part of [MyDy LMS Helper](../README.md).
 
 <img src="../docs/assets/mcp-chat.svg" alt="An AI assistant using the MyDy MCP tools to list what's due, check attendance and download notes" width="100%">
 
@@ -30,6 +30,28 @@ claude mcp add mydy-lms -s user `
   -e MYDY_PASSWORD=your_password `
   -- "$((Get-Command uv).Source)" run --script "$PWD\mcp\mcp_server.py"
 ```
+
+**Codex and the ChatGPT desktop app** share their MCP settings, so adding the server once covers both (run from the repo folder):
+
+```sh
+codex mcp add mydy-lms \
+  --env MYDY_USERNAME=your_email@dypatil.edu \
+  --env MYDY_PASSWORD=your_password \
+  -- "$(command -v uv)" run --script "$PWD/mcp/mcp_server.py"
+```
+
+On Windows (PowerShell):
+
+```powershell
+codex mcp add mydy-lms `
+  --env MYDY_USERNAME=your_email@dypatil.edu `
+  --env MYDY_PASSWORD=your_password `
+  -- "$((Get-Command uv).Source)" run --script "$PWD\mcp\mcp_server.py"
+```
+
+No Codex CLI? In the ChatGPT desktop app, open **Settings**, then **MCP servers**, and select **Add server**. Choose **STDIO** and enter the same command and login details, then save and select **Restart**.
+
+ChatGPT on the web can't use this server. It only reaches remote servers by URL, and this one runs on your computer.
 
 **Other clients** (Claude Desktop, Cursor and others):
 

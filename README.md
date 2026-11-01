@@ -23,6 +23,8 @@ MyDy, the D.Y. Patil LMS, in your terminal: attendance, deadlines and grades on 
 
 Each folder has its own README with setup and details.
 
+<img src="docs/assets/how-it-works.svg" alt="The terminal UI and MCP server log in and parse MyDy's pages over HTTP; the Chrome extension reuses your logged-in browser tab" width="100%">
+
 ## Quick start
 
 macOS and Linux:
