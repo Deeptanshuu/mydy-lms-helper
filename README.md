@@ -13,7 +13,7 @@
 
 <img alt="The terminal UI: your courses with attendance on the left, the selected course's attendance, deadlines, grade and files on the right" src="docs/assets/tui-dashboard.svg" width="100%">
 
-A better way to use MyDy, the D.Y. Patil LMS: attendance, deadlines and grades on one screen, every course's notes in one download, and your AI assistant plugged into your courses.
+MyDy, the D.Y. Patil LMS, in your terminal: attendance, deadlines and grades on one screen, every course's notes in one download, your SGPA and CGPA from UniClaIRE, and your AI assistant plugged into all of it.
 
 | Part | What it does | Folder |
 |---|---|---|

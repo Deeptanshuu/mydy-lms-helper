@@ -1,4 +1,4 @@
-import type { Assignment, GradeItem } from "@mydy/core/logic"
+import { buildResults, type Assignment, type GradeItem, type RevaluationApplication, type RevaluationExam } from "@mydy/core/logic"
 import { createAppStore, type AppStore } from "./state"
 
 /** Fixed "now" for demo data: Tue 29 Sep 2026, 10:00. */
@@ -19,6 +19,24 @@ export const DEMO_POSTS: Record<string, string> = {
   "Assignment 3 deadline extended": "Assignment 3 is now due on Wednesday 30 September at 11:59 pm.",
   "Timetable for the mid-semester exams": "The mid-semester exam timetable is on the notice board and in the exam cell's folder.",
 }
+
+const sitting = (code: string, name: string, subjects: Array<[string, number, string]>) => ({
+  exam: { code, name },
+  rows: subjects.map(([subject, credits, remarks]) => ({ subject, FCREDITS: String(credits), remarks })),
+})
+
+/** Sample UniClaIRE results for the website demo. */
+export const DEMO_RESULTS = buildResults("DY23MTCO012", [
+  sitting("D-2024", "Dec 2024", [["Engineering Maths I", 4, "B"], ["Engineering Physics", 4, "C"], ["Programming in C", 3, "A"], ["Physics Lab", 1, "O"]]),
+  sitting("M-2025", "May 2025", [["Engineering Maths II", 4, "C"], ["Basic Electronics", 3, "B"], ["Digital Logic", 4, "B"], ["Electronics Lab", 1, "O"]]),
+  sitting("D-2025", "Dec 2025", [["Data Structures", 4, "A"], ["Discrete Maths", 4, "C"], ["Object Oriented Programming", 3, "A"], ["Data Structures Lab", 1, "O"]]),
+  sitting("M-2026", "May 2026", [["Operating Systems", 4, "B"], ["Database Systems", 4, "A"], ["Design of Algorithms", 3, "B"], ["Database Lab", 1, "A"]]),
+])
+export const DEMO_REVALUATION: RevaluationExam[] = [{ code: "M-2026", exam: "May 2026", examDate: "", resultDate: "", open: false, window: "" }]
+export const DEMO_APPLICATIONS: RevaluationApplication[] = [{
+  appNo: "RV2611", applied: "12-06-2026", amount: "500", paid: "12-06-2026", paymentType: "Online", status: "Applied",
+  items: [{ code: "CS402", subject: "Design of Algorithms", exam: "May 2026", examDate: "", kind: "Revaluation", processed: false }],
+}]
 
 /** Realistic sample data for tests, the README screenshots and the website demo. */
 export function demoStore(): AppStore {

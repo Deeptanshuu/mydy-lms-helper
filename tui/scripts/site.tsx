@@ -7,7 +7,7 @@ import { MDI_FILE, MDI_NAME } from "./mdi"
 import { testRender } from "@opentui/solid"
 import { copyFile, mkdir } from "node:fs/promises"
 import { join } from "node:path"
-import { DEMO_NOW, DEMO_POSTS, demoStore } from "../src/demo"
+import { DEMO_APPLICATIONS, DEMO_NOW, DEMO_POSTS, DEMO_RESULTS, DEMO_REVALUATION, demoStore } from "../src/demo"
 import { fileSlot, glyph, type FileKind, type IconName } from "../src/icons"
 import { OVERVIEW_ROW } from "../src/state"
 import { color } from "../src/theme"
@@ -74,6 +74,7 @@ const noop = () => undefined
 const store = demoStore()
 // The app opens on the Overview (demoStore() selects a course, for the screenshots and tests).
 store.actions.select(OVERVIEW_ROW)
+store.actions.applyResults(DEMO_RESULTS, DEMO_REVALUATION, DEMO_NOW.getTime(), DEMO_APPLICATIONS)
 const services: Services = {
   refresh: noop,
   loadTab: noop,
@@ -166,6 +167,10 @@ if (truncated) console.warn(`state graph capped at ${MAX_STATES} states; some ke
 // ---- autoplay tour -------------------------------------------------------------------------------------
 const TOUR: Array<[KeyName | null, number, string]> = [
   [null, 3800, "It opens on the Overview: attendance, what's due this week and your grades on one screen."],
+  ["j", 3000, "Results shows each semester's SGPA and every subject's grade, from UniClaIRE."],
+  ["tab", 2800, "tab switches to Statistics: your grade progression and credits by grade."],
+  ["tab", 2400, "Revaluation shows your applications and each subject's status."],
+  ["tab", 700, ""],
   ["j", 2800, "Pick a course and the needs-you row under the header keeps what's urgent in view."],
   ["j", 2800, "Computer Networks is at 72%: attend the next 6 classes to get back to 75%."],
   ["space", 1600, "Press space to mark courses for download."],
@@ -180,6 +185,7 @@ const TOUR: Array<[KeyName | null, number, string]> = [
   ["enter", 3200, "enter reads the whole post without leaving the terminal."],
   ["esc", 700, ""],
   ["esc", 1400, "esc goes back."],
+  ["k", 500, ""],
   ["k", 500, ""],
   ["k", 500, ""],
   ["k", 2200, "Back on the Overview. enter steps in, and j and k pick a deadline."],

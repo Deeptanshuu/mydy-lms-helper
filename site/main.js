@@ -1,4 +1,4 @@
-// MyDy LMS Helper website: install command, the live TUI demo, the bulk download card and the "Set up with AI" menus.
+// MyDy LMS Helper website: install command, top bar, sample chat, the live TUI demo, the bulk download card and the "Set up with AI" menus.
 const REPO = "Deeptanshuu/mydy-lms-helper"
 
 // ---------------------------------------------------------------------------
@@ -15,8 +15,8 @@ function detectPlatform() {
 }
 
 const INSTALL = {
-  unix: { command: "curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh", where: "your terminal" },
-  windows: { command: "irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex", where: "PowerShell" },
+  unix: { command: "curl -fsSL https://deeptanshuu.github.io/mydy-lms-helper/install.sh | sh", where: "your terminal", prompt: "$" },
+  windows: { command: "irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex", where: "PowerShell", prompt: ">" },
 }
 
 /** Shows a command in `code`; on a narrow screen it wraps after a slash in the URL rather than mid-word. */
@@ -43,19 +43,35 @@ async function copyWithFeedback(text, label, done = "Copied") {
 // A browser download of the unsigned macOS binary is quarantined ("damaged"), so the site leads with the
 // one-line installer, which fetches it with curl. Direct binary links stay in the Install section.
 async function setUpDownloads() {
-  const platform = detectPlatform()
-  const install = platform === "windows" ? INSTALL.windows : INSTALL.unix
-  const button = document.getElementById("install-copy")
-  const label = document.getElementById("install-label")
+  const onPhone = /android|iphone|ipad/i.test(navigator.userAgent)
   const note = document.getElementById("download-note")
-  showCommand(document.getElementById("install-cmd"), install.command)
-  note.innerHTML = `Paste it in ${install.where}, then run <code>mydy</code>. Unofficial and open source.`
-  button.addEventListener("click", () => copyWithFeedback(install.command, label, `Copied, paste it in ${install.where}`))
+  let install = detectPlatform() === "windows" ? INSTALL.windows : INSTALL.unix
+  let version = null
+
+  const showInstall = () => {
+    for (const code of document.querySelectorAll("[data-install-cmd]")) showCommand(code, install.command)
+    for (const prompt of document.querySelectorAll(".install-box .prompt")) prompt.textContent = install.prompt
+    for (const button of document.querySelectorAll("[data-os]")) button.setAttribute("aria-pressed", String(INSTALL[button.dataset.os] === install))
+    const about = version ? `${version}, unofficial and open source.` : "Unofficial and open source."
+    note.innerHTML = onPhone
+      ? `mydy runs on your computer, so open this page there to install it. ${about}`
+      : `Paste it in ${install.where}, then run <code>mydy</code>. ${about}`
+  }
+  showInstall()
+  for (const button of document.querySelectorAll("[data-os]")) {
+    button.addEventListener("click", () => {
+      install = INSTALL[button.dataset.os]
+      showInstall()
+    })
+  }
+  for (const group of document.querySelectorAll(".os-switch")) group.hidden = false
+
+  const navLabel = document.getElementById("nav-install-label")
+  document.getElementById("nav-install").addEventListener("click", () => copyWithFeedback(install.command, navLabel, "Copied"))
 
   // Every command block gets a copy button.
   for (const block of document.querySelectorAll(".cmd")) {
     const code = block.querySelector("code")
-    if (code.id !== "install-cmd") showCommand(code, code.textContent)
     const copy = document.createElement("button")
     copy.type = "button"
     copy.className = "cmd-copy"
@@ -82,7 +98,10 @@ async function setUpDownloads() {
     if (url) link.href = url
     else link.classList.add("unavailable")
   }
-  if (release) note.innerHTML = `Paste it in ${install.where}, then run <code>mydy</code>. ${release.tag_name}, unofficial and open source.`
+  if (release) {
+    version = release.tag_name
+    showInstall()
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -441,7 +460,7 @@ async function setUpDemo() {
 // Each menu says which setup it's for: data-ai-menu="general" (the whole project) or "mcp".
 const AI_SETUP = {
   general: {
-    prompt: `Help me set up MyDy LMS Helper (https://github.com/${REPO}), an unofficial, open-source helper for the MyDy LMS at D.Y. Patil (mydy.dypatil.edu). It has a terminal app (an Overview of attendance, deadlines and grades, plus announcements and bulk downloads), an MCP server that lets an AI assistant like you read my courses, and a Chrome extension for downloading course files.
+    prompt: `Help me set up MyDy LMS Helper (https://github.com/${REPO}), an unofficial, open-source helper for the MyDy LMS at D.Y. Patil (mydy.dypatil.edu). It has a terminal app (an Overview of attendance, deadlines and grades, plus exam results from UniClaIRE, announcements and bulk downloads), an MCP server that lets an AI assistant like you read my courses, and a Chrome extension for downloading course files.
 
 README: https://github.com/${REPO}#readme
 
@@ -454,7 +473,7 @@ irm https://deeptanshuu.github.io/mydy-lms-helper/install.ps1 | iex
 mydy`,
   },
   mcp: {
-    prompt: `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, and download my course files.
+    prompt: `Help me set up the MCP server from MyDy LMS Helper, so you can read my MyDy (mydy.dypatil.edu) courses, attendance, deadlines, grades and announcements, read my UniClaIRE exam results, and download my course files.
 
 Project: https://github.com/${REPO}
 Setup guide: https://github.com/${REPO}/blob/main/mcp/README.md
@@ -589,7 +608,167 @@ function setUpDownloadCard() {
   }).observe(drawer)
 }
 
+// ---------------------------------------------------------------------------
+// Top bar: clear at the top of the page, marks the current section, and folds into a menu on a phone.
+// ---------------------------------------------------------------------------
+function setUpTopBar() {
+  const bar = document.querySelector(".topbar")
+  const nav = document.getElementById("site-nav")
+  const menu = document.getElementById("nav-menu")
+
+  // The hero's top padding keeps text clear of the bar for this far, and solid takes over from there.
+  const setClear = () => bar.classList.toggle("clear", scrollY < 40)
+  setClear()
+  addEventListener("scroll", setClear, { passive: true })
+  new IntersectionObserver(([entry]) => bar.classList.toggle("hero-cmd-showing", entry.isIntersecting), { rootMargin: "-56px 0px 0px 0px" })
+    .observe(document.querySelector(".hero .install-box"))
+
+  const links = [...nav.querySelectorAll('a[href^="#"]')]
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const link = links.find((a) => a.hash === `#${entry.target.id}`)
+        if (entry.isIntersecting) link.setAttribute("aria-current", "true")
+        else link.removeAttribute("aria-current")
+      }
+    },
+    { rootMargin: "-50% 0px -50% 0px" },
+  )
+  for (const link of links) observer.observe(document.querySelector(link.hash))
+
+  const setOpen = (open) => {
+    document.documentElement.classList.toggle("menu-open", open)
+    menu.setAttribute("aria-expanded", String(open))
+    menu.textContent = open ? "Close" : "Menu"
+  }
+  menu.addEventListener("click", () => setOpen(menu.getAttribute("aria-expanded") !== "true"))
+  nav.addEventListener("click", (e) => {
+    if (e.target.closest("a")) setOpen(false)
+  })
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && menu.getAttribute("aria-expanded") === "true") {
+      setOpen(false)
+      menu.focus()
+    }
+  })
+  // Widening the window past the phone layout leaves no menu to close.
+  matchMedia("(min-width: 761px)").addEventListener("change", () => setOpen(false))
+}
+
+// ---------------------------------------------------------------------------
+// AI section: the sample chat plays each suggested question. The numbers match the demo's sample data.
+// ---------------------------------------------------------------------------
+const CHAT_ANSWERS = [
+  {
+    tools: "simulate_results",
+    output: "Discrete Maths: C to B\nCGPA: 8.19 to 8.27",
+    reply: "<p>Your CGPA would be <b>8.27</b>, up from 8.19.</p>",
+  },
+  {
+    tools: "get_attendance",
+    output: "Software Engineering 93%, miss 10\nData Structures and Algorithms 88%, miss 8\nComputer Networks 72%, need 6\nEngineering Maths III 46%, need 47",
+    reply: "<p>You can miss <b>10</b> more in Software Engineering and <b>8</b> in Data Structures and Algorithms. Don't skip Computer Networks or Engineering Maths III: both are below 75%.</p>",
+  },
+  {
+    tools: "get_announcements",
+    output: "Mid-sem syllabus uploaded\nUnits 1 to 3 are in scope for the mid-semester exam.\nThe question bank is in Files, under Unit 3.",
+    reply: '<ul class="reply-list"><li>Revise Unit 1</li><li>Revise Unit 2</li><li>Revise Unit 3</li><li>Do the question bank in Files, under Unit 3</li></ul>',
+  },
+  {
+    tools: "download_course_materials",
+    output: "Computer Networks/OSI layers.pdf",
+    reply: "<p>Saved <b>OSI layers.pdf</b> to your Computer Networks folder. First question: which OSI layer handles routing?</p>",
+  },
+]
+
+function setUpChat() {
+  const log = document.getElementById("chat-log")
+  const send = document.getElementById("chat-send")
+  const next = document.getElementById("chat-next")
+  const prompts = [...document.querySelectorAll("[data-ask]")]
+  const start = log.innerHTML
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms))
+  let playing = false
+
+  const showNext = () => {
+    const unasked = prompts.find((b) => !b.disabled)
+    next.textContent = unasked ? unasked.textContent : "Start over"
+    send.classList.toggle("restart", !unasked)
+    send.setAttribute("aria-label", unasked ? `Send: ${unasked.textContent}` : "Start the sample chat over")
+    send.setAttribute("aria-disabled", String(playing))
+  }
+  // Only the chat scrolls, and it glides, so a new message never moves the page or snaps into place.
+  const scrollDown = () => {
+    const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches
+    log.scrollTo({ top: log.scrollHeight, behavior: smooth ? "smooth" : "auto" })
+  }
+  const add = (html) => {
+    log.insertAdjacentHTML("beforeend", html)
+    scrollDown()
+    return log.lastElementChild
+  }
+
+  // Words appear one after another, the way a chat app streams its answer.
+  async function stream(answer) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const words = []
+    for (const block of answer.querySelectorAll(":scope > p, :scope > ul")) {
+      const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
+      const texts = []
+      while (walker.nextNode()) texts.push(walker.currentNode)
+      for (const text of texts) {
+        const parts = text.textContent.split(/(\s+)/).map((part) => {
+          if (!part.trim()) return document.createTextNode(part)
+          const word = document.createElement("span")
+          word.className = "word"
+          word.textContent = part
+          words.push(word)
+          return word
+        })
+        text.replaceWith(...parts)
+      }
+    }
+    for (const word of words) {
+      await pause(28)
+      word.classList.add("shown")
+    }
+  }
+
+  async function ask(button) {
+    if (playing) return
+    playing = true
+    // A disabled button drops focus, so hand it to the message box without scrolling to it.
+    if (document.activeElement === button) send.focus({ preventScroll: true })
+    button.disabled = true
+    showNext()
+    const { tools, output, reply } = CHAT_ANSWERS[Number(button.dataset.ask)]
+    add(`<p class="bubble you"></p>`).textContent = button.textContent
+    await pause(350)
+    const answer = add(`<div class="reply"><p class="tool-step running">Using ${tools}</p></div>`)
+    await pause(800)
+    answer.innerHTML = `<details class="tool-step"><summary>Used ${tools}<svg class="ic" aria-hidden="true"><use href="#i-chevron"/></svg></summary><div class="tool-output">${output}</div></details>${reply}`
+    scrollDown()
+    await stream(answer)
+    playing = false
+    showNext()
+  }
+
+  for (const button of prompts) button.addEventListener("click", () => ask(button))
+  send.addEventListener("click", () => {
+    if (playing) return
+    const unasked = prompts.find((b) => !b.disabled)
+    if (unasked) return ask(unasked)
+    log.innerHTML = start
+    for (const button of prompts) button.disabled = false
+    showNext()
+  })
+  send.hidden = false
+  showNext()
+}
+
 setUpDownloads()
+setUpTopBar()
+setUpChat()
 setUpDemo()
 setUpDownloadCard()
 setUpAiMenus()

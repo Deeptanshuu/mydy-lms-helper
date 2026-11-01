@@ -120,34 +120,30 @@ async function banner(): Promise<string> {
 }
 
 /**
- * The link-preview image for the website (site/og.png): the name and what it does across the top, the real
- * Overview screenshot underneath, running off the bottom edge. The screenshot is docs/assets/tui-overview.svg
+ * The link-preview image for the website (site/og.png): the headline large enough to read as a small thumbnail, with
+ * the real Overview screenshot running off the right and bottom edges. The screenshot is docs/assets/tui-overview.svg
  * (from `bun run --cwd tui screenshot`), embedded as-is so the card always shows the app as it is.
  */
 async function socialCard(): Promise<string> {
   const W = 1200
   const H = 630
   const body: string[] = []
-  // Waves toward the top right, well away from the title.
-  body.push(...heroWaves(W, H, (x, y) => smoothstep(0.6, 0.92, x / W) * (1 - smoothstep(0.05, 0.4, y / H)), 0))
+  // Waves along the bottom edge, below the words and clear of the screenshot.
+  body.push(...heroWaves(W, H, (x, y) => smoothstep(0.92, 1, y / H) * (1 - smoothstep(0.3, 0.52, x / W)), 0))
 
-  body.push(logoMarkup(60, 48, 64, true))
-  body.push(text(144, 92, 46, color.strong, "MyDy LMS Helper", { bold: true }))
-  body.push(text(146, 124, 19, color.muted, "Attendance, deadlines, grades and files from MyDy, in your terminal."))
-
-  let chipX = W - 60
-  for (const [path, label] of [[mdi.mdiGoogleChrome, "Chrome extension"], [mdi.mdiRobotOutline, "MCP server"], [mdi.mdiConsole, "Terminal UI"]] as const) {
-    const w = Math.ceil(14 + 16 + 8 + label.length * cw(14) + 14)
-    chipX -= w
-    body.push(`<rect x="${chipX}" y="58" width="${w}" height="34" rx="17" fill="${color.bg}" stroke="${color.line}"/>`)
-    body.push(icon(path, chipX + 14, 67, 16, color.muted))
-    body.push(text(chipX + 38, 80, 14, color.text, label))
-    chipX -= 10
+  body.push(
+    `<text x="60" y="88" font-size="34" font-weight="800" xml:space="preserve"><tspan fill="${color.accent}">&gt;</tspan><tspan fill="${color.strong}">MYDY</tspan><tspan fill="${color.accent}">_</tspan></text>`,
+  )
+  for (const [i, line] of ["MyDy,", "in your", "terminal."].entries()) {
+    body.push(text(56, 222 + i * 88, 88, color.strong, line, { bold: true }))
   }
+  body.push(text(60, 472, 25, color.text, "Attendance, deadlines, grades"))
+  body.push(text(60, 508, 25, color.text, "and exam results."))
+  body.push(text(60, 576, 20, color.muted, "Unofficial and open source"))
 
-  body.push(...(await screenshotMarkup((W - 1000) / 2, 172, 1000, { width: W, height: H, radius: 0 })))
+  body.push(...(await screenshotMarkup(590, 56, 1000, { width: W, height: H, radius: 0 })))
 
-  return svg(W, H, BANNER_TITLE, "MyDy LMS Helper: the terminal UI's Overview, with attendance, deadlines and grades for the semester.", body, 0)
+  return svg(W, H, BANNER_TITLE, "MyDy, in your terminal: the terminal app's Overview, with attendance, deadlines and grades for the semester.", body, 0)
 }
 
 function howItWorks(): string {
