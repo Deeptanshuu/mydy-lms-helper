@@ -50,4 +50,4 @@ Contributing: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT. Unofficial, not affiliated with D.Y. Patil or MyDy. Your login is only sent to MyDy; only download what you already have access to.
+MIT. Unofficial, not affiliated with D.Y. Patil or MyDy. Your logins are only sent to MyDy and UniClaIRE; only download what you already have access to.
